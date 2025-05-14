@@ -1,15 +1,15 @@
 
 import { getNations } from "@/lib/nation-service";
-import type { Nation } from "@/types";
-import { NationList } from "@/components/nations/nation-list";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PlusCircle, ListMusic } from "lucide-react";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
+import { NationsDisplayClient } from "@/components/nations/nations-display-client";
 
 export default async function NationsPage() {
   const nations = await getNations();
+  const listTitle = "Elenco Nazioni Partecipanti";
 
   return (
     <div className="space-y-8">
@@ -21,7 +21,7 @@ export default async function NationsPage() {
             Incontra le Nazioni
           </h1>
           <p className="text-xl text-muted-foreground">
-            Esplora tutti i paesi partecipanti a TreppoVision, ordinati per ordine di esibizione.
+            Esplora tutti i paesi partecipanti a TreppoVision.
           </p>
         </header>
         <AdminNationControls nationId={null}>
@@ -41,7 +41,7 @@ export default async function NationsPage() {
       )}
 
       {nations.length > 0 && (
-        <NationList nations={nations} title="Elenco Completo delle Nazioni (per Ordine di Esibizione)" />
+        <NationsDisplayClient initialNations={nations} listTitle={listTitle} />
       )}
     </div>
   );
