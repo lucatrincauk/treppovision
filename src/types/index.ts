@@ -87,3 +87,17 @@ export interface AdminNationPayload {
   youtubeVideoId: string;
   category: NationCategory;
 }
+
+// Team Creation
+export interface TeamFormData {
+  name: string;
+  founderNationId: string;
+  day1NationId: string;
+  day2NationId: string;
+}
+
+export interface Team extends TeamFormData {
+  id: string; // Firestore document ID
+  userId: string; // UID of the user who created the team
+  createdAt: number; // Timestamp
+}
