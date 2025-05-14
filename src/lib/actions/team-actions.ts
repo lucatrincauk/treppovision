@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/firebase";
 import type { TeamFormData } from "@/types"; // TeamFormData now includes creatorDisplayName
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 
 const TEAMS_COLLECTION = "teams";
@@ -15,6 +15,21 @@ export async function createTeamAction(
   if (!userId) {
     return { success: false, message: "Utente non autenticato. Effettua il login per creare un team." };
   }
+
+  // Server-side check if user already has a team
+  try {
+    const teamsCollectionRef = collection(db, TEAMS_COLLECTION);
+    const q = query(teamsCollectionRef, where("userId", "==", userId), limit(1));
+    const existingTeamSnapshot = await getDocs(q);
+
+    if (!existingTeamSnapshot.empty) {
+      return { success: false, message: "Hai già creato un team. Puoi creare un solo team per account." };
+    }
+  } catch (error) {
+    console.error("Errore durante la verifica del team esistente:", error);
+    return { success: false, message: "Errore del server durante la verifica del team. Riprova." };
+  }
+
 
   if (!data.name.trim()) {
     return { success: false, message: "Il nome del team è obbligatorio." };
