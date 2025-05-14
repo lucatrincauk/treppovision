@@ -8,7 +8,8 @@ import {
   updateProfile,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
-  signInWithEmailLink
+  signInWithEmailLink,
+  sendPasswordResetEmail // Added this import
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -46,6 +47,6 @@ export {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  sendPasswordResetEmail, // Export this function
   actionCodeSettings
 };
-
