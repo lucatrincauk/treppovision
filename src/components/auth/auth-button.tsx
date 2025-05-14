@@ -55,6 +55,8 @@ export function AuthButton() {
   const [userTeam, setUserTeam] = React.useState<Team | null>(null);
   const [isLoadingUserTeam, setIsLoadingUserTeam] = React.useState(false);
   const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+
 
   React.useEffect(() => {
     completeEmailLinkSignIn();
@@ -68,37 +70,59 @@ export function AuthButton() {
     }
   }, [user?.displayName, editNameDialogOpen]);
 
+  // Effect 1: Handles initial data load when user changes, or clears data on logout
   React.useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchInitialData = async () => {
       if (user) {
-        setIsLoadingUserTeam(true);
+        setIsLoadingUserTeam(true); // Indicates loading for team and initial lock status
         try {
-          const [teams, lockedStatus] = await Promise.all([
+          // Fetch both team and initial lock status together
+          const [teamsResult, lockedStatusResult] = await Promise.all([
             getTeamsByUserId(user.uid),
             getTeamsLockedStatus()
           ]);
 
-          if (teams.length > 0) {
-            setUserTeam(teams[0]);
-          } else {
-            setUserTeam(null);
-          }
-          setTeamsLocked(lockedStatus);
+          setUserTeam(teamsResult.length > 0 ? teamsResult[0] : null);
+          setTeamsLocked(lockedStatusResult);
         } catch (error) {
-          console.error("Failed to fetch user team or lock status:", error);
+          console.error("Failed to fetch initial user data/lock status:", error);
           setUserTeam(null);
           setTeamsLocked(false); // Default to false on error
         } finally {
           setIsLoadingUserTeam(false);
         }
       } else {
+        // User logged out, clear all related states
         setUserTeam(null);
         setTeamsLocked(null);
+        setIsLoadingUserTeam(false); // Ensure loader is off
       }
     };
 
-    fetchUserData();
-  }, [user]);
+    fetchInitialData();
+  }, [user]); // Depends only on user
+
+  // Effect 2: Refreshes lock status specifically when dropdown is opened (and user exists)
+  React.useEffect(() => {
+    const refreshLockStatusOnOpen = async () => {
+      if (user && isDropdownOpen) {
+        // Set loading true if you want a spinner during this quick refresh
+        // setIsLoadingUserTeam(true); 
+        try {
+          const currentLockedStatus = await getTeamsLockedStatus();
+          setTeamsLocked(currentLockedStatus);
+        } catch (error) {
+          console.error("Failed to refresh teams lock status:", error);
+          // Potentially keep the old status or default to a safe value
+          // setTeamsLocked(teamsLocked === null ? false : teamsLocked); 
+        } finally {
+          // setIsLoadingUserTeam(false);
+        }
+      }
+    };
+
+    refreshLockStatusOnOpen();
+  }, [user, isDropdownOpen]); // Depends on user and dropdown state
 
 
   const handleAuthSuccess = () => {
@@ -115,7 +139,7 @@ export function AuthButton() {
     }
   };
 
-  if (isLoading && !user) {
+  if (isLoading && !user) { // Initial app load, auth still resolving
     return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin mr-2" />Caricamento...</Button>;
   }
 
@@ -123,7 +147,7 @@ export function AuthButton() {
     const userInitial = user.displayName ? user.displayName.substring(0, 2).toUpperCase() : (user.email ? user.email.substring(0,2).toUpperCase() : "U");
     return (
       <>
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
@@ -182,24 +206,31 @@ export function AuthButton() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {(isLoadingUserTeam || teamsLocked === null) && (
+            {(isLoadingUserTeam && isDropdownOpen) && (teamsLocked === null || userTeam === undefined) && (
               <DropdownMenuItem disabled>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Caricamento squadra...
               </DropdownMenuItem>
             )}
-            {!isLoadingUserTeam && userTeam && teamsLocked === false && (
-              <DropdownMenuItem onSelect={() => router.push(`/teams/${userTeam.id}/edit`)}>
-                <FileEdit className="mr-2 h-4 w-4" />
-                Modifica Squadra
-              </DropdownMenuItem>
+            
+            {/* Display Edit Team or Locked message only after initial loading is complete for userTeam and teamsLocked */}
+            {userTeam !== undefined && teamsLocked !== null && !isLoadingUserTeam && (
+                <>
+                    {userTeam && teamsLocked === false && (
+                    <DropdownMenuItem onSelect={() => router.push(`/teams/${userTeam.id}/edit`)}>
+                        <FileEdit className="mr-2 h-4 w-4" />
+                        Modifica Squadra
+                    </DropdownMenuItem>
+                    )}
+                    {userTeam && teamsLocked === true && (
+                    <DropdownMenuItem disabled>
+                        <Lock className="mr-2 h-4 w-4 text-destructive" />
+                        Modifica Squadra Bloccata
+                    </DropdownMenuItem>
+                    )}
+                </>
             )}
-             {!isLoadingUserTeam && userTeam && teamsLocked === true && (
-              <DropdownMenuItem disabled>
-                <Lock className="mr-2 h-4 w-4 text-destructive" />
-                Modifica Squadra Bloccata
-              </DropdownMenuItem>
-            )}
+
 
             {user?.isAdmin && (
               <>
