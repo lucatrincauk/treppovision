@@ -23,7 +23,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     return (
       <div className="flex items-center gap-2 py-1">
         {label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />}
-        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[120px] flex-shrink-0">{label}</span>}
+        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } 
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -49,7 +49,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
         <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
           {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
           {nation.ranking && nation.ranking > 0 && (
-            <span className="ml-1 text-xs text-accent font-semibold">(Pos: {nation.ranking})</span>
+            <span className="ml-1 text-xs text-accent font-semibold">({nation.ranking}°)</span>
           )}
         </span>
       </Link>

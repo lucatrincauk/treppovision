@@ -113,9 +113,9 @@ export default async function TeamsLeaderboardPage() {
           className="rounded-sm border border-border/30 object-contain"
           data-ai-hint={`${detail.name} flag`}
         />
-        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Pos: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
+        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Posizione: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
           <span className="font-medium">{detail.name}</span>
-          <span className="text-muted-foreground"> (Pos: {detail.actualRank ?? 'N/D'})</span>: {detail.points}pt
+          <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
         </Link>
       </div>
     );
