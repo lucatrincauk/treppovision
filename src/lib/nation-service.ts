@@ -1,14 +1,16 @@
 
 import { db } from "@/lib/firebase";
 import type { Nation } from "@/types";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, orderBy } from "firebase/firestore";
 
 const NATIONS_COLLECTION = "nations";
 
 export async function getNations(): Promise<Nation[]> {
   try {
     const nationsCollection = collection(db, NATIONS_COLLECTION);
-    const nationSnapshot = await getDocs(nationsCollection);
+    // Order by performingOrder, then by name as a secondary sort
+    const q = query(nationsCollection, orderBy("performingOrder", "asc"), orderBy("name", "asc"));
+    const nationSnapshot = await getDocs(q);
     const nationsList = nationSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Nation));
     return nationsList;
   } catch (error) {

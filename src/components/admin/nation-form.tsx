@@ -40,6 +40,7 @@ const nationFormSchema = z.object({
     required_error: "La categoria è richiesta.",
   }),
   ranking: z.coerce.number().int().positive("La posizione deve essere un numero intero positivo."),
+  performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
 interface NationFormProps {
@@ -54,8 +55,12 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
 
   const form = useForm<NationFormData>({
     resolver: zodResolver(nationFormSchema),
-    defaultValues: initialData 
-      ? { ...initialData, ranking: initialData.ranking || 1 } // Ensure ranking has a default
+    defaultValues: initialData
+      ? { 
+          ...initialData, 
+          ranking: initialData.ranking || 1,
+          performingOrder: initialData.performingOrder || 0, // Ensure performingOrder has a default
+        }
       : {
           id: "",
           name: "",
@@ -64,7 +69,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: 1, // Default ranking for new nations
+          ranking: 1,
+          performingOrder: 0, // Default performingOrder for new nations
         },
   });
 
@@ -79,7 +85,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
         description: `${values.name} ${isEditMode ? 'aggiornata' : 'aggiunta'} con successo.`,
       });
       router.push(`/nations/${result.nationId || values.id}`);
-      router.refresh(); 
+      router.refresh();
     } else {
       toast({
         title: "Errore",
@@ -217,12 +223,30 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             <FormItem>
               <FormLabel>Posizione (Ranking)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting} 
+                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting}
                   onChange={event => field.onChange(+event.target.value)} // Ensure value is number
                 />
               </FormControl>
               <FormDescription>
                 La posizione iniziale o prevista della nazione.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="performingOrder"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ordine di Esibizione</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="es. 0, 1, 2..." {...field} disabled={isSubmitting} 
+                  onChange={event => field.onChange(+event.target.value)} // Ensure value is number
+                />
+              </FormControl>
+              <FormDescription>
+                Numero per ordinare le nazioni (0 per primo). Non visibile agli utenti.
               </FormDescription>
               <FormMessage />
             </FormItem>

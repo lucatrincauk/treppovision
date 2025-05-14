@@ -32,6 +32,7 @@ export default async function EditNationPage({ params }: EditNationPageProps) {
     youtubeVideoId: nation.youtubeVideoId,
     category: nation.category,
     ranking: nation.ranking || 1, // Default to 1 if ranking is somehow not set
+    performingOrder: nation.performingOrder || 0, // Default to 0 if performingOrder is not set
   };
 
   return (

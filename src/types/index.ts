@@ -9,8 +9,9 @@ export interface Nation {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number; // Added ranking
-  dataAiHintFlag?: string; 
+  ranking: number;
+  performingOrder: number; // Added for sorting
+  dataAiHintFlag?: string;
 }
 
 // Used for form validation and submission when adding/editing nations
@@ -22,20 +23,21 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number; // Added ranking
+  ranking: number;
+  performingOrder: number; // Added for sorting
 }
 
 export interface User {
-  uid: string; 
+  uid: string;
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
-  isAdmin?: boolean; 
+  isAdmin?: boolean;
 }
 
 export interface Vote {
   nationId: string;
-  userId: string; 
+  userId: string;
   scores: {
     song: number;
     performance: number;
@@ -88,7 +90,8 @@ export interface AdminNationPayload {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number; // Added ranking
+  ranking: number;
+  performingOrder: number; // Added for sorting
 }
 
 // Team Creation
@@ -108,8 +111,8 @@ export interface Team extends Omit<TeamFormData, 'creatorDisplayName'> { // Omit
   founderNationId: string;
   day1NationId: string;
   day2NationId: string;
-  createdAt: { 
+  createdAt: {
     seconds: number;
     nanoseconds: number;
-  } | any; 
+  } | any;
 }
