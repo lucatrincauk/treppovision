@@ -91,7 +91,7 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
         
-        <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Preferenze Utente:</p>
+        <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Voti Treppovision:</p>
         <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
         <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
         <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
