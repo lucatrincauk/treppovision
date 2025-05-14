@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/firebase";
 import type { TeamFormData, Team } from "@/types"; 
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, getDoc } from "firebase/firestore"; // Added getDoc here
 import { revalidatePath } from "next/cache";
 
 const TEAMS_COLLECTION = "teams";
