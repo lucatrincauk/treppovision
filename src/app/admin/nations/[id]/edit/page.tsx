@@ -31,7 +31,9 @@ export default async function EditNationPage({ params }: EditNationPageProps) {
     artistName: nation.artistName,
     youtubeVideoId: nation.youtubeVideoId,
     category: nation.category,
-    ranking: nation.ranking || undefined, // Default to undefined if ranking is not set or 0
+    // If nation.ranking is 0, treat it as undefined for form display (empty field)
+    // Otherwise, use the actual ranking value.
+    ranking: nation.ranking === 0 ? undefined : nation.ranking, 
     performingOrder: nation.performingOrder || 0, 
   };
 

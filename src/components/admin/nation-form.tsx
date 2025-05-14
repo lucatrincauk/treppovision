@@ -39,7 +39,7 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.number().int("La posizione deve essere un numero intero.").optional(), // Removed .positive()
+  ranking: z.number().int("La posizione deve essere un numero intero.").optional(),
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
@@ -58,7 +58,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     defaultValues: initialData
       ? { 
           ...initialData, 
-          ranking: initialData.ranking || undefined, // Ensure undefined if not set
+          // Ensure ranking is undefined if not set or was 0 in source initialData (already handled in edit page)
+          ranking: initialData.ranking === undefined || initialData.ranking === null ? undefined : Number(initialData.ranking),
           performingOrder: initialData.performingOrder || 0,
         }
       : {
@@ -69,7 +70,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: undefined, // Default to undefined
+          ranking: undefined, 
           performingOrder: 0, 
         },
   });
@@ -77,9 +78,10 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   async function onSubmit(values: NationFormData) {
     setIsSubmitting(true);
     
+    // Ensure that ranking is undefined if it's not a positive number
     const payload = {
       ...values,
-      ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
+      ranking: values.ranking !== undefined && values.ranking > 0 ? values.ranking : undefined,
     };
 
     const action = isEditMode ? updateNationAction : addNationAction;
@@ -234,8 +236,20 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                   placeholder="es. 1 (lasciare vuoto se non applicabile)" 
                   {...field} 
                   disabled={isSubmitting}
-                  onChange={event => field.onChange(event.target.value === "" ? undefined : +event.target.value)}
-                  value={field.value ?? ""} 
+                  onChange={event => {
+                    const val = event.target.value;
+                    if (val === "") {
+                      field.onChange(undefined);
+                    } else {
+                      const num = parseInt(val, 10); // Use parseInt for robustness
+                      if (!isNaN(num)) {
+                        field.onChange(num);
+                      } else {
+                        field.onChange(undefined); // Or some other error state if desired
+                      }
+                    }
+                  }}
+                  value={field.value === undefined || field.value === null ? "" : String(field.value)} 
                 />
               </FormControl>
               <FormDescription>
@@ -253,7 +267,10 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
               <FormLabel>Ordine di Esibizione</FormLabel>
               <FormControl>
                 <Input type="number" placeholder="es. 0, 1, 2..." {...field} disabled={isSubmitting} 
-                  onChange={event => field.onChange(+event.target.value)}
+                  onChange={event => {
+                     const num = parseInt(event.target.value, 10);
+                     field.onChange(isNaN(num) ? 0 : num); // Default to 0 if parse fails
+                  }}
                 />
               </FormControl>
               <FormDescription>
@@ -272,4 +289,3 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     </Form>
   );
 }
-
