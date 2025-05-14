@@ -66,30 +66,30 @@ export default function ChartsPage() {
     <div className="space-y-8">
       <header className="text-center space-y-2">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center justify-center">
-          <BarChart3 className="w-10 h-10 mr-3 text-primary"/> TreppoVision Charts
+          <BarChart3 className="w-10 h-10 mr-3 text-primary"/> Grafici TreppoVision
         </h1>
         <p className="text-xl text-muted-foreground">
-          See how the nations stack up based on user votes!
+          Guarda come si classificano le nazioni in base ai voti degli utenti!
         </p>
       </header>
       
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Live Rankings</AlertTitle>
+        <AlertTitle>Classifiche Live</AlertTitle>
         <AlertDescription>
-          These charts reflect votes cast by users within this application. Data is stored locally in your browser. For official Eurovision results, please refer to the official Eurovision Song Contest website.
+          Questi grafici riflettono i voti espressi dagli utenti all'interno di questa applicazione. I dati sono memorizzati localmente nel tuo browser. Per i risultati ufficiali dell'Eurovision, si prega di fare riferimento al sito ufficiale dell'Eurovision Song Contest.
         </AlertDescription>
       </Alert>
 
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle>Average Scores by Nation</CardTitle>
-          <CardDescription>Scores are averaged from 1 to 10 for Song, Performance, and Outfit categories.</CardDescription>
+          <CardTitle>Punteggi Medi per Nazione</CardTitle>
+          <CardDescription>I punteggi sono mediati da 1 a 10 per le categorie Canzone, Performance e Outfit.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
              <div className="flex justify-center items-center min-h-[300px]">
-                <p className="text-muted-foreground">Loading chart data...</p>
+                <p className="text-muted-foreground">Caricamento dati grafici...</p>
              </div>
           ) : (
             <NationVoteChart data={aggregatedData} />

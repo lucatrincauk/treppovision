@@ -18,7 +18,7 @@ export function AuthButton() {
   const { user, login, logout, isLoading } = useAuth();
 
   if (isLoading) {
-    return <Button variant="outline" size="sm" disabled>Loading...</Button>;
+    return <Button variant="outline" size="sm" disabled>Caricamento...</Button>;
   }
 
   if (user) {
@@ -37,14 +37,14 @@ export function AuthButton() {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{user.name}</p>
               <p className="text-xs leading-none text-muted-foreground">
-                {user.isAdmin ? "Administrator" : "User"}
+                {user.isAdmin ? "Amministratore" : "Utente"}
               </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />
-            Log out
+            Esci
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -56,15 +56,15 @@ export function AuthButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
           <LogIn className="mr-2 h-4 w-4" />
-          Login
+          Accedi
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel>Login As</DropdownMenuLabel>
+        <DropdownMenuLabel>Accedi Come</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => login(false)}>
           <UserCircle className="mr-2 h-4 w-4" />
-          User
+          Utente
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => login(true)}>
           <ShieldCheck className="mr-2 h-4 w-4" />

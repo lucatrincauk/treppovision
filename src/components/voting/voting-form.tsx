@@ -47,7 +47,7 @@ export function VotingForm({ nation }: VotingFormProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user) {
-      toast({ title: "Authentication Required", description: "Please log in to vote.", variant: "destructive" });
+      toast({ title: "Autenticazione Richiesta", description: "Effettua il login per votare.", variant: "destructive" });
       return;
     }
 
@@ -65,9 +65,9 @@ export function VotingForm({ nation }: VotingFormProps) {
       if (result.success && result.vote) {
         saveVote(result.vote); // Client-side save to localStorage
         setHasVoted(true);
-        toast({ title: "Vote Submitted!", description: `Your scores for ${nation.name} have been recorded.` });
+        toast({ title: "Voto Inviato!", description: `I tuoi punteggi per ${nation.name} sono stati registrati.` });
       } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" });
+        toast({ title: "Errore", description: result.message, variant: "destructive" });
       }
     });
   };
@@ -76,10 +76,10 @@ export function VotingForm({ nation }: VotingFormProps) {
     return (
       <Card className="bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-accent">Login to Vote</CardTitle>
+          <CardTitle className="text-accent">Accedi per Votare</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">You need to be logged in to cast your vote for {nation.name}.</p>
+          <p className="text-muted-foreground">Devi aver effettuato l'accesso per esprimere il tuo voto per {nation.name}.</p>
         </CardContent>
       </Card>
     );
@@ -88,13 +88,13 @@ export function VotingForm({ nation }: VotingFormProps) {
   return (
     <Card className="shadow-lg border-primary/30">
       <CardHeader>
-        <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Your Vote for {nation.name}</CardTitle>
-        {hasVoted && <CardDescription>You've already voted for {nation.name}. You can update your scores.</CardDescription>}
+        <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Il Tuo Voto per {nation.name}</CardTitle>
+        {hasVoted && <CardDescription>Hai già votato per {nation.name}. Puoi aggiornare i tuoi punteggi.</CardDescription>}
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
           <div>
-            <Label htmlFor="songScore" className="text-lg">Song: <span className="font-bold text-accent">{songScore}</span>/10</Label>
+            <Label htmlFor="songScore" className="text-lg">Canzone: <span className="font-bold text-accent">{songScore}</span>/10</Label>
             <Slider
               id="songScore"
               min={1}
@@ -136,7 +136,7 @@ export function VotingForm({ nation }: VotingFormProps) {
         <CardFooter>
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            {hasVoted ? "Update Vote" : "Submit Vote"}
+            {hasVoted ? "Aggiorna Voto" : "Invia Voto"}
           </Button>
         </CardFooter>
       </form>

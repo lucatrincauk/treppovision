@@ -13,18 +13,18 @@ export default function NationsPage() {
     <div className="space-y-12">
       <header className="text-center space-y-2">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-          Meet the Nations
+          Incontra le Nazioni
         </h1>
         <p className="text-xl text-muted-foreground">
-          Explore all the participating countries in TreppoVision.
+          Esplora tutti i paesi partecipanti a TreppoVision.
         </p>
       </header>
       
-      <NationList nations={founderNations} title="Founders" />
+      <NationList nations={founderNations} title="Fondatori" />
       <Separator className="my-8 bg-border/50" />
-      <NationList nations={day1Nations} title="Day 1 Entries" />
+      <NationList nations={day1Nations} title="Partecipanti Giorno 1" />
       <Separator className="my-8 bg-border/50" />
-      <NationList nations={day2Nations} title="Day 2 Entries" />
+      <NationList nations={day2Nations} title="Partecipanti Giorno 2" />
     </div>
   );
 }

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error("Failed to load user from localStorage", error);
+      console.error("Impossibile caricare l'utente da localStorage", error);
       localStorage.removeItem("treppoUser"); // Clear corrupted data
     }
     setIsLoading(false);
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = (asAdmin: boolean) => {
     const mockUser: User = {
       id: "mockUserId",
-      name: asAdmin ? "Admin User" : " EurovisionFan_123",
+      name: asAdmin ? "Amministratore Demo" : "TifosoEurovision_123",
       isAdmin: asAdmin,
     };
     setUser(mockUser);

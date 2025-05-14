@@ -20,7 +20,7 @@ interface VoteSubmission {
 
 export async function submitVoteAction(submission: VoteSubmission): Promise<{ success: boolean; message: string; vote?: Vote }> {
   if (!submission.userId) {
-    return { success: false, message: "User not authenticated." };
+    return { success: false, message: "Utente non autenticato." };
   }
 
   if (
@@ -28,7 +28,7 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
     submission.scores.performance < 1 || submission.scores.performance > 10 ||
     submission.scores.outfit < 1 || submission.scores.outfit > 10
   ) {
-    return { success: false, message: "Invalid scores. Must be between 1 and 10." };
+    return { success: false, message: "Punteggi non validi. Devono essere tra 1 e 10." };
   }
   
   const newVote: Vote = {
@@ -42,5 +42,5 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
   revalidatePath(`/nations/${submission.nationId}`);
   revalidatePath("/charts");
 
-  return { success: true, message: "Vote submitted successfully!", vote: newVote };
+  return { success: true, message: "Voto inviato con successo!", vote: newVote };
 }

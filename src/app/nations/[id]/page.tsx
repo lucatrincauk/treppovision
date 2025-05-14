@@ -38,14 +38,14 @@ export default function NationPage({ params }: NationPageProps) {
     <div className="space-y-8">
       <Link href="/nations" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
         <ChevronLeft className="w-4 h-4 mr-1" />
-        Back to Nations List
+        Torna all'Elenco Nazioni
       </Link>
 
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
         <div className="absolute inset-0">
            <Image
             src={youtubeThumbnailUrl}
-            alt={`${nation.name} YouTube Thumbnail`}
+            alt={`Miniatura YouTube ${nation.name}`}
             layout="fill"
             objectFit="cover"
             className="opacity-30 blur-sm scale-110"
@@ -56,7 +56,7 @@ export default function NationPage({ params }: NationPageProps) {
           <div className="flex flex-col md:flex-row items-start gap-6">
             <Image
               src={flagUrl}
-              alt={`${nation.name} Flag`}
+              alt={`Bandiera ${nation.name}`}
               width={160}
               height={107}
               className="rounded-md shadow-lg border-2 border-white/20 object-contain"
@@ -82,7 +82,7 @@ export default function NationPage({ params }: NationPageProps) {
             </Badge>
              <Badge variant="outline" className="text-sm py-1 px-3">
               <CalendarDays className="w-3 h-3 mr-1.5" />
-              {nation.category === 'founders' ? 'Automatic Finalist' : `Performing on ${nation.category.replace('day', 'Day ')}`}
+              {nation.category === 'founders' ? 'Finalista Automatico' : `Si esibisce il Giorno ${nation.category.replace('day', '')}`}
             </Badge>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function NationPage({ params }: NationPageProps) {
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-secondary">Watch The Performance</CardTitle>
+              <CardTitle className="text-2xl text-secondary">Guarda la Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <YouTubeEmbed videoId={nation.youtubeVideoId} title={`${nation.artistName} - ${nation.songTitle}`} />
@@ -111,10 +111,10 @@ export default function NationPage({ params }: NationPageProps) {
 export async function generateMetadata({ params }: NationPageProps) {
   const nation = getNationById(params.id);
   if (!nation) {
-    return { title: "Nation Not Found" };
+    return { title: "Nazione Non Trovata" };
   }
   return {
     title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
-    description: `Learn about ${nation.name}'s entry for TreppoVision: "${nation.songTitle}" by ${nation.artistName}. Cast your vote!`,
+    description: `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Esprimi il tuo voto!`,
   };
 }

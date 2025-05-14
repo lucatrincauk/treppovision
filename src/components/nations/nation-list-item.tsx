@@ -20,7 +20,7 @@ export function NationListItem({ nation }: NationListItemProps) {
           <div className="aspect-[3/2] w-full relative">
             <Image
               src={flagUrl}
-              alt={`${nation.name} Flag`}
+              alt={`Bandiera ${nation.name}`}
               width={160}
               height={107} // Approximate 3:2 ratio for w160
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
@@ -46,7 +46,7 @@ export function NationListItem({ nation }: NationListItemProps) {
         </CardContent>
         <CardFooter className="p-4 pt-0">
           <Button variant="outline" size="sm" className="w-full group-hover:bg-accent group-hover:text-accent-foreground">
-            View Details <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+            Vedi Dettagli <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
           </Button>
         </CardFooter>
       </Card>

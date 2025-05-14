@@ -12,7 +12,7 @@ export function NationList({ nations, title }: NationListProps) {
     return (
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4 text-primary">{title}</h2>
-        <p className="text-muted-foreground">No nations in this category.</p>
+        <p className="text-muted-foreground">Nessuna nazione in questa categoria.</p>
       </div>
     );
   }

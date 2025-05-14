@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { ListMusic, BarChart3 } from "lucide-react";
 
 const navItems = [
-  { href: "/nations", label: "Nations", icon: ListMusic },
-  { href: "/charts", label: "Charts", icon: BarChart3 },
+  { href: "/nations", label: "Nazioni", icon: ListMusic },
+  { href: "/charts", label: "Grafici", icon: BarChart3 },
 ];
 
 export function Navigation() {

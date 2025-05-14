@@ -17,7 +17,7 @@ interface NationVoteChartProps {
 
 const chartConfig = {
   averageSong: {
-    label: "Song",
+    label: "Canzone",
     color: "hsl(var(--chart-1))",
   },
   averagePerformance: {
@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function NationVoteChart({ data }: NationVoteChartProps) {
   if (!data || data.length === 0) {
-    return <p className="text-muted-foreground text-center py-10">No voting data available yet. Be the first to vote!</p>;
+    return <p className="text-muted-foreground text-center py-10">Nessun dato di voto ancora disponibile. Sii il primo a votare!</p>;
   }
   
   // Sort data by total score for better visualization
@@ -58,7 +58,7 @@ export function NationVoteChart({ data }: NationVoteChartProps) {
             content={<ChartTooltipContent hideLabel />}
           />
           <Legend content={<ChartLegendContent />} />
-          <Bar dataKey="averageSong" name="Song" fill="var(--color-averageSong)" radius={4} barSize={10} />
+          <Bar dataKey="averageSong" name="Canzone" fill="var(--color-averageSong)" radius={4} barSize={10} />
           <Bar dataKey="averagePerformance" name="Performance" fill="var(--color-averagePerformance)" radius={4} barSize={10} />
           <Bar dataKey="averageOutfit" name="Outfit" fill="var(--color-averageOutfit)" radius={4} barSize={10} />
         </BarChart>
