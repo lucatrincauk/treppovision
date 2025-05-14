@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3 } from "lucide-react";
+import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit } from "lucide-react"; // Added FileEdit
 import {
   Dialog,
   DialogContent,
@@ -38,14 +38,21 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "./login-form";
 import { SignupForm } from "./signup-form";
-import { EmailLinkForm } from "./email-link-form"; 
+import { EmailLinkForm } from "./email-link-form";
+import { getTeamsByUserId } from "@/lib/team-service"; // Import team service
+import type { Team } from "@/types"; // Import Team type
+import { useRouter } from "next/navigation"; // Import useRouter
 
 export function AuthButton() {
   const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName } = useAuth();
+  const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = React.useState(false);
   const [editNameDialogOpen, setEditNameDialogOpen] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("login");
+
+  const [userTeam, setUserTeam] = React.useState<Team | null>(null);
+  const [isLoadingUserTeam, setIsLoadingUserTeam] = React.useState(false);
 
   React.useEffect(() => {
     completeEmailLinkSignIn();
@@ -59,6 +66,31 @@ export function AuthButton() {
     }
   }, [user?.displayName, editNameDialogOpen]);
 
+  React.useEffect(() => {
+    const fetchUserTeam = async () => {
+      if (user) {
+        setIsLoadingUserTeam(true);
+        try {
+          const teams = await getTeamsByUserId(user.uid);
+          if (teams.length > 0) {
+            setUserTeam(teams[0]); // Assuming user can only have one team
+          } else {
+            setUserTeam(null);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user team:", error);
+          setUserTeam(null);
+        } finally {
+          setIsLoadingUserTeam(false);
+        }
+      } else {
+        setUserTeam(null); // Clear team if user logs out
+      }
+    };
+
+    fetchUserTeam();
+  }, [user]);
+
 
   const handleAuthSuccess = () => {
     setAuthDialogOpen(false);
@@ -66,7 +98,6 @@ export function AuthButton() {
 
   const handleUpdateName = async () => {
     if (!newName.trim()) {
-      // Toast is handled by updateUserProfileName, but can add specific one here if needed
       return;
     }
     const success = await updateUserProfileName(newName);
@@ -75,7 +106,7 @@ export function AuthButton() {
     }
   };
 
-  if (isLoading && !user) { // Show loader only if truly loading initial auth state
+  if (isLoading && !user) {
     return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin mr-2" />Caricamento...</Button>;
   }
 
@@ -141,6 +172,20 @@ export function AuthButton() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {isLoadingUserTeam && (
+              <DropdownMenuItem disabled>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Caricamento squadra...
+              </DropdownMenuItem>
+            )}
+            {!isLoadingUserTeam && userTeam && (
+              <DropdownMenuItem onSelect={() => router.push(`/teams/${userTeam.id}/edit`)}>
+                <FileEdit className="mr-2 h-4 w-4" />
+                Modifica Squadra
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
               Esci
@@ -186,3 +231,5 @@ export function AuthButton() {
     </Dialog>
   );
 }
+
+    
