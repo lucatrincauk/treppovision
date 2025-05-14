@@ -22,7 +22,6 @@ export default async function EditNationPage({ params }: EditNationPageProps) {
     notFound();
   }
 
-  // Prepare initialData for the form
   const initialData: NationFormData = {
     id: nation.id,
     name: nation.name,
@@ -31,10 +30,10 @@ export default async function EditNationPage({ params }: EditNationPageProps) {
     artistName: nation.artistName,
     youtubeVideoId: nation.youtubeVideoId,
     category: nation.category,
-    // If nation.ranking is 0, undefined, or null, treat it as undefined for form display (empty field, string type)
-    // Otherwise, convert to string for the form.
     ranking: (nation.ranking === 0 || nation.ranking === undefined || nation.ranking === null) ? undefined : String(nation.ranking),
     performingOrder: nation.performingOrder || 0,
+    songDescription: nation.songDescription || "",
+    songLyrics: nation.songLyrics || "",
   };
 
   return (

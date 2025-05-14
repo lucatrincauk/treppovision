@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import {
   Select,
   SelectContent,
@@ -24,12 +25,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { NationFormData, NationCategory } from "@/types";
+import type { NationFormData, NationCategory, AdminNationPayload } from "@/types";
 import { addNationAction, updateNationAction } from "@/lib/actions/admin-actions";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 
-// Schema for form values where ranking is a string or undefined
+// This schema is for the form's internal values (NationFormData)
 const nationFormInternalSchema = z.object({
   id: z.string().min(2, "L'ID Nazione è richiesto (es. 'it').").max(3, "L'ID Nazione deve essere di 2-3 caratteri."),
   name: z.string().min(1, "Il nome della nazione è richiesto."),
@@ -42,11 +43,14 @@ const nationFormInternalSchema = z.object({
   }),
   ranking: z.string().optional(), // Form stores string or undefined for ranking
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
+  songDescription: z.string().optional(), // New field
+  songLyrics: z.string().optional(), // New field
 });
 
-// Schema for the actual data payload (ranking is number | undefined)
+// This schema is for the actual data payload (AdminNationPayload) sent to server actions
+// It transforms ranking from string to number | undefined
 const nationPayloadSchema = nationFormInternalSchema.extend({
-  ranking: z.any().optional().transform((val, ctx) => {
+  ranking: z.any().transform((val, ctx) => {
     if (val === undefined || val === null || String(val).trim() === "") {
       return undefined;
     }
@@ -56,15 +60,16 @@ const nationPayloadSchema = nationFormInternalSchema.extend({
         code: z.ZodIssueCode.custom,
         message: "La posizione deve essere un numero intero valido o vuota.",
       });
-      return z.NEVER; // Prevents further processing by Zod if invalid
+      return z.NEVER;
     }
     return num;
   }),
+  // songDescription and songLyrics remain optional strings, no transformation needed from internal form state
 });
 
 
 interface NationFormProps {
-  initialData?: NationFormData; // initialData.ranking is string | undefined
+  initialData?: NationFormData;
   isEditMode?: boolean;
 }
 
@@ -73,14 +78,15 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const form = useForm<z.infer<typeof nationFormInternalSchema>>({ // Form uses internal schema with string ranking
-    resolver: zodResolver(nationPayloadSchema), // Validation uses payload schema that transforms ranking
+  const form = useForm<z.infer<typeof nationFormInternalSchema>>({
+    resolver: zodResolver(nationPayloadSchema),
     defaultValues: initialData
       ? {
           ...initialData,
-          // initialData.ranking is already string | undefined
-          ranking: initialData.ranking,
+          ranking: initialData.ranking, // Already string | undefined
           performingOrder: initialData.performingOrder || 0,
+          songDescription: initialData.songDescription || "",
+          songLyrics: initialData.songLyrics || "",
         }
       : {
           id: "",
@@ -90,18 +96,24 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: undefined, // Starts as undefined for string type
+          ranking: undefined,
           performingOrder: 0,
+          songDescription: "",
+          songLyrics: "",
         },
   });
 
-  async function onSubmit(values: z.infer<typeof nationPayloadSchema>) { // values are after Zod parsing/transform
+  async function onSubmit(values: z.infer<typeof nationPayloadSchema>) {
     setIsSubmitting(true);
-
-    // Payload's ranking is now number | undefined, validated by Zod
-    const payloadForAction = {
+    const payloadForAction: AdminNationPayload = {
       ...values,
       ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
+      // songDescription and songLyrics are already in correct format (string | undefined)
+      // If they are empty strings from the form, they will be saved as empty strings.
+      // If they were truly undefined (e.g. if the field was never part of the form),
+      // they wouldn't be in 'values'.
+      songDescription: values.songDescription || undefined, // Convert empty string to undefined if preferred
+      songLyrics: values.songLyrics || undefined, // Convert empty string to undefined if preferred
     };
 
     const action = isEditMode ? updateNationAction : addNationAction;
@@ -120,8 +132,6 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
         description: result.message || "Si è verificato un errore.",
         variant: "destructive",
       });
-      // If Zod validation failed in the resolver, errors will be on fields.
-      // If action failed for other reasons, general toast is shown.
     }
     setIsSubmitting(false);
   }
@@ -254,18 +264,18 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
               <FormLabel>Posizione (Ranking) (Opzionale)</FormLabel>
               <FormControl>
                 <Input
-                  type="text" // Input type is text
+                  type="text"
                   placeholder="es. 1 (lasciare vuoto se non applicabile)"
                   {...field}
-                  onChange={event => field.onChange(event.target.value)} // Pass raw string
-                  value={field.value ?? ""} // Display "" if form state is undefined
+                  onChange={event => field.onChange(event.target.value)}
+                  value={field.value ?? ""}
                   disabled={isSubmitting}
                 />
               </FormControl>
               <FormDescription>
                 La posizione iniziale o prevista della nazione. Lasciare vuoto se non si desidera specificare.
               </FormDescription>
-              <FormMessage /> {/* Will show Zod custom message if validation fails */}
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -283,7 +293,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                   disabled={isSubmitting}
                   onChange={event => {
                      const num = parseInt(event.target.value, 10);
-                     field.onChange(isNaN(num) ? 0 : num); // Default to 0 if not a number
+                     field.onChange(isNaN(num) ? 0 : num);
                   }}
                   value={field.value ?? 0}
                 />
@@ -291,6 +301,42 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
               <FormDescription>
                 Numero per ordinare le nazioni (0 per primo). Non visibile agli utenti.
               </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="songDescription"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrizione Canzone (Opzionale)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Breve descrizione o aneddoti sulla canzone..."
+                  className="resize-y min-h-[100px]"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="songLyrics"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Testo Canzone (Opzionale)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Incolla qui il testo della canzone..."
+                  className="resize-y min-h-[200px] font-mono text-sm"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

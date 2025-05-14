@@ -11,10 +11,13 @@ export interface Nation {
   category: NationCategory;
   ranking?: number; // Made optional
   performingOrder: number;
+  songDescription?: string; // New field
+  songLyrics?: string; // New field
   dataAiHintFlag?: string;
 }
 
 // Used for form validation and submission when adding/editing nations
+// This is the type for the form's internal state, where ranking might be a string.
 export interface NationFormData {
   id: string; // country code, will be used as Firestore document ID
   name: string;
@@ -23,8 +26,10 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: number; // Made optional
+  ranking?: string; // Stored as string in form, converted by Zod
   performingOrder: number;
+  songDescription?: string; // New field
+  songLyrics?: string; // New field
 }
 
 export interface User {
@@ -82,6 +87,7 @@ export interface AuthContextType {
 }
 
 // For Server Actions payloads related to admin nation management
+// This is the type for the actual data payload after Zod transformation (ranking is number | undefined)
 export interface AdminNationPayload {
   id: string; // document ID (usually country code)
   name: string;
@@ -90,8 +96,10 @@ export interface AdminNationPayload {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: number; // Made optional
+  ranking?: number; // Made optional, number type
   performingOrder: number;
+  songDescription?: string; // New field
+  songLyrics?: string; // New field
 }
 
 // Team Creation

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Award } from "lucide-react";
+import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Award, FileText, Info } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls"; 
@@ -122,6 +122,20 @@ export default async function NationPage({ params }: NationPageProps) {
       
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
+          {nation.songDescription && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl text-secondary flex items-center">
+                  <Info className="w-5 h-5 mr-2" />
+                  A Proposito della Canzone
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-line">{nation.songDescription}</p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-secondary">Guarda la Performance</CardTitle>
@@ -130,6 +144,22 @@ export default async function NationPage({ params }: NationPageProps) {
               <YouTubeEmbed videoId={nation.youtubeVideoId} title={`${nation.artistName} - ${nation.songTitle}`} />
             </CardContent>
           </Card>
+
+          {nation.songLyrics && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl text-secondary flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Testo della Canzone
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-sm text-muted-foreground whitespace-pre-line bg-muted/30 p-4 rounded-md font-mono overflow-x-auto">
+                  {nation.songLyrics}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="md:col-span-1">
@@ -145,9 +175,15 @@ export async function generateMetadata({ params }: NationPageProps) {
   if (!nation) {
     return { title: "Nazione Non Trovata" };
   }
-  const description = nation.ranking && nation.ranking > 0 
-    ? `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Posizione: ${nation.ranking}. Esprimi il tuo voto!`
-    : `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Esprimi il tuo voto!`;
+  let description = `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}.`;
+  if (nation.songDescription) {
+    description += ` ${nation.songDescription.substring(0, 100)}...`;
+  }
+  if (nation.ranking && nation.ranking > 0) {
+    description += ` Posizione: ${nation.ranking}. Esprimi il tuo voto!`;
+  } else {
+    description += ` Esprimi il tuo voto!`;
+  }
   return {
     title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
     description: description,
