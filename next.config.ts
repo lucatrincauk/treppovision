@@ -29,9 +29,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Google User Profile Pictures might still be relevant if users previously logged in with Google
+      // or if you allow linking accounts / uploading profile pictures from Google Photos in the future.
+      // For now, it's safe to keep, but can be removed if strictly not needed.
       {
         protocol: 'https',
-        hostname: 'lh3.googleusercontent.com', // For Google User Profile Pictures
+        hostname: 'lh3.googleusercontent.com', 
         port: '',
         pathname: '/**',
       }

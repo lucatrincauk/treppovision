@@ -1,15 +1,17 @@
 
 "use client";
 
-import type { User } from "@/types";
+import type { User, LoginFormData, SignupFormData } from "@/types";
 import type { Dispatch, ReactNode, SetStateAction} from "react";
 import { createContext, useState, useEffect } from "react";
-import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithPopup, signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
+import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "@/lib/firebase";
+import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
-  login: () => Promise<void>;
+  loginWithEmail: (data: LoginFormData) => Promise<boolean>;
+  signupWithEmail: (data: SignupFormData) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -19,18 +21,16 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // Map Firebase user to your app's User type
         const appUser: User = {
           uid: firebaseUser.uid,
           displayName: firebaseUser.displayName,
           email: firebaseUser.email,
           photoURL: firebaseUser.photoURL,
-          // For isAdmin, you would typically check against a database or custom claims
-          // For this example, we'll default to false.
           isAdmin: false, 
         };
         setUser(appUser);
@@ -39,40 +39,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsLoading(false);
     });
-
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  const login = async () => {
+  const mapFirebaseAuthError = (errorCode: string): string => {
+    switch (errorCode) {
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+        return "Email o password non validi.";
+      case "auth/email-already-in-use":
+        return "Questo indirizzo email è già registrato.";
+      case "auth/weak-password":
+        return "La password è troppo debole. Deve essere di almeno 6 caratteri.";
+      case "auth/invalid-email":
+        return "L'indirizzo email non è valido.";
+      default:
+        return "Si è verificato un errore. Riprova.";
+    }
+  };
+
+  const loginWithEmail = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged will handle setting the user state
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast({ title: "Accesso Riuscito", description: "Bentornato!" });
+      setIsLoading(false);
+      return true;
     } catch (error) {
-      console.error("Errore durante l'accesso con Google:", error);
-      // Potresti voler mostrare un toast di errore qui
+      const authError = error as AuthError;
+      console.error("Errore durante l'accesso con email:", authError);
+      toast({ title: "Errore di Accesso", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
+      setIsLoading(false);
+      return false;
     }
-    // setIsLoading is managed by onAuthStateChanged
+  };
+
+  const signupWithEmail = async (data: SignupFormData) => {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      if (data.displayName && userCredential.user) {
+        await updateProfile(userCredential.user, { displayName: data.displayName });
+         // Re-fetch user to get updated displayName, or update local state
+        const updatedFirebaseUser = auth.currentUser;
+        if (updatedFirebaseUser) {
+            const appUser: User = {
+                uid: updatedFirebaseUser.uid,
+                displayName: updatedFirebaseUser.displayName,
+                email: updatedFirebaseUser.email,
+                photoURL: updatedFirebaseUser.photoURL,
+                isAdmin: false,
+            };
+            setUser(appUser); // Update context user
+        }
+      }
+      toast({ title: "Registrazione Riuscita", description: "Benvenuto! Il tuo account è stato creato." });
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error("Errore durante la registrazione con email:", authError);
+      toast({ title: "Errore di Registrazione", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const logout = async () => {
     setIsLoading(true);
     try {
       await signOut(auth);
-      // onAuthStateChanged will handle setting the user state to null
+      toast({ title: "Logout Riuscito", description: "A presto!"});
     } catch (error) {
       console.error("Errore durante il logout:", error);
+      toast({ title: "Errore Logout", description: "Non è stato possibile effettuare il logout. Riprova.", variant: "destructive" });
     }
-    // setIsLoading is managed by onAuthStateChanged
+    // setIsLoading is managed by onAuthStateChanged after signOut
   };
   
-  // Removed: if (isLoading) { return null; }
-  // The AuthContext.Provider should always render its children.
-  // Consumers of the context can use the `isLoading` flag to display loading states.
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

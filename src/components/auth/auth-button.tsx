@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,13 +13,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserCircle } from "lucide-react";
+import { LogIn, LogOut, UserPlus, UserCircle, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoginForm } from "./login-form";
+import { SignupForm } from "./signup-form";
 
 export function AuthButton() {
-  const { user, login, logout, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  const handleAuthSuccess = () => {
+    setDialogOpen(false);
+  };
 
   if (isLoading) {
-    return <Button variant="outline" size="sm" disabled>Caricamento...</Button>;
+    return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin" />Caricamento...</Button>;
   }
 
   if (user) {
@@ -36,8 +53,8 @@ export function AuthButton() {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user.displayName || "Utente"}</p>
-              {user.email && (
+              <p className="text-sm font-medium leading-none">{user.displayName || user.email || "Utente"}</p>
+              {user.email && user.displayName && (
                 <p className="text-xs leading-none text-muted-foreground">
                   {user.email}
                 </p>
@@ -45,13 +62,8 @@ export function AuthButton() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {/* Placeholder for future admin-specific actions or profile page */}
-          {/* <DropdownMenuItem>
-            <UserCircle className="mr-2 h-4 w-4" />
-            Profilo
-          </DropdownMenuItem> */}
-          <DropdownMenuItem onClick={logout}>
-            <LogOut className="mr-2 h-4 w-4" />
+          <DropdownMenuItem onClick={logout} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
             Esci
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -60,9 +72,33 @@ export function AuthButton() {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={login} disabled={isLoading}>
-      <LogIn className="mr-2 h-4 w-4" />
-      Accedi con Google
-    </Button>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <LogIn className="mr-2 h-4 w-4" />
+          Accedi / Registrati
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Autenticazione</DialogTitle>
+          <DialogDescription>
+            Accedi o crea un nuovo account per continuare.
+          </DialogDescription>
+        </DialogHeader>
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
+            <TabsTrigger value="signup"><UserPlus className="mr-1"/>Registrati</TabsTrigger>
+          </TabsList>
+          <TabsContent value="login">
+            <LoginForm onSuccess={handleAuthSuccess} />
+          </TabsContent>
+          <TabsContent value="signup">
+            <SignupForm onSuccess={handleAuthSuccess} />
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }
