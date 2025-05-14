@@ -8,7 +8,7 @@ import { ListMusic, Award } from "lucide-react"; // Changed ListChecks to Award 
 
 const subNavItems = [
   { href: "/nations", label: "Elenco Completo", icon: ListMusic },
-  { href: "/nations/ranking", label: "Classifica per Ranking", icon: Award },
+  { href: "/nations/ranking", label: "Classifica Finale", icon: Award },
 ];
 
 export function NationsSubNavigation() {

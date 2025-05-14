@@ -17,10 +17,10 @@ export default async function NationsRankingPage() {
       <header className="text-center sm:text-left space-y-2 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
           <Award className="mr-3 h-10 w-10" />
-          Classifica Nazioni per Ranking
+          Classifica Finale
         </h1>
         <p className="text-xl text-muted-foreground">
-          Le nazioni partecipanti a TreppoVision, ordinate in base alla loro posizione in classifica.
+          Le nazioni partecipanti a TreppoVision, ordinate in base alla loro posizione in classifica finale.
         </p>
       </header>
       
@@ -31,7 +31,7 @@ export default async function NationsRankingPage() {
           <p>Il ranking può essere impostato dalla sezione admin per ciascuna nazione.</p>
         </div>
       ) : (
-        <NationList nations={rankedNations} title="Classifica (basata sul Ranking)" />
+        <NationList nations={rankedNations} title="Classifica Finale (basata sul Ranking)" />
       )}
     </div>
   );
