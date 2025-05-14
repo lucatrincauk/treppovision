@@ -7,11 +7,12 @@ import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Import Input
+import { Input } from "@/components/ui/input"; 
 import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
+import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation"; // Import sub-navigation
 
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
@@ -81,7 +82,7 @@ export default function TeamsPage() {
       <header className="text-center sm:text-left space-y-2">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
           <Users className="mr-3 h-10 w-10" />
-          Squadre TreppoVision
+          Elenco Squadre TreppoVision
         </h1>
         <p className="text-xl text-muted-foreground">
           Scopri tutte le squadre create dagli utenti e le loro scelte.
@@ -109,6 +110,7 @@ export default function TeamsPage() {
   if (authIsLoading || isLoadingData) {
     return (
       <div className="space-y-8">
+        <TeamsSubNavigation />
         {displayHeaderAndButton()}
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -121,6 +123,7 @@ export default function TeamsPage() {
   if (error) {
     return (
        <div className="space-y-8">
+        <TeamsSubNavigation />
         {displayHeaderAndButton()}
         <Alert variant="destructive">
           <Users className="h-4 w-4" />
@@ -135,6 +138,7 @@ export default function TeamsPage() {
   
   return (
     <div className="space-y-8">
+      <TeamsSubNavigation />
       {displayHeaderAndButton()}
 
       {!user && allFetchedTeams.length > 0 && (
