@@ -10,12 +10,12 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center text-center space-y-8">
       <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
         <Image 
-            src="https://placehold.co/1200x400.png" 
-            alt="Banner Concerto Eurovision"
+            src="https://firebasestudio.googleapis.com/v0/b/project-id-12345/o/projects%2Ftest-project-525f49%2Ffiles%2F45463d5e-0ff3-4b59-8c87-a2a3d3c37c47%2Feurovision-banner.jpg?alt=media&token=c1e6c680-07c1-4155-bd70-ef1dd58537f2" 
+            alt="Banner Eurovision Song Contest"
             layout="fill" 
             objectFit="cover"
             priority
-            data-ai-hint="Eurovision stage concert"
+            data-ai-hint="Eurovision logo"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex flex-col items-center justify-end p-8">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary animate-pulse">
