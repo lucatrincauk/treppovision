@@ -20,7 +20,7 @@ export const saveVote = (newVote: Vote): Vote[] => {
   const votes = getVotes();
   // Remove previous vote by the same user for the same nation
   const updatedVotes = votes.filter(
-    vote => !(vote.userId === newVote.userId && vote.nationId === newVote.nationId)
+    vote => !(vote.userId === newVote.userId && vote.nationId === newVote.nationId) // userId is now Firebase uid
   );
   updatedVotes.push(newVote);
   try {
@@ -36,6 +36,7 @@ export const getVotesForNation = (nationId: string): Vote[] => {
   return votes.filter(vote => vote.nationId === nationId);
 };
 
+// userId parameter is now Firebase uid
 export const getUserVoteForNation = (nationId: string, userId: string): Vote | undefined => {
   const votes = getVotes();
   return votes.find(vote => vote.nationId === nationId && vote.userId === userId);

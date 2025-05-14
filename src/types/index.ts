@@ -12,15 +12,20 @@ export interface Nation {
   dataAiHintFlag?: string; // If using picsum as fallback
 }
 
+// Updated User type for Firebase Authentication
 export interface User {
-  id: string;
-  name: string;
-  isAdmin: boolean;
+  uid: string; // Firebase User ID
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+  // isAdmin could be added here if you have a system to determine admin status
+  // e.g., by checking UID against a list of admins in your database or custom claims
+  isAdmin?: boolean; 
 }
 
 export interface Vote {
   nationId: string;
-  userId: string;
+  userId: string; // This will store user.uid
   scores: {
     song: number;
     performance: number;

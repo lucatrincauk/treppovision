@@ -29,7 +29,7 @@ export function VotingForm({ nation }: VotingFormProps) {
 
   useEffect(() => {
     if (user) {
-      const existingVote = getUserVoteForNation(nation.id, user.id);
+      const existingVote = getUserVoteForNation(nation.id, user.uid); // Changed to user.uid
       if (existingVote) {
         setSongScore(existingVote.scores.song);
         setPerformanceScore(existingVote.scores.performance);
@@ -41,6 +41,12 @@ export function VotingForm({ nation }: VotingFormProps) {
         setOutfitScore(5);
         setHasVoted(false);
       }
+    } else {
+      // Reset form if user logs out
+      setSongScore(5);
+      setPerformanceScore(5);
+      setOutfitScore(5);
+      setHasVoted(false);
     }
   }, [nation.id, user]);
 
@@ -54,7 +60,7 @@ export function VotingForm({ nation }: VotingFormProps) {
     startTransition(async () => {
       const result = await submitVoteAction({
         nationId: nation.id,
-        userId: user.id,
+        userId: user.uid, // Changed to user.uid
         scores: {
           song: songScore,
           performance: performanceScore,

@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         hostname: 'i.ytimg.com', // For YouTube thumbnails
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com', // For Google User Profile Pictures
+        port: '',
+        pathname: '/**',
       }
     ],
   },
