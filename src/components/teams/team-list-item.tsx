@@ -1,7 +1,7 @@
 
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Flag, BadgeCheck, HelpCircle } from "lucide-react"; // Added HelpCircle for unknown
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle } from "lucide-react";
 import Image from "next/image";
 
 interface TeamListItemProps {
@@ -29,8 +29,8 @@ const SelectedNationDisplay = ({ nation, IconComponent }: { nation?: Nation, Ico
       <Image
         src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
-        width={32} // Slightly smaller for a more compact list
-        height={21} // Approximate 3:2 ratio for w40
+        width={32}
+        height={21}
         className="rounded-sm border border-border/50 object-contain flex-shrink-0"
         data-ai-hint={`${nation.name} flag`}
       />
@@ -46,14 +46,19 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-      <CardHeader className="pb-4"> {/* Adjusted padding */}
-        <CardTitle className="text-xl text-primary flex items-center gap-2"> {/* Slightly smaller title */}
+      <CardHeader className="pb-3 pt-4"> {/* Adjusted padding */}
+        <CardTitle className="text-xl text-primary flex items-center gap-2">
           <Users className="h-5 w-5 text-accent" />
           {team.name}
         </CardTitle>
-        {/* Removed CardDescription with "Creato da" and date */}
+        {team.creatorDisplayName && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <UserCircle className="h-3 w-3" />
+            Creato da: {team.creatorDisplayName}
+          </p>
+        )}
       </CardHeader>
-      <CardContent className="flex-grow space-y-2 pt-0"> {/* Adjusted spacing and pt */}
+      <CardContent className="flex-grow space-y-1.5 pt-0 pb-4"> {/* Adjusted spacing and padding */}
         <SelectedNationDisplay nation={founderNation} IconComponent={BadgeCheck} />
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />

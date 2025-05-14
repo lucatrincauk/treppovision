@@ -33,12 +33,17 @@ import { Loader2, Save, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 
-const teamFormSchema = z.object({
+const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
   founderNationId: z.string().min(1, "Devi selezionare una nazione Fondatrice."),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per il Giorno 1."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per il Giorno 2."),
+  creatorDisplayName: z.string(), // No validation needed here, will be set internally
 });
+
+// Use Omit for the form values since creatorDisplayName is handled internally
+type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
+
 
 export function CreateTeamForm() {
   const { user, isLoading: authLoading } = useAuth();
@@ -68,8 +73,8 @@ export function CreateTeamForm() {
     fetchNations();
   }, [toast]);
 
-  const form = useForm<TeamFormData>({
-    resolver: zodResolver(teamFormSchema),
+  const form = useForm<TeamFormValues>({ // Use Omit<TeamFormData, 'creatorDisplayName'> for form values
+    resolver: zodResolver(teamFormZodSchema.omit({ creatorDisplayName: true })), // Omit for Zod schema too
     defaultValues: {
       name: "",
       founderNationId: "",
@@ -78,20 +83,26 @@ export function CreateTeamForm() {
     },
   });
 
-  async function onSubmit(values: TeamFormData) {
+  async function onSubmit(values: TeamFormValues) {
     if (!user) {
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login per creare un team.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
-    const result = await createTeamAction(values, user.uid);
+
+    const fullTeamData: TeamFormData = {
+      ...values,
+      creatorDisplayName: user.displayName || user.email || "Utente Anonimo",
+    };
+
+    const result = await createTeamAction(fullTeamData, user.uid);
 
     if (result.success) {
       toast({
         title: "Team Creato!",
         description: `Il tuo team "${values.name}" è stato creato con successo.`,
       });
-      router.push("/teams"); // Redirect to the teams list page (to be created)
+      router.push("/teams"); 
       router.refresh(); 
     } else {
       toast({
@@ -119,8 +130,6 @@ export function CreateTeamForm() {
             <AlertTitle>Accesso Richiesto</AlertTitle>
             <AlertDescription>
                 Devi effettuare il <Link href="#" className="font-bold hover:underline" onClick={() => {
-                    // This is a bit of a hack to trigger the auth dialog.
-                    // Ideally, the auth dialog would be globally accessible via context/store.
                     const authButton = document.querySelector('button[aria-label="Open authentication dialog"]') as HTMLElement | null;
                     authButton?.click();
                 }}>login</Link> per creare una squadra.

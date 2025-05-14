@@ -94,13 +94,19 @@ export interface TeamFormData {
   founderNationId: string;
   day1NationId: string;
   day2NationId: string;
+  creatorDisplayName: string; // Added
 }
 
-export interface Team extends TeamFormData {
+export interface Team extends Omit<TeamFormData, 'creatorDisplayName'> { // Omit to avoid duplication with explicit field below
   id: string; // Firestore document ID
   userId: string; // UID of the user who created the team
-  createdAt: { // Firestore Timestamp type is complex, simplified for client
+  creatorDisplayName: string; // Added
+  name: string;
+  founderNationId: string;
+  day1NationId: string;
+  day2NationId: string;
+  createdAt: { 
     seconds: number;
     nanoseconds: number;
-  } | any; // Use 'any' for serverTimestamp() on write, then expect object on read
+  } | any; 
 }
