@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ListMusic, BarChart3, Users } from "lucide-react"; // Added Users icon
+import { ListMusic, BarChart3, Users } from "lucide-react"; // Users icon for Teams
 import { useAuth } from "@/hooks/use-auth";
 
 const navItemsBase = [
@@ -13,7 +13,7 @@ const navItemsBase = [
 ];
 
 const navItemsAuth = [
-  { href: "/teams/new", label: "Crea Team", icon: Users }, // For now, points to new, will be /teams later
+  { href: "/teams", label: "Squadre", icon: Users }, // Changed from "/teams/new" to "/teams"
 ];
 
 
@@ -26,7 +26,7 @@ export function Navigation() {
     currentNavItems = [...currentNavItems, ...navItemsAuth];
   }
   
-  if (isLoading) { // Optional: render a placeholder or nothing while loading auth state
+  if (isLoading) { 
     return (
         <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
             {navItemsBase.map((item) => (
@@ -37,12 +37,11 @@ export function Navigation() {
             ))}
              <span className="text-sm font-medium text-foreground/30 animate-pulse">
                 <Users className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
-                Teams
+                Squadre
              </span>
         </nav>
     );
   }
-
 
   return (
     <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
@@ -52,7 +51,8 @@ export function Navigation() {
           href={item.href}
           className={cn(
             "text-sm font-medium transition-colors hover:text-primary",
-            pathname.startsWith(item.href) // Use startsWith for parent path matching
+            // Updated path matching: exact for /teams, startsWith for others like /nations or /teams/new
+            (item.href === "/teams" ? pathname === item.href || pathname.startsWith("/teams/") : pathname.startsWith(item.href)) 
               ? "text-primary"
               : "text-foreground/60"
           )}

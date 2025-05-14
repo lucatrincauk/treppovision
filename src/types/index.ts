@@ -99,5 +99,8 @@ export interface TeamFormData {
 export interface Team extends TeamFormData {
   id: string; // Firestore document ID
   userId: string; // UID of the user who created the team
-  createdAt: number; // Timestamp
+  createdAt: { // Firestore Timestamp type is complex, simplified for client
+    seconds: number;
+    nanoseconds: number;
+  } | any; // Use 'any' for serverTimestamp() on write, then expect object on read
 }
