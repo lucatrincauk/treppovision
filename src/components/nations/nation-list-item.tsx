@@ -42,10 +42,12 @@ export function NationListItem({ nation }: NationListItemProps) {
               <UserSquare2 className="w-4 h-4 mr-2 text-accent" />
               <span className="truncate" title={nation.artistName}>{nation.artistName}</span>
             </p>
-            <p className="flex items-center text-muted-foreground">
-              <Award className="w-4 h-4 mr-2 text-accent" />
-              <span className="font-medium text-foreground">Posizione: {nation.ranking}</span>
-            </p>
+            {nation.ranking && nation.ranking > 0 && (
+              <p className="flex items-center text-muted-foreground">
+                <Award className="w-4 h-4 mr-2 text-accent" />
+                <span className="font-medium text-foreground">Posizione: {nation.ranking}</span>
+              </p>
+            )}
           </div>
         </CardContent>
         <CardFooter className="p-4 pt-0">

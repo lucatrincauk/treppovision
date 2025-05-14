@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Trash2, Award } from "lucide-react";
+import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Award } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { AdminNationControls } from "@/components/admin/admin-nation-controls"; // Import new component
+import { AdminNationControls } from "@/components/admin/admin-nation-controls"; 
 
 interface NationPageProps {
   params: {
@@ -62,11 +62,6 @@ export default async function NationPage({ params }: NationPageProps) {
                 Modifica
               </Link>
             </Button>
-            {/* Delete button will be handled in a later stage with a confirmation dialog */}
-            {/* <Button variant="destructive" size="sm" onClick={() => alert("Delete functionality to be implemented")}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Elimina
-            </Button> */}
           </div>
         </AdminNationControls>
       </div>
@@ -109,16 +104,18 @@ export default async function NationPage({ params }: NationPageProps) {
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge variant="secondary" className="text-sm py-1 px-3 bg-accent text-accent-foreground">
               <Tag className="w-3 h-3 mr-1.5" />
-              {nation.category.charAt(0).toUpperCase() + nation.category.slice(1).replace('day1', 'Prima Semifinale').replace('day2', 'Seconda Semifinale').replace('founders', 'Fondatori')}
+              {nation.category === 'founders' ? 'Fondatori' : nation.category === 'day1' ? 'Prima Semifinale' : 'Seconda Semifinale'}
             </Badge>
              <Badge variant="outline" className="text-sm py-1 px-3">
               <CalendarDays className="w-3 h-3 mr-1.5" />
               {categoryDisplay}
             </Badge>
-            <Badge variant="outline" className="text-sm py-1 px-3">
-              <Award className="w-3 h-3 mr-1.5" />
-              Posizione: {nation.ranking}
-            </Badge>
+            {nation.ranking && nation.ranking > 0 && (
+              <Badge variant="outline" className="text-sm py-1 px-3">
+                <Award className="w-3 h-3 mr-1.5" />
+                Posizione: {nation.ranking}
+              </Badge>
+            )}
           </div>
         </div>
       </header>
@@ -148,8 +145,11 @@ export async function generateMetadata({ params }: NationPageProps) {
   if (!nation) {
     return { title: "Nazione Non Trovata" };
   }
+  const description = nation.ranking && nation.ranking > 0 
+    ? `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Posizione: ${nation.ranking}. Esprimi il tuo voto!`
+    : `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Esprimi il tuo voto!`;
   return {
     title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
-    description: `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Posizione: ${nation.ranking}. Esprimi il tuo voto!`,
+    description: description,
   };
 }

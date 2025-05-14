@@ -39,7 +39,10 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.coerce.number().int().positive("La posizione deve essere un numero intero positivo."),
+  ranking: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+    z.number().int().positive("La posizione deve essere un numero intero positivo.").optional()
+  ),
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
@@ -58,8 +61,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     defaultValues: initialData
       ? { 
           ...initialData, 
-          ranking: initialData.ranking || 1,
-          performingOrder: initialData.performingOrder || 0, // Ensure performingOrder has a default
+          ranking: initialData.ranking || undefined, // Ensure undefined if not set
+          performingOrder: initialData.performingOrder || 0,
         }
       : {
           id: "",
@@ -69,15 +72,22 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: 1,
-          performingOrder: 0, // Default performingOrder for new nations
+          ranking: undefined, // Default to undefined
+          performingOrder: 0, 
         },
   });
 
   async function onSubmit(values: NationFormData) {
     setIsSubmitting(true);
+    
+    // Ensure ranking is undefined if not provided or is invalid, instead of 0
+    const payload = {
+      ...values,
+      ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
+    };
+
     const action = isEditMode ? updateNationAction : addNationAction;
-    const result = await action(values);
+    const result = await action(payload);
 
     if (result.success) {
       toast({
@@ -97,7 +107,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   }
 
   const categories: { value: NationCategory; label: string }[] = [
-    { value: "founders", label: "Fondatori" },
+    { value: "founders", label: "Fondatori (Finalisti Automatici)" },
     { value: "day1", label: "Prima Semifinale" },
     { value: "day2", label: "Seconda Semifinale" },
   ];
@@ -221,14 +231,19 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           name="ranking"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Posizione (Ranking)</FormLabel>
+              <FormLabel>Posizione (Ranking) (Opzionale)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting}
-                  onChange={event => field.onChange(+event.target.value)} // Ensure value is number
+                <Input 
+                  type="number" 
+                  placeholder="es. 1 (lasciare vuoto se non applicabile)" 
+                  {...field} 
+                  disabled={isSubmitting}
+                  onChange={event => field.onChange(event.target.value === "" ? undefined : +event.target.value)}
+                  value={field.value ?? ""} // Ensure input is empty if value is undefined
                 />
               </FormControl>
               <FormDescription>
-                La posizione iniziale o prevista della nazione.
+                La posizione iniziale o prevista della nazione. Lasciare vuoto se non si desidera specificare.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -242,7 +257,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
               <FormLabel>Ordine di Esibizione</FormLabel>
               <FormControl>
                 <Input type="number" placeholder="es. 0, 1, 2..." {...field} disabled={isSubmitting} 
-                  onChange={event => field.onChange(+event.target.value)} // Ensure value is number
+                  onChange={event => field.onChange(+event.target.value)}
                 />
               </FormControl>
               <FormDescription>

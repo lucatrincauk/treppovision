@@ -9,8 +9,8 @@ export interface Nation {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number;
-  performingOrder: number; // Added for sorting
+  ranking?: number; // Made optional
+  performingOrder: number;
   dataAiHintFlag?: string;
 }
 
@@ -23,8 +23,8 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number;
-  performingOrder: number; // Added for sorting
+  ranking?: number; // Made optional
+  performingOrder: number;
 }
 
 export interface User {
@@ -90,8 +90,8 @@ export interface AdminNationPayload {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking: number;
-  performingOrder: number; // Added for sorting
+  ranking?: number; // Made optional
+  performingOrder: number;
 }
 
 // Team Creation
