@@ -10,10 +10,11 @@ import { useAuth } from "@/hooks/use-auth";
 const navItemsBase = [
   { href: "/nations", label: "Nazioni", icon: ListMusic },
   { href: "/charts", label: "Grafici", icon: BarChart3 },
+  { href: "/teams", label: "Squadre", icon: Users }, // Moved Teams here
 ];
 
 const navItemsAuth = [
-  { href: "/teams", label: "Squadre", icon: Users }, // Changed from "/teams/new" to "/teams"
+  // No items here for now, Teams moved to base
 ];
 
 
@@ -23,22 +24,25 @@ export function Navigation() {
 
   let currentNavItems = [...navItemsBase];
   if (user) {
-    currentNavItems = [...currentNavItems, ...navItemsAuth];
+    // If there were other auth-specific links, they would be added here
+    // currentNavItems = [...currentNavItems, ...navItemsAuth];
   }
   
   if (isLoading) { 
     return (
         <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-            {navItemsBase.map((item) => (
+            {navItemsBase.map((item) => ( // Always render base items during loading
                  <span key={item.href} className="text-sm font-medium text-foreground/30 animate-pulse">
                     <item.icon className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
                     {item.label}
                  </span>
             ))}
+             {/* Placeholder for any auth items if they existed and were loading 
              <span className="text-sm font-medium text-foreground/30 animate-pulse">
-                <Users className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
-                Squadre
+                <SomeAuthIcon className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
+                Auth Item
              </span>
+             */}
         </nav>
     );
   }
