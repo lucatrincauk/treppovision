@@ -17,29 +17,18 @@ const getPointsForRank = (rank?: number): number => {
     case 3: return 25;
     case 4: return 15;
     case 5: return 10;
-    case 6: return 9;
-    case 7: return 8;
-    case 8: return 7;
-    case 9: return 6;
-    case 10: return 5;
-    case 11: return 4;
-    case 12: return 3;
-    case 13: return 2;
-    case 14: return 1;
-    case 15: return 0;
-    case 16: return -1;
-    case 17: return -2;
-    case 18: return -3;
-    case 19: return -4;
-    case 20: return -5;
-    case 21: return -6;
-    case 22: return -7;
-    case 23: return -8;
-    case 24: return -9;
-    case 25: return -10;
-    case 26: return 25; 
-    default: return 0; 
   }
+  // For ranks 6th to 25th: start with 10 points (for 5th) and subtract 1 for each rank after 5th.
+  // Rank 6: 10 - (6-5) = 9
+  // Rank 15: 10 - (15-5) = 0
+  // Rank 16: 10 - (16-5) = -1
+  // Rank 25: 10 - (25-5) = -10
+  if (rank >= 6 && rank <= 25) {
+    return 10 - (rank - 5);
+  }
+  if (rank === 26) return 25;
+  
+  return 0; // Default for ranks not covered or > 26
 };
 
 interface NationScoreDetail {
@@ -203,7 +192,7 @@ export default async function TeamsLeaderboardPage() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Ogni squadra sceglie 3 nazioni (una per categoria: Fondatrici, Prima Semifinale, Seconda Semifinale).
                   Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 3 nazioni in base alla loro classifica finale nell'Eurovision.
-                  Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-10°: 9-5pt, 11°-14°: 4-1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
+                  Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
                   Le nazioni senza ranking o con ranking 0 non contribuiscono (0 punti).
                 </p>
               </div>
