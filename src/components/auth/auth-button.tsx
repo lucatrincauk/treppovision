@@ -200,8 +200,8 @@ export function AuthButton() {
     <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" aria-label="Open authentication dialog">
-          <LogIn className="mr-2 h-4 w-4" />
-          Accedi / Registrati
+          <LogIn className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Accedi / Registrati</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
