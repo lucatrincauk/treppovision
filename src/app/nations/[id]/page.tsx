@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Award, FileText, Info } from "lucide-react";
+import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered } from "lucide-react"; // Added ListOrdered
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls"; 
@@ -37,15 +37,7 @@ export default async function NationPage({ params }: NationPageProps) {
     ? `https://placehold.co/480x360.png`
     : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
 
-  let categoryDisplay = "";
-  if (nation.category === 'founders') {
-    categoryDisplay = 'Finalista Automatico';
-  } else if (nation.category === 'day1') {
-    categoryDisplay = 'Si esibisce nella Prima Semifinale';
-  } else if (nation.category === 'day2') {
-    categoryDisplay = 'Si esibisce nella Seconda Semifinale';
-  }
-
+  // Removed unused categoryDisplay logic
 
   return (
     <div className="space-y-8">
@@ -107,8 +99,8 @@ export default async function NationPage({ params }: NationPageProps) {
               {nation.category === 'founders' ? 'Fondatori' : nation.category === 'day1' ? 'Prima Semifinale' : 'Seconda Semifinale'}
             </Badge>
              <Badge variant="outline" className="text-sm py-1 px-3">
-              <CalendarDays className="w-3 h-3 mr-1.5" />
-              {categoryDisplay}
+              <ListOrdered className="w-3 h-3 mr-1.5" />
+              Ordine Esibizione: {nation.performingOrder}
             </Badge>
             {nation.ranking && nation.ranking > 0 && (
               <Badge variant="outline" className="text-sm py-1 px-3">
@@ -180,10 +172,10 @@ export async function generateMetadata({ params }: NationPageProps) {
     description += ` ${nation.songDescription.substring(0, 100)}...`;
   }
   if (nation.ranking && nation.ranking > 0) {
-    description += ` Posizione: ${nation.ranking}. Esprimi il tuo voto!`;
-  } else {
-    description += ` Esprimi il tuo voto!`;
+    description += ` Posizione: ${nation.ranking}.`;
   }
+  description += ` Ordine Esibizione: ${nation.performingOrder}. Esprimi il tuo voto!`;
+  
   return {
     title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
     description: description,
