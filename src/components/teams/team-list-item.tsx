@@ -1,10 +1,10 @@
 
-"use client"; // Added "use client" as it uses hooks like useAuth and client-side logic
+"use client"; 
 
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,7 +24,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
       <div className="flex items-center gap-2 py-1">
         {label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />}
         {label && <span className="text-xs text-muted-foreground mr-1 min-w-[120px] flex-shrink-0">{label}</span>}
-        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } {/* Placeholder for alignment if no label */}
+        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } 
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -35,17 +35,19 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     <div className="flex items-center gap-2 py-1">
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-      <Image
-        src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
-        alt={`Bandiera ${nation.name}`}
-        width={24}
-        height={16}
-        className="rounded-sm border border-border/50 object-contain flex-shrink-0"
-        data-ai-hint={`${nation.name} flag`}
-      />
-      <span className="text-sm text-foreground/90 truncate" title={`${nation.name} - ${nation.songTitle}`}>
-        {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
-      </span>
+      <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
+        <Image
+          src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+          alt={`Bandiera ${nation.name}`}
+          width={24}
+          height={16}
+          className="rounded-sm border border-border/50 object-contain flex-shrink-0"
+          data-ai-hint={`${nation.name} flag`}
+        />
+        <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={`${nation.name} - ${nation.songTitle}`}>
+          {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
+        </span>
+      </Link>
     </div>
   );
 };
