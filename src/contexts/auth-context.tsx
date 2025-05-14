@@ -18,7 +18,7 @@ import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError 
 import { useToast } from "@/hooks/use-toast";
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
-const ADMIN_EMAIL = "admin@treppovision.com"; // Define Admin Email
+const ADMIN_EMAIL = "lucatrinca.uk@gmail.com"; // Define Admin Email
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
