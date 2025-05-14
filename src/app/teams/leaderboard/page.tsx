@@ -4,7 +4,7 @@ import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card"; // Removed CardHeader, CardTitle as they are not used directly here
+import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, UserCircle, BarChartBig, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,17 +18,12 @@ const getPointsForRank = (rank?: number): number => {
     case 4: return 15;
     case 5: return 10;
   }
-  // For ranks 6th to 25th: start with 10 points (for 5th) and subtract 1 for each rank after 5th.
-  // Rank 6: 10 - (6-5) = 9
-  // Rank 15: 10 - (15-5) = 0
-  // Rank 16: 10 - (16-5) = -1
-  // Rank 25: 10 - (25-5) = -10
   if (rank >= 6 && rank <= 25) {
     return 10 - (rank - 5);
   }
   if (rank === 26) return 25;
   
-  return 0; // Default for ranks not covered or > 26
+  return 0;
 };
 
 interface NationScoreDetail {
@@ -41,7 +36,7 @@ interface NationScoreDetail {
 
 interface TeamWithScore extends Team {
   score: number;
-  rank?: number; // Assigned rank in the leaderboard
+  rank?: number; 
   nationScoreDetails: {
     founder: NationScoreDetail | null;
     day1: NationScoreDetail | null;
@@ -102,7 +97,7 @@ export default async function TeamsLeaderboardPage() {
   }
 
   const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail | null }) => {
-    if (!detail) return <div className="text-xs text-muted-foreground">Nazione non trovata</div>;
+    if (!detail) return <div className="text-xs text-muted-foreground/80">Nazione non trovata</div>;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
         <Image
@@ -147,35 +142,30 @@ export default async function TeamsLeaderboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px] text-center">Pos.</TableHead>
-                  <TableHead>Squadra</TableHead>
+                  <TableHead>Squadra e Dettaglio Punteggio</TableHead>
                   <TableHead className="hidden md:table-cell">Creatore</TableHead>
-                  <TableHead className="hidden lg:table-cell min-w-[250px]">Dettaglio Punteggio</TableHead>
                   <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {teamsWithScores.map((team) => (
                   <TableRow key={team.id}>
-                    <TableCell className="font-medium text-center">{team.rank}</TableCell>
-                    <TableCell>
-                        <span className="font-medium truncate"> {/* Removed Link here, as details are shown */}
-                            {team.name}
-                        </span>
+                    <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
+                    <TableCell className="align-top">
+                        <div className="font-medium truncate mb-1">{team.name}</div>
+                        <div className="space-y-0.5 text-xs text-muted-foreground">
+                            <NationDetailDisplay detail={team.nationScoreDetails.founder} />
+                            <NationDetailDisplay detail={team.nationScoreDetails.day1} />
+                            <NationDetailDisplay detail={team.nationScoreDetails.day2} />
+                        </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell truncate" title={team.creatorDisplayName}>
+                    <TableCell className="hidden md:table-cell truncate align-top" title={team.creatorDisplayName}>
                       <div className="flex items-center gap-1.5 text-sm">
                         <UserCircle className="w-4 h-4 text-muted-foreground" />
                         {team.creatorDisplayName}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <div className="space-y-0.5">
-                        <NationDetailDisplay detail={team.nationScoreDetails.founder} />
-                        <NationDetailDisplay detail={team.nationScoreDetails.day1} />
-                        <NationDetailDisplay detail={team.nationScoreDetails.day2} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-lg text-primary">{team.score}</TableCell>
+                    <TableCell className="text-right font-semibold text-lg text-primary align-top">{team.score}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
