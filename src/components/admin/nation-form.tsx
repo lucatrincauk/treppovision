@@ -39,7 +39,7 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.number().int().positive("La posizione deve essere un numero intero positivo.").optional(),
+  ranking: z.number().int("La posizione deve essere un numero intero.").optional(), // Removed .positive()
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
@@ -77,7 +77,6 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   async function onSubmit(values: NationFormData) {
     setIsSubmitting(true);
     
-    // Ensure ranking is undefined if not provided or is invalid, instead of 0
     const payload = {
       ...values,
       ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
@@ -236,7 +235,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                   {...field} 
                   disabled={isSubmitting}
                   onChange={event => field.onChange(event.target.value === "" ? undefined : +event.target.value)}
-                  value={field.value ?? ""} // Ensure input is empty if value is undefined
+                  value={field.value ?? ""} 
                 />
               </FormControl>
               <FormDescription>
