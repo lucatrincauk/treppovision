@@ -43,6 +43,12 @@ const nextConfig: NextConfig = {
         hostname: 'firebasestudio.googleapis.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co', // Added for placeholder images
+        port: '',
+        pathname: '/**',
       }
     ],
   },
