@@ -12,12 +12,13 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  sendPasswordResetEmail, // Import sendPasswordResetEmail
   actionCodeSettings
 } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { getTeamsByUserId } from "@/lib/team-service"; // Import team service
-import { updateTeamCreatorDisplayNameAction } from "@/lib/actions/team-actions"; // Import the new action
+import { getTeamsByUserId } from "@/lib/team-service"; 
+import { updateTeamCreatorDisplayNameAction } from "@/lib/actions/team-actions"; 
 
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
@@ -132,9 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       if (data.displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName: data.displayName });
-        // User state will be updated by onAuthStateChanged after profile update
         setUser(prevUser => prevUser ? { ...prevUser, displayName: data.displayName } : (
-            userCredential.user ? { // Construct a User object if prevUser is null
+            userCredential.user ? { 
                 uid: userCredential.user.uid,
                 displayName: data.displayName,
                 email: userCredential.user.email,
@@ -172,6 +172,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      toast({ title: "Email Inviata", description: "Controlla la tua casella di posta per reimpostare la password." });
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error("Errore durante l'invio dell'email di reset password:", authError);
+      toast({ title: "Errore Reset Password", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
@@ -200,25 +216,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       await updateProfile(currentUser, { displayName: newName });
-      // Update local user state immediately
       setUser(prevUser => prevUser ? { ...prevUser, displayName: newName } : null);
       toast({ title: "Nome Aggiornato", description: "Il tuo nome visualizzato è stato aggiornato con successo." });
 
-      // Now, update the creatorDisplayName in the user's team(s)
       const userTeams = await getTeamsByUserId(currentUser.uid);
       if (userTeams.length > 0) {
         for (const team of userTeams) {
           const updateResult = await updateTeamCreatorDisplayNameAction(team.id, newName, currentUser.uid);
           if (!updateResult.success) {
-            // Log or show a secondary, less intrusive toast for this error
             console.warn(`Failed to update team "${team.name}" creator display name: ${updateResult.message}`);
-            // Optionally:
-            // toast({
-            //   title: "Aggiornamento Parziale",
-            //   description: `Nome del creatore per il team "${team.name}" non aggiornato: ${updateResult.message}`,
-            //   variant: "destructive",
-            //   duration: 7000
-            // });
           }
         }
       }
@@ -234,7 +240,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   return (
-    <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, sendLoginLink, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName }}>
+    <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, sendLoginLink, sendPasswordReset, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock, Settings } from "lucide-react";
+import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock, Settings, KeyRound } from "lucide-react"; // Added KeyRound
 import {
   Dialog,
   DialogContent,
@@ -45,10 +45,11 @@ import { useRouter } from "next/navigation";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 
 export function AuthButton() {
-  const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName } = useAuth();
+  const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName, sendPasswordReset } = useAuth();
   const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = React.useState(false);
   const [editNameDialogOpen, setEditNameDialogOpen] = React.useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = React.useState(false); // New state for reset password dialog
   const [newName, setNewName] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("login");
 
@@ -70,13 +71,11 @@ export function AuthButton() {
     }
   }, [user?.displayName, editNameDialogOpen]);
 
-  // Effect 1: Handles initial data load when user changes, or clears data on logout
   React.useEffect(() => {
     const fetchInitialData = async () => {
       if (user) {
-        setIsLoadingUserTeam(true); // Indicates loading for team and initial lock status
+        setIsLoadingUserTeam(true); 
         try {
-          // Fetch both team and initial lock status together
           const [teamsResult, lockedStatusResult] = await Promise.all([
             getTeamsByUserId(user.uid),
             getTeamsLockedStatus()
@@ -87,42 +86,34 @@ export function AuthButton() {
         } catch (error) {
           console.error("Failed to fetch initial user data/lock status:", error);
           setUserTeam(null);
-          setTeamsLocked(false); // Default to false on error
+          setTeamsLocked(false); 
         } finally {
           setIsLoadingUserTeam(false);
         }
       } else {
-        // User logged out, clear all related states
         setUserTeam(null);
         setTeamsLocked(null);
-        setIsLoadingUserTeam(false); // Ensure loader is off
+        setIsLoadingUserTeam(false); 
       }
     };
 
     fetchInitialData();
-  }, [user]); // Depends only on user
+  }, [user]); 
 
-  // Effect 2: Refreshes lock status specifically when dropdown is opened (and user exists)
   React.useEffect(() => {
     const refreshLockStatusOnOpen = async () => {
       if (user && isDropdownOpen) {
-        // Set loading true if you want a spinner during this quick refresh
-        // setIsLoadingUserTeam(true); 
         try {
           const currentLockedStatus = await getTeamsLockedStatus();
           setTeamsLocked(currentLockedStatus);
         } catch (error) {
           console.error("Failed to refresh teams lock status:", error);
-          // Potentially keep the old status or default to a safe value
-          // setTeamsLocked(teamsLocked === null ? false : teamsLocked); 
-        } finally {
-          // setIsLoadingUserTeam(false);
-        }
+        } 
       }
     };
 
     refreshLockStatusOnOpen();
-  }, [user, isDropdownOpen]); // Depends on user and dropdown state
+  }, [user, isDropdownOpen]); 
 
 
   const handleAuthSuccess = () => {
@@ -139,7 +130,14 @@ export function AuthButton() {
     }
   };
 
-  if (isLoading && !user) { // Initial app load, auth still resolving
+  const handlePasswordReset = async () => {
+    if (user?.email) {
+      await sendPasswordReset(user.email);
+      setResetPasswordDialogOpen(false); // Close dialog after attempting to send
+    }
+  };
+
+  if (isLoading && !user) { 
     return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin mr-2" />Caricamento...</Button>;
   }
 
@@ -168,6 +166,8 @@ export function AuthButton() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            
+            {/* Edit Name Dialog Trigger */}
             <AlertDialog open={editNameDialogOpen} onOpenChange={setEditNameDialogOpen}>
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -206,6 +206,34 @@ export function AuthButton() {
               </AlertDialogContent>
             </AlertDialog>
 
+            {/* Reset Password Dialog Trigger */}
+            {user.email && ( // Only show if user has an email
+              <AlertDialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Cambia Password
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cambia Password</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Verrà inviata un'email a <strong>{user.email}</strong> con le istruzioni per reimpostare la tua password. Continuare?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isLoading}>Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePasswordReset} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Invia Email
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
+
             {(isLoadingUserTeam && isDropdownOpen) && (teamsLocked === null || userTeam === undefined) && (
               <DropdownMenuItem disabled>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -213,7 +241,6 @@ export function AuthButton() {
               </DropdownMenuItem>
             )}
             
-            {/* Display Edit Team or Locked message only after initial loading is complete for userTeam and teamsLocked */}
             {userTeam !== undefined && teamsLocked !== null && !isLoadingUserTeam && (
                 <>
                     {userTeam && teamsLocked === false && (

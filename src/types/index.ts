@@ -24,7 +24,7 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; // Kept as string for form handling, converted in Zod
+  ranking?: string; 
   performingOrder: number;
   songDescription?: string; 
   songLyrics?: string; 
@@ -79,6 +79,7 @@ export interface AuthContextType {
   loginWithEmail: (data: LoginFormData) => Promise<boolean>;
   signupWithEmail: (data: SignupFormData) => Promise<boolean>;
   sendLoginLink: (email: string) => Promise<boolean>;
+  sendPasswordReset: (email: string) => Promise<boolean>; // New method
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
