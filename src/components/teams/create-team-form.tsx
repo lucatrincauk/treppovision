@@ -39,8 +39,8 @@ const teamFormZodSchema = z.object({
   founderNationId: z.string().min(1, "Devi selezionare una nazione Fondatrice."),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la Prima Semifinale."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la Seconda Semifinale."),
-  // creatorDisplayName is not part of the form values validated by Zod from user input
-  // but it is part of TeamFormData which is sent to the action.
+  // creatorDisplayName is part of TeamFormData but not directly part of Zod schema for user input,
+  // as it's derived from the authenticated user state.
 });
 
 // Form values will not include creatorDisplayName directly from user input fields
@@ -65,7 +65,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
   React.useEffect(() => {
     async function fetchInitialData() {
       setIsLoadingNations(true);
-      if (!isEditMode) { // Only check for existing team if creating new
+      if (!isEditMode) { 
         setIsLoadingUserTeamCheck(true);
       }
 
@@ -78,7 +78,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
             const userTeams = await getTeamsByUserId(user.uid);
             setUserHasTeam(userTeams.length > 0);
           } else {
-            setUserHasTeam(true); // In edit mode, user definitely has this team
+            // In edit mode, user already has this team.
+            // If initialData isn't provided (e.g., direct navigation to edit page),
+            // this check might still be relevant if we fetched the team here.
+            // For now, assuming initialData is provided for edit mode from parent.
+            setUserHasTeam(true); 
           }
         } catch (error) {
           console.error("Failed to fetch initial data for team form:", error);
@@ -94,6 +98,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           if (!isEditMode) setIsLoadingUserTeamCheck(false);
         }
       } else {
+        // If no user, still try to load nations for selection display (though form will be disabled)
         try {
             const fetchedNations = await getNations();
             setNations(fetchedNations);
@@ -130,13 +135,18 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
 
   React.useEffect(() => {
     if (initialData) {
-      form.reset(initialData);
+      form.reset({ // Reset only the fields Zod schema cares about
+        name: initialData.name,
+        founderNationId: initialData.founderNationId,
+        day1NationId: initialData.day1NationId,
+        day2NationId: initialData.day2NationId,
+      });
     }
   }, [initialData, form]);
 
   async function onSubmit(values: TeamFormValues) {
     if (!user) {
-      toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login.", variant: "destructive" });
+      toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login per creare o modificare un team.", variant: "destructive" });
       return;
     }
     if (!isEditMode && userHasTeam) {
@@ -203,14 +213,14 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     );
   }
 
-  if (!isEditMode && userHasTeam) {
+  if (!isEditMode && userHasTeam === true) { // Explicitly check true
     return (
       <Alert>
         <Info className="h-4 w-4" />
         <AlertTitle>Team Già Creato</AlertTitle>
         <AlertDescription>
           Hai già creato un team. Puoi creare un solo team.
-          Visualizza o modifica il <Link href="/teams" className="font-bold hover:underline">tuo team e gli altri qui</Link>.
+          Visualizza o <Link href="/teams" className="font-bold hover:underline">modifica il tuo team qui</Link>.
         </AlertDescription>
       </Alert>
     );
@@ -226,11 +236,23 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
             <Users className="h-4 w-4" />
             <AlertTitle>Nazioni Mancanti</AlertTitle>
             <AlertDescription>
-                Impossibile caricare l'elenco delle nazioni. Assicurati che ci siano nazioni in Firestore.
+                Impossibile caricare l'elenco delle nazioni. Assicurati che ci siano nazioni in Firestore per popolare le selezioni.
             </AlertDescription>
         </Alert>
     )
   }
+   if ((founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) {
+     return (
+        <Alert variant="destructive">
+            <Users className="h-4 w-4" />
+            <AlertTitle>Categorie Nazioni Incomplete</AlertTitle>
+            <AlertDescription>
+                Per creare un team, devono essere disponibili nazioni per tutte e tre le categorie (Fondatrici, Prima Semifinale, Seconda Semifinale). Controlla i dati delle nazioni in Firestore.
+            </AlertDescription>
+        </Alert>
+     )
+   }
+
 
   return (
     <Form {...form}>
@@ -258,10 +280,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Fondatrice</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || founderNations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione fondatrice"} />
+                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -283,10 +305,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Prima Semifinale</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day1Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione Prima Semifinale disponibile" : "Seleziona nazione Prima Semifinale"} />
+                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -308,10 +330,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Seconda Semifinale</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day2Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione Seconda Semifinale disponibile" : "Seleziona nazione Seconda Semifinale"} />
+                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -327,7 +349,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           )}
         />
 
-        <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true)}>
+        <Button 
+            type="submit" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
+            disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0}
+        >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
           {isEditMode ? "Salva Modifiche" : "Crea Team"}
@@ -336,5 +362,3 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     </Form>
   );
 }
-
-    

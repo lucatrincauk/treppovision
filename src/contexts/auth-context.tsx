@@ -16,9 +16,12 @@ import {
 } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { getTeamsByUserId } from "@/lib/team-service"; // Import team service
+import { updateTeamCreatorDisplayNameAction } from "@/lib/actions/team-actions"; // Import the new action
+
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
-const ADMIN_EMAIL = "lucatrinca.uk@gmail.com"; // Define Admin Email
+const ADMIN_EMAIL = "lucatrinca.uk@gmail.com"; 
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -130,7 +133,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName: data.displayName });
         // User state will be updated by onAuthStateChanged after profile update
-        setUser(prevUser => prevUser ? { ...prevUser, displayName: data.displayName } : null); // Optimistic update
+        setUser(prevUser => prevUser ? { ...prevUser, displayName: data.displayName } : (
+            userCredential.user ? { // Construct a User object if prevUser is null
+                uid: userCredential.user.uid,
+                displayName: data.displayName,
+                email: userCredential.user.email,
+                photoURL: userCredential.user.photoURL,
+                isAdmin: userCredential.user.email === ADMIN_EMAIL
+            } : null
+        ));
       }
       toast({ title: "Registrazione Riuscita", description: "Benvenuto! Il tuo account è stato creato." });
       setIsLoading(false);
@@ -167,15 +178,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signOut(auth);
       toast({ title: "Logout Riuscito", description: "A presto!"});
     } catch (error) {
-      console.error("Errore durante il logout:", error);
-      toast({ title: "Errore Logout", description: "Non è stato possibile effettuare il logout. Riprova.", variant: "destructive" });
+      const authError = error as AuthError;
+      console.error("Errore durante il logout:", authError);
+      toast({ title: "Errore Logout", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
     } finally {
       setIsLoading(false); 
     }
   };
 
   const updateUserProfileName = async (newName: string) => {
-    if (!auth.currentUser) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
       toast({ title: "Errore", description: "Utente non trovato.", variant: "destructive" });
       return false;
     }
@@ -186,9 +199,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setIsLoading(true);
     try {
-      await updateProfile(auth.currentUser, { displayName: newName });
+      await updateProfile(currentUser, { displayName: newName });
+      // Update local user state immediately
       setUser(prevUser => prevUser ? { ...prevUser, displayName: newName } : null);
       toast({ title: "Nome Aggiornato", description: "Il tuo nome visualizzato è stato aggiornato con successo." });
+
+      // Now, update the creatorDisplayName in the user's team(s)
+      const userTeams = await getTeamsByUserId(currentUser.uid);
+      if (userTeams.length > 0) {
+        for (const team of userTeams) {
+          const updateResult = await updateTeamCreatorDisplayNameAction(team.id, newName, currentUser.uid);
+          if (!updateResult.success) {
+            // Log or show a secondary, less intrusive toast for this error
+            console.warn(`Failed to update team "${team.name}" creator display name: ${updateResult.message}`);
+            // Optionally:
+            // toast({
+            //   title: "Aggiornamento Parziale",
+            //   description: `Nome del creatore per il team "${team.name}" non aggiornato: ${updateResult.message}`,
+            //   variant: "destructive",
+            //   duration: 7000
+            // });
+          }
+        }
+      }
       setIsLoading(false);
       return true;
     } catch (error) {
