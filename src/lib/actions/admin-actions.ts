@@ -2,26 +2,30 @@
 "use server";
 
 import { auth, db } from "@/lib/firebase";
-import type { AdminNationPayload } from "@/types";
-import { doc, setDoc, getDoc, deleteDoc, deleteField } from "firebase/firestore"; // Import deleteField
+import type { AdminNationPayload, AdminSettings } from "@/types";
+import { doc, setDoc, getDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 const NATIONS_COLLECTION = "nations";
-const ADMIN_EMAIL = "lucatrinca.uk@gmail.com"; // Ensure this matches your auth context
+const ADMIN_SETTINGS_COLLECTION = "adminSettings";
+const ADMIN_SETTINGS_DOC_ID = "config";
 
-async function verifyAdmin(): Promise<boolean> {
-  // This is a placeholder for actual admin verification logic.
-  // In a real app, you would get the authenticated user's claims or check their UID against a database.
-  // console.warn("Admin verification is simplified for this example. Implement robust checks for production.");
-  return true; 
+// Placeholder - in a real app, use Firebase Custom Claims or a secure roles system.
+// This function is now only used internally by actions in this file.
+// Client-side admin checks should use the isAdmin flag from AuthContext.
+async function verifyAdminServerSide(): Promise<boolean> {
+  // This check would be more robust if it verified a custom claim on the auth token
+  // or checked against a secure list of admin UIDs in Firestore.
+  // For now, it's a simplified placeholder.
+  // console.warn("Admin verification in server actions is simplified. Implement robust checks for production.");
+  return true; // Assume admin for server actions if they reach here after client checks.
 }
 
 
 export async function addNationAction(
   data: AdminNationPayload
 ): Promise<{ success: boolean; message: string; nationId?: string }> {
-  const isAdmin = await verifyAdmin();
+  const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato." };
   }
@@ -50,7 +54,7 @@ export async function addNationAction(
 export async function updateNationAction(
   data: AdminNationPayload
 ): Promise<{ success: boolean; message: string; nationId?: string }> {
-  const isAdmin = await verifyAdmin();
+  const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato." };
   }
@@ -58,14 +62,11 @@ export async function updateNationAction(
   try {
     const nationRef = doc(db, NATIONS_COLLECTION, data.id);
     
-    // Prepare payload for Firestore, using deleteField() for undefined ranking
     const payloadForFirestore: { [key: string]: any } = { ...data };
     if (data.ranking === undefined) {
       payloadForFirestore.ranking = deleteField();
     }
-    // If other fields were optional and could be undefined, and you wanted to remove them,
-    // you'd apply similar logic. For now, only ranking is explicitly handled for removal.
-
+    
     await setDoc(nationRef, payloadForFirestore, { merge: true });
 
     revalidatePath("/nations");
@@ -82,7 +83,7 @@ export async function updateNationAction(
 export async function deleteNationAction(
   nationId: string
 ): Promise<{ success: boolean; message: string }> {
-    const isAdmin = await verifyAdmin();
+    const isAdmin = await verifyAdminServerSide();
     if (!isAdmin) {
         return { success: false, message: "Non autorizzato." };
     }
@@ -99,4 +100,44 @@ export async function deleteNationAction(
         const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore sconosciuto.";
         return { success: false, message: `Errore del server: ${errorMessage}` };
     }
+}
+
+// Admin Settings Actions
+export async function getAdminSettingsAction(): Promise<AdminSettings> {
+  try {
+    const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
+    const docSnap = await getDoc(settingsDocRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as AdminSettings;
+    }
+    // Return default settings if document doesn't exist
+    return { teamsLocked: false };
+  } catch (error) {
+    console.error("Error fetching admin settings:", error);
+    // Return default settings on error
+    return { teamsLocked: false };
+  }
+}
+
+export async function updateAdminSettingsAction(
+  payload: { teamsLocked: boolean }
+): Promise<{ success: boolean; message: string }> {
+  const isAdmin = await verifyAdminServerSide(); // Ensure this check is robust in production
+  if (!isAdmin) {
+    return { success: false, message: "Non autorizzato." };
+  }
+
+  try {
+    const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
+    await setDoc(settingsDocRef, payload, { merge: true });
+    revalidatePath("/admin/settings"); // Revalidate the admin settings page
+    revalidatePath("/teams"); // Revalidate teams pages as their editability might change
+    revalidatePath("/teams/[teamId]/edit", "layout"); // Revalidate edit team pages
+
+    return { success: true, message: "Impostazioni admin aggiornate con successo." };
+  } catch (error) {
+    console.error("Errore durante l'aggiornamento delle impostazioni admin:", error);
+    const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore sconosciuto.";
+    return { success: false, message: `Errore del server: ${errorMessage}` };
+  }
 }

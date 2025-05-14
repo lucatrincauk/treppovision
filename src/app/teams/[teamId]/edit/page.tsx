@@ -8,10 +8,11 @@ import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamFormData } from "@/types";
 import { CreateTeamForm } from "@/components/teams/create-team-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, AlertTriangle, Users, Edit } from "lucide-react";
+import { Loader2, AlertTriangle, Users, Edit, Lock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getTeamsLockedStatus } from "@/lib/actions/team-actions"; // Import the check
 
 export default function EditTeamPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -23,18 +24,24 @@ export default function EditTeamPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
   useEffect(() => {
-    async function fetchTeam() {
+    async function fetchTeamAndSettings() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authLoading); // if !teamId, data loading effectively stops.
+        setIsLoadingData(authLoading);
         return;
       }
 
       setIsLoadingData(true);
       setError(null);
       try {
-        const fetchedTeam = await getTeamById(teamId);
+        const [fetchedTeam, lockedStatus] = await Promise.all([
+          getTeamById(teamId),
+          getTeamsLockedStatus()
+        ]);
+        setTeamsLocked(lockedStatus);
+
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           if (user && fetchedTeam.userId === user.uid) {
@@ -48,18 +55,18 @@ export default function EditTeamPage() {
           setIsAuthorized(false);
         }
       } catch (fetchError: any) {
-        console.error("Failed to fetch team:", fetchError);
-        setError(fetchError.message || "Errore durante il caricamento del team.");
+        console.error("Failed to fetch team or settings:", fetchError);
+        setError(fetchError.message || "Errore durante il caricamento dei dati del team o delle impostazioni.");
         setIsAuthorized(false);
       } finally {
         setIsLoadingData(false);
       }
     }
 
-    fetchTeam();
+    fetchTeamAndSettings();
   }, [teamId, user, authLoading]);
 
-  if (authLoading || isLoadingData) {
+  if (authLoading || isLoadingData || teamsLocked === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -97,6 +104,21 @@ export default function EditTeamPage() {
       </Alert>
     );
   }
+  
+  if (teamsLocked) {
+    return (
+      <Alert variant="destructive" className="max-w-lg mx-auto">
+        <Lock className="h-4 w-4" />
+        <AlertTitle>Modifica Squadre Bloccata</AlertTitle>
+        <AlertDescription>
+          L'amministratore ha temporaneamente bloccato la modifica delle squadre. Riprova più tardi.
+          <Button variant="link" asChild className="p-0 ml-1">
+            <Link href="/teams">Torna alle Squadre</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (!isAuthorized || !team) {
      return (
@@ -118,7 +140,7 @@ export default function EditTeamPage() {
     founderNationId: team.founderNationId,
     day1NationId: team.day1NationId,
     day2NationId: team.day2NationId,
-    creatorDisplayName: team.creatorDisplayName, // This will be re-confirmed in the form if needed
+    creatorDisplayName: team.creatorDisplayName,
     bestSongNationId: team.bestSongNationId || "",
     bestPerformanceNationId: team.bestPerformanceNationId || "",
     bestOutfitNationId: team.bestOutfitNationId || "",
@@ -142,6 +164,7 @@ export default function EditTeamPage() {
             initialData={initialFormData} 
             isEditMode={true} 
             teamId={team.id}
+            teamsLocked={teamsLocked} // Pass locked status to form
           />
         </CardContent>
       </Card>

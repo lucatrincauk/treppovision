@@ -30,7 +30,7 @@ import { getNations } from "@/lib/nation-service";
 import { getTeamsByUserId } from "@/lib/team-service";
 import { createTeamAction, updateTeamAction } from "@/lib/actions/team-actions";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Users, Info, Edit } from "lucide-react";
+import { Loader2, Save, Users, Info, Edit, Lock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -45,16 +45,16 @@ const teamFormZodSchema = z.object({
   worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
 });
 
-// Form values will not include creatorDisplayName directly from user input fields
 type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
 
 interface CreateTeamFormProps {
   initialData?: TeamFormData;
   isEditMode?: boolean;
   teamId?: string;
+  teamsLocked?: boolean | null; // Add this prop
 }
 
-export function CreateTeamForm({ initialData, isEditMode = false, teamId }: CreateTeamFormProps) {
+export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsLocked }: CreateTeamFormProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -158,6 +158,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login per creare o modificare un team.", variant: "destructive" });
       return;
     }
+    if (teamsLocked) {
+      toast({ title: "Modifica Bloccata", description: "La modifica delle squadre è temporaneamente bloccata.", variant: "destructive" });
+      return;
+    }
     if (!isEditMode && userHasTeam) {
       toast({ title: "Limite Team Raggiunto", description: "Puoi creare un solo team per account.", variant: "destructive" });
       return;
@@ -195,7 +199,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     setIsSubmitting(false);
   }
 
-  if (authLoading || isLoadingNations || (!isEditMode && isLoadingUserTeamCheck)) {
+  if (authLoading || isLoadingNations || (!isEditMode && isLoadingUserTeamCheck) || teamsLocked === null) {
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
@@ -219,6 +223,18 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
                 }}>login</Link> per {isEditMode ? 'modificare' : 'creare'} una squadra.
             </AlertDescription>
         </Alert>
+    );
+  }
+
+  if (teamsLocked) {
+    return (
+      <Alert variant="destructive">
+        <Lock className="h-4 w-4" />
+        <AlertTitle>Modifica Squadre Bloccata</AlertTitle>
+        <AlertDescription>
+          L'amministratore ha temporaneamente bloccato la {isEditMode ? 'modifica' : 'creazione'} delle squadre. Riprova più tardi.
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -274,7 +290,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
             <FormItem>
               <FormLabel>Nome del Team</FormLabel>
               <FormControl>
-                <Input placeholder="Es. Gli EuroVincenti" {...field} disabled={isSubmitting} />
+                <Input placeholder="Es. Gli EuroVincenti" {...field} disabled={isSubmitting || teamsLocked} />
               </FormControl>
               <FormDescription>
                 Scegli un nome epico per la tua squadra!
@@ -290,7 +306,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Prima squadra (nazioni fondatrici)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || founderNations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
@@ -315,7 +331,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Seconda squadra (Prima semifinale)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day1Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione disponibile (Prima Semifinale)" : "Seleziona nazione"} />
@@ -340,7 +356,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Terza squadra (Seconda semifinale)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day2Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione disponibile (Seconda Semifinale)" : "Seleziona nazione"} />
@@ -359,14 +375,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           )}
         />
 
-        {/* New Fields */}
         <FormField
           control={form.control}
           name="bestSongNationId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
@@ -392,7 +407,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore performance</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
@@ -418,7 +433,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore outfit</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
@@ -444,7 +459,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           render={({ field }) => (
             <FormItem>
               <FormLabel>Peggiore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
@@ -468,11 +483,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
         <Button 
             type="submit" 
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
-            disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
+            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-          {isEditMode ? "Salva Modifiche" : "Crea Team"}
+          {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}
+          {teamsLocked ? "Modifiche Bloccate" : (isEditMode ? "Salva Modifiche" : "Crea Team")}
         </Button>
       </form>
     </Form>

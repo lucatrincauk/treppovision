@@ -4,10 +4,12 @@
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
+import React from "react";
 
 interface TeamListItemProps {
   team: Team;
@@ -31,7 +33,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     );
   }
 
-  const titleText = `${nation.name} - ${nation.songTitle}${nation.ranking && nation.ranking > 0 ? ` (Posizione: ${nation.ranking})` : ''}`;
+  const titleText = `${nation.name} - ${nation.songTitle}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''}`;
 
   return (
     <div className="flex items-center gap-2 py-1">
@@ -59,6 +61,17 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
 
 export function TeamListItem({ team, nations }: TeamListItemProps) {
   const { user } = useAuth();
+  const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    async function fetchLockStatus() {
+      const status = await getTeamsLockedStatus();
+      setTeamsLocked(status);
+    }
+    fetchLockStatus();
+  }, []);
+
+
   const founderNation = getNationDetailsById(team.founderNationId, nations);
   const day1Nation = getNationDetailsById(team.day1NationId, nations);
   const day2Nation = getNationDetailsById(team.day2NationId, nations);
@@ -85,13 +98,19 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
             </p>
           )}
         </div>
-        {isOwner && (
+        {isOwner && teamsLocked === false && (
           <Button asChild variant="outline" size="sm" className="ml-auto">
             <Link href={`/teams/${team.id}/edit`}>
               <Edit className="h-3 w-3 mr-1.5" />
               Modifica
             </Link>
           </Button>
+        )}
+        {isOwner && teamsLocked === true && (
+            <Button variant="outline" size="sm" className="ml-auto" disabled>
+                <Lock className="h-3 w-3 mr-1.5 text-destructive"/>
+                Bloccato
+            </Button>
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">

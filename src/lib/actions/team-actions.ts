@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import type { TeamFormData, Team } from "@/types"; 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, getDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
+import { getAdminSettingsAction } from "./admin-actions"; // Import admin settings
 
 const TEAMS_COLLECTION = "teams";
 
@@ -14,6 +15,12 @@ export async function createTeamAction(
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
     return { success: false, message: "Utente non autenticato. Effettua il login per creare un team." };
+  }
+
+  // Check admin settings
+  const adminSettings = await getAdminSettingsAction();
+  if (adminSettings.teamsLocked) {
+    return { success: false, message: "La creazione e modifica delle squadre è temporaneamente bloccata dall'amministratore." };
   }
 
   try {
@@ -97,6 +104,12 @@ export async function updateTeamAction(
   }
   if (!teamId) {
     return { success: false, message: "ID del team mancante." };
+  }
+
+  // Check admin settings
+  const adminSettings = await getAdminSettingsAction();
+  if (adminSettings.teamsLocked) {
+    return { success: false, message: "La creazione e modifica delle squadre è temporaneamente bloccata dall'amministratore." };
   }
 
   try {
@@ -184,6 +197,11 @@ export async function updateTeamCreatorDisplayNameAction(
   if (!newDisplayName.trim()) {
     return { success: false, message: "Il nuovo nome visualizzato non può essere vuoto." };
   }
+  
+  // Note: This action might also need to check adminSettings.teamsLocked
+  // if changing display name is considered part of "team editing".
+  // For now, let's assume display name sync is allowed even if general editing is locked.
+  // If not, add the adminSettings check here as well.
 
   try {
     const teamDocRef = doc(db, TEAMS_COLLECTION, teamId);
@@ -213,4 +231,9 @@ export async function updateTeamCreatorDisplayNameAction(
     const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore sconosciuto.";
     return { success: false, message: `Errore del server: ${errorMessage}` };
   }
+}
+
+export async function getTeamsLockedStatus(): Promise<boolean> {
+    const settings = await getAdminSettingsAction();
+    return settings.teamsLocked;
 }

@@ -24,7 +24,7 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; 
+  ranking?: string; // Kept as string for form handling, converted in Zod
   performingOrder: number;
   songDescription?: string; 
   songLyrics?: string; 
@@ -82,7 +82,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
-  updateUserProfileName: (newName: string) => Promise<boolean>; // Added this
+  updateUserProfileName: (newName: string) => Promise<boolean>;
 }
 
 export interface AdminNationPayload {
@@ -132,4 +132,8 @@ export interface Team {
     seconds: number;
     nanoseconds: number;
   } | any;
+}
+
+export interface AdminSettings {
+  teamsLocked: boolean;
 }
