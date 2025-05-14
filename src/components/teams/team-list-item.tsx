@@ -31,6 +31,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     );
   }
 
+  const titleText = `${nation.name} - ${nation.songTitle}${nation.ranking && nation.ranking > 0 ? ` (Posizione: ${nation.ranking})` : ''}`;
+
   return (
     <div className="flex items-center gap-2 py-1">
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
@@ -44,8 +46,11 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
           className="rounded-sm border border-border/50 object-contain flex-shrink-0"
           data-ai-hint={`${nation.name} flag`}
         />
-        <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={`${nation.name} - ${nation.songTitle}`}>
+        <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
           {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
+          {nation.ranking && nation.ranking > 0 && (
+            <span className="ml-1 text-xs text-accent font-semibold">(Pos: {nation.ranking})</span>
+          )}
         </span>
       </Link>
     </div>
