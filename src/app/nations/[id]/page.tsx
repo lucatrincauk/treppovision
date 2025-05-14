@@ -37,6 +37,16 @@ export default async function NationPage({ params }: NationPageProps) {
     ? `https://placehold.co/480x360.png`
     : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
 
+  let categoryDisplay = "";
+  if (nation.category === 'founders') {
+    categoryDisplay = 'Finalista Automatico';
+  } else if (nation.category === 'day1') {
+    categoryDisplay = 'Si esibisce nella Prima Semifinale';
+  } else if (nation.category === 'day2') {
+    categoryDisplay = 'Si esibisce nella Seconda Semifinale';
+  }
+
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-4">
@@ -99,11 +109,11 @@ export default async function NationPage({ params }: NationPageProps) {
           <div className="mt-4 flex gap-2">
             <Badge variant="secondary" className="text-sm py-1 px-3 bg-accent text-accent-foreground">
               <Tag className="w-3 h-3 mr-1.5" />
-              {nation.category.charAt(0).toUpperCase() + nation.category.slice(1)}
+              {nation.category.charAt(0).toUpperCase() + nation.category.slice(1).replace('day1', 'Prima Semifinale').replace('day2', 'Seconda Semifinale').replace('founders', 'Fondatori')}
             </Badge>
              <Badge variant="outline" className="text-sm py-1 px-3">
               <CalendarDays className="w-3 h-3 mr-1.5" />
-              {nation.category === 'founders' ? 'Finalista Automatico' : `Si esibisce il Giorno ${nation.category.replace('day', '')}`}
+              {categoryDisplay}
             </Badge>
           </div>
         </div>
@@ -139,3 +149,4 @@ export async function generateMetadata({ params }: NationPageProps) {
     description: `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Esprimi il tuo voto!`,
   };
 }
+

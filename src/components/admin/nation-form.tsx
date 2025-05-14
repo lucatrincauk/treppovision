@@ -88,8 +88,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
 
   const categories: { value: NationCategory; label: string }[] = [
     { value: "founders", label: "Fondatori" },
-    { value: "day1", label: "Giorno 1" },
-    { value: "day2", label: "Giorno 2" },
+    { value: "day1", label: "Prima Semifinale" },
+    { value: "day2", label: "Seconda Semifinale" },
   ];
 
   return (
@@ -215,3 +215,4 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     </Form>
   );
 }
+

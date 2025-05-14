@@ -48,11 +48,12 @@ export default async function NationsPage() {
         <>
           <NationList nations={founderNations} title="Fondatori" />
           <Separator className="my-8 bg-border/50" />
-          <NationList nations={day1Nations} title="Partecipanti Giorno 1" />
+          <NationList nations={day1Nations} title="Prima Semifinale" />
           <Separator className="my-8 bg-border/50" />
-          <NationList nations={day2Nations} title="Partecipanti Giorno 2" />
+          <NationList nations={day2Nations} title="Seconda Semifinale" />
         </>
       )}
     </div>
   );
 }
+

@@ -37,8 +37,8 @@ import Link from "next/link";
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
   founderNationId: z.string().min(1, "Devi selezionare una nazione Fondatrice."),
-  day1NationId: z.string().min(1, "Devi selezionare una nazione per il Giorno 1."),
-  day2NationId: z.string().min(1, "Devi selezionare una nazione per il Giorno 2."),
+  day1NationId: z.string().min(1, "Devi selezionare una nazione per la Prima Semifinale."),
+  day2NationId: z.string().min(1, "Devi selezionare una nazione per la Seconda Semifinale."),
   creatorDisplayName: z.string(), // No validation needed here, will be set internally
 });
 
@@ -260,11 +260,11 @@ export function CreateTeamForm() {
           name="day1NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Giorno 1 (1)</FormLabel>
+              <FormLabel>Nazione Prima Semifinale (1)</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione Giorno 1 disponibile" : "Seleziona nazione Giorno 1"} />
+                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione Prima Semifinale disponibile" : "Seleziona nazione Prima Semifinale"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -285,11 +285,11 @@ export function CreateTeamForm() {
           name="day2NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Giorno 2 (1)</FormLabel>
+              <FormLabel>Nazione Seconda Semifinale (1)</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione Giorno 2 disponibile" : "Seleziona nazione Giorno 2"} />
+                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione Seconda Semifinale disponibile" : "Seleziona nazione Seconda Semifinale"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -314,3 +314,4 @@ export function CreateTeamForm() {
     </Form>
   );
 }
+
