@@ -9,13 +9,13 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center text-center space-y-8">
       <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
-        <Image 
-            src="https://placehold.co/1200x400.png" 
-            alt="Banner Eurovision Song Contest"
-            layout="fill" 
+        <Image
+            src="/banner.png"
+            alt="App Banner"
+            layout="fill"
             objectFit="cover"
             priority
-            data-ai-hint="Eurovision banner"
+            data-ai-hint="site banner"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex flex-col items-center justify-end p-8">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary animate-pulse">
