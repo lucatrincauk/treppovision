@@ -97,14 +97,6 @@ export default function TeamsPage() {
           </Link>
         </Button>
       )}
-      {user && !showCreateTeamButton && userTeams.length > 0 && (
-         <Button asChild variant="outline" size="lg">
-          <Link href={`/teams/${userTeams[0].id}/edit`}>
-            <Edit className="mr-2 h-5 w-5" />
-            Modifica la Tua Squadra
-          </Link>
-        </Button>
-      )}
     </div>
   );
 
@@ -250,3 +242,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+
