@@ -53,8 +53,16 @@ export function NationListItem({ nation }: NationListItemProps) {
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-            <CardTitle className="absolute bottom-2 left-4 text-xl font-bold text-white drop-shadow-md">
-              {nation.name}
+            <CardTitle className="absolute bottom-3 left-4 text-xl font-bold text-white drop-shadow-md flex items-center gap-2">
+              <Image
+                src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+                alt={`Bandiera ${nation.name}`}
+                width={20}
+                height={13} // Approximate height for a 20px wide flag
+                className="rounded-sm object-contain border border-white/20 shadow-sm"
+                data-ai-hint={`${nation.name} flag icon`}
+              />
+              <span>{nation.name}</span>
             </CardTitle>
           </div>
         </CardHeader>
