@@ -11,7 +11,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 container max-w-screen-2xl py-8 px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 w-full max-w-screen-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {children}
       </main>
       <footer className="py-6 md:px-8 md:py-0 border-t border-border/40">
