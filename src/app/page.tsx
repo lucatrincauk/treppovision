@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ListMusic, Star } from "lucide-react"; // Flame icon removed
+import { ListMusic, Star } from "lucide-react"; 
 import Link from "next/link";
 import Image from "next/image";
 
@@ -18,12 +18,7 @@ export default function HomePage() {
             data-ai-hint="site banner"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex flex-col items-center justify-end p-8">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary animate-pulse">
-            TreppoVision
-          </h1>
-          <p className="mt-4 text-xl md:text-2xl text-foreground/80">
-            Il Tuo Compagno Eurovision Definitivo!
-          </p>
+          {/* Text removed from here */}
         </div>
       </div>
 
@@ -48,16 +43,6 @@ export default function HomePage() {
             <CardDescription>Valuta le partecipazioni per canzone, performance e outfit. Fai sentire la tua voce!</CardDescription>
           </CardContent>
         </Card>
-        {/* Removed Charts Card
-        <Card className="hover:shadow-primary/20 hover:shadow-lg transition-shadow duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center gap-2"><Flame className="text-accent" /> Guarda i Grafici</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>Consulta le classifiche in tempo reale basate sui voti degli utenti e scopri chi è in testa.</CardDescription>
-          </CardContent>
-        </Card>
-        */}
       </div>
 
       <Link href="/nations">
