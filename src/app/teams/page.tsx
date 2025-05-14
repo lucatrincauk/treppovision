@@ -6,13 +6,14 @@ import { getTeams, getTeamsByUserId } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
+import { TeamListItem } from "@/components/teams/team-list-item"; // Import TeamListItem
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
 import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
-import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation"; // Import sub-navigation
+import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
@@ -170,7 +171,7 @@ export default function TeamsPage() {
       )}
       
       {/* User's Team Section */}
-      {user && userTeams.length > 0 && (
+      {user && userTeams.length > 0 && nations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
           <div className="flex items-center gap-3 mb-6">
             <ThumbsUp className="w-8 h-8 text-secondary" />
@@ -178,7 +179,12 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
           </div>
-          <TeamList teams={userTeams} nations={nations} />
+          {/* Render TeamListItem directly for full width */}
+          {userTeams.map(team => (
+            <div key={team.id} className="mb-6"> {/* Added margin bottom for spacing if needed */}
+              <TeamListItem team={team} nations={nations} />
+            </div>
+          ))}
         </section>
       )}
 
