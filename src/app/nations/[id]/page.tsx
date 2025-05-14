@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered } from "lucide-react"; // Added ListOrdered
+import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { AdminNationControls } from "@/components/admin/admin-nation-controls"; 
+import { AdminNationControls } from "@/components/admin/admin-nation-controls";
+import { cn } from "@/lib/utils";
 
 interface NationPageProps {
   params: {
@@ -37,8 +38,6 @@ export default async function NationPage({ params }: NationPageProps) {
     ? `https://placehold.co/480x360.png`
     : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
 
-  // Removed unused categoryDisplay logic
-
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-4">
@@ -63,8 +62,9 @@ export default async function NationPage({ params }: NationPageProps) {
            <Image
             src={youtubeThumbnailUrl}
             alt={`Miniatura YouTube ${nation.name}`}
-            layout="fill"
-            objectFit="cover"
+            fill // Changed from layout="fill"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
+            style={{ objectFit: "cover" }} // Changed from objectFit="cover"
             className="opacity-30 blur-sm scale-110"
             data-ai-hint={isPlaceholderVideo ? "music stage" : `youtube thumbnail ${nation.artistName}`}
           />
@@ -103,9 +103,18 @@ export default async function NationPage({ params }: NationPageProps) {
               Ordine Esibizione: {nation.performingOrder}
             </Badge>
             {nation.ranking && nation.ranking > 0 && (
-              <Badge variant="outline" className="text-sm py-1 px-3">
+              <Badge
+                variant={ ![1,2,3].includes(nation.ranking) ? "outline" : undefined }
+                className={cn(
+                  "text-sm py-1 px-3",
+                  nation.ranking === 1 && "bg-yellow-400 border-yellow-500 text-yellow-900 hover:bg-yellow-400/90 font-semibold",
+                  nation.ranking === 2 && "bg-slate-300 border-slate-400 text-slate-900 hover:bg-slate-300/90 font-semibold",
+                  nation.ranking === 3 && "bg-amber-400 border-amber-500 text-amber-900 hover:bg-amber-400/90 font-semibold"
+                )}
+              >
                 <Award className="w-3 h-3 mr-1.5" />
                 Posizione: {nation.ranking}
+                {nation.ranking === 1 && " (Vincitore!)"}
               </Badge>
             )}
           </div>
