@@ -36,9 +36,9 @@ import Link from "next/link";
 
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
-  founderNationId: z.string().min(1, "Devi selezionare una nazione Fondatrice."),
-  day1NationId: z.string().min(1, "Devi selezionare una nazione per la Prima Semifinale."),
-  day2NationId: z.string().min(1, "Devi selezionare una nazione per la Seconda Semifinale."),
+  founderNationId: z.string().min(1, "Devi selezionare una nazione per la prima squadra."),
+  day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
+  day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
   // creatorDisplayName is part of TeamFormData but not directly part of Zod schema for user input,
   // as it's derived from the authenticated user state.
 });
@@ -279,7 +279,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="founderNationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Fondatrice</FormLabel>
+              <FormLabel>Prima squadra (nazioni fondatrici)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -304,7 +304,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="day1NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Prima Semifinale</FormLabel>
+              <FormLabel>Seconda squadra (Prima semifinale)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -329,7 +329,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="day2NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Seconda Semifinale</FormLabel>
+              <FormLabel>Terza squadra (Seconda semifinale)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -362,3 +362,5 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     </Form>
   );
 }
+
+    
