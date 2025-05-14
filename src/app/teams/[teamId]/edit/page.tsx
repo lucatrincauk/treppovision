@@ -119,6 +119,10 @@ export default function EditTeamPage() {
     day1NationId: team.day1NationId,
     day2NationId: team.day2NationId,
     creatorDisplayName: team.creatorDisplayName, // This will be re-confirmed in the form if needed
+    bestSongNationId: team.bestSongNationId || "",
+    bestPerformanceNationId: team.bestPerformanceNationId || "",
+    bestOutfitNationId: team.bestOutfitNationId || "",
+    worstSongNationId: team.worstSongNationId || "",
   };
 
   return (
