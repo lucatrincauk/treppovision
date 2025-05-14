@@ -1,7 +1,15 @@
 
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  updateProfile,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink
+} from "firebase/auth";
 
 // Your web app's Firebase configuration
 // IMPORTANT: Replace these with your actual Firebase project credentials
@@ -19,4 +27,21 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
-export { app, auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile };
+const actionCodeSettings = {
+  // URL you want to redirect back to. The domain (www.example.com) for this
+  // URL must be in the authorized domains list in the Firebase Console.
+  url: typeof window !== 'undefined' ? `${window.location.origin}/` : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002/'),
+  handleCodeInApp: true,
+};
+
+export { 
+  app, 
+  auth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  updateProfile,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  actionCodeSettings
+};

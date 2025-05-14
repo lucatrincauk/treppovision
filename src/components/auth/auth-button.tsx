@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserPlus, UserCircle, Loader2 } from "lucide-react";
+import { LogIn, LogOut, UserPlus, Loader2, Link2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,17 +25,25 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "./login-form";
 import { SignupForm } from "./signup-form";
+import { EmailLinkForm } from "./email-link-form"; // Import the new form
 
 export function AuthButton() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, completeEmailLinkSignIn } = useAuth();
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("login");
+
+  // Attempt to complete email link sign in when component mounts or user state might change
+  React.useEffect(() => {
+    completeEmailLinkSignIn();
+  }, [completeEmailLinkSignIn]);
+
 
   const handleAuthSuccess = () => {
     setDialogOpen(false);
   };
 
   if (isLoading) {
-    return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin" />Caricamento...</Button>;
+    return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin mr-2" />Caricamento...</Button>;
   }
 
   if (user) {
@@ -83,19 +91,23 @@ export function AuthButton() {
         <DialogHeader>
           <DialogTitle>Autenticazione</DialogTitle>
           <DialogDescription>
-            Accedi o crea un nuovo account per continuare.
+            Scegli un metodo per accedere o creare un nuovo account.
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
             <TabsTrigger value="signup"><UserPlus className="mr-1"/>Registrati</TabsTrigger>
+            <TabsTrigger value="emailLink"><Link2 className="mr-1"/>Link Email</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
             <LoginForm onSuccess={handleAuthSuccess} />
           </TabsContent>
           <TabsContent value="signup">
             <SignupForm onSuccess={handleAuthSuccess} />
+          </TabsContent>
+          <TabsContent value="emailLink">
+            <EmailLinkForm onSuccess={handleAuthSuccess} />
           </TabsContent>
         </Tabs>
       </DialogContent>

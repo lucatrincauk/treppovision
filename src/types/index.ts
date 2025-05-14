@@ -50,3 +50,18 @@ export interface SignupFormData {
   password: string;
   displayName?: string;
 }
+
+export interface EmailLinkFormData {
+  email: string;
+}
+
+// AuthContext types
+export interface AuthContextType {
+  user: User | null;
+  loginWithEmail: (data: LoginFormData) => Promise<boolean>;
+  signupWithEmail: (data: SignupFormData) => Promise<boolean>;
+  sendLoginLink: (email: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  completeEmailLinkSignIn: () => Promise<void>;
+}
