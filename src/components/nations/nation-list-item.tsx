@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Music2, UserSquare2 } from "lucide-react";
+import { ArrowRight, Music2, UserSquare2, Award } from "lucide-react";
 
 interface NationListItemProps {
   nation: Nation;
@@ -41,6 +41,10 @@ export function NationListItem({ nation }: NationListItemProps) {
             <p className="flex items-center text-muted-foreground">
               <UserSquare2 className="w-4 h-4 mr-2 text-accent" />
               <span className="truncate" title={nation.artistName}>{nation.artistName}</span>
+            </p>
+            <p className="flex items-center text-muted-foreground">
+              <Award className="w-4 h-4 mr-2 text-accent" />
+              <span className="font-medium text-foreground">Posizione: {nation.ranking}</span>
             </p>
           </div>
         </CardContent>

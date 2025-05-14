@@ -39,6 +39,7 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
+  ranking: z.coerce.number().int().positive("La posizione deve essere un numero intero positivo."),
 });
 
 interface NationFormProps {
@@ -53,15 +54,18 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
 
   const form = useForm<NationFormData>({
     resolver: zodResolver(nationFormSchema),
-    defaultValues: initialData || {
-      id: "",
-      name: "",
-      countryCode: "",
-      songTitle: "",
-      artistName: "",
-      youtubeVideoId: "dQw4w9WgXcQ", // Default placeholder
-      category: "day1",
-    },
+    defaultValues: initialData 
+      ? { ...initialData, ranking: initialData.ranking || 1 } 
+      : {
+          id: "",
+          name: "",
+          countryCode: "",
+          songTitle: "",
+          artistName: "",
+          youtubeVideoId: "dQw4w9WgXcQ",
+          category: "day1",
+          ranking: 1,
+        },
   });
 
   async function onSubmit(values: NationFormData) {
@@ -74,8 +78,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
         title: isEditMode ? "Nazione Aggiornata" : "Nazione Aggiunta",
         description: `${values.name} ${isEditMode ? 'aggiornata' : 'aggiunta'} con successo.`,
       });
-      router.push(`/nations/${result.nationId || values.id}`); // Redirect to the nation page
-      router.refresh(); // Refresh server components
+      router.push(`/nations/${result.nationId || values.id}`);
+      router.refresh(); 
     } else {
       toast({
         title: "Errore",
@@ -206,6 +210,22 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="ranking"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Posizione (Ranking)</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting} />
+              </FormControl>
+              <FormDescription>
+                La posizione iniziale o prevista della nazione.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
@@ -215,4 +235,3 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     </Form>
   );
 }
-

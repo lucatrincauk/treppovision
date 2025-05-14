@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Trash2 } from "lucide-react";
+import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Trash2, Award } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls"; // Import new component
@@ -106,7 +106,7 @@ export default async function NationPage({ params }: NationPageProps) {
               </div>
             </div>
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Badge variant="secondary" className="text-sm py-1 px-3 bg-accent text-accent-foreground">
               <Tag className="w-3 h-3 mr-1.5" />
               {nation.category.charAt(0).toUpperCase() + nation.category.slice(1).replace('day1', 'Prima Semifinale').replace('day2', 'Seconda Semifinale').replace('founders', 'Fondatori')}
@@ -114,6 +114,10 @@ export default async function NationPage({ params }: NationPageProps) {
              <Badge variant="outline" className="text-sm py-1 px-3">
               <CalendarDays className="w-3 h-3 mr-1.5" />
               {categoryDisplay}
+            </Badge>
+            <Badge variant="outline" className="text-sm py-1 px-3">
+              <Award className="w-3 h-3 mr-1.5" />
+              Posizione: {nation.ranking}
             </Badge>
           </div>
         </div>
@@ -146,7 +150,6 @@ export async function generateMetadata({ params }: NationPageProps) {
   }
   return {
     title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
-    description: `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Esprimi il tuo voto!`,
+    description: `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}. Posizione: ${nation.ranking}. Esprimi il tuo voto!`,
   };
 }
-
