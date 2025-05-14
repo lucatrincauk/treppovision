@@ -57,7 +57,7 @@ export function NationListItem({ nation }: NationListItemProps) {
               onError={handleImageError}
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div> {/* Changed from-black/50 to from-black/70 */}
             <CardTitle className="absolute bottom-3 left-4 text-xl font-bold text-white drop-shadow-md flex items-center gap-2">
               <Image
                 src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
