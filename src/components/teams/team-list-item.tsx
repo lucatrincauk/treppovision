@@ -4,7 +4,7 @@
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,7 +22,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
   if (!nation) {
     return (
       <div className="flex items-center gap-2 py-1">
-        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px]">{label}</span>}
+        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px] flex-shrink-0">{label}</span>}
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -91,11 +91,15 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
         
-        <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Voti Treppovision:</p>
-        <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
-        <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
-        <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
-        <SelectedNationDisplay nation={worstSongNation} IconComponent={ThumbsDown} label="Peggior Canzone:" />
+        {isOwner && (
+          <>
+            <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Voti Treppovision:</p>
+            <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
+            <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
+            <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
+            <SelectedNationDisplay nation={worstSongNation} IconComponent={ThumbsDown} label="Peggior Canzone:" />
+          </>
+        )}
       </CardContent>
     </Card>
   );
