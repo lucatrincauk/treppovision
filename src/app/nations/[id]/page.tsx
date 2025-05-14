@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
+import { NationDetailImage } from "@/components/nations/nation-detail-image"; // New Import
 
 interface NationPageProps {
   params: {
@@ -32,7 +33,6 @@ export default async function NationPage({ params }: NationPageProps) {
     notFound();
   }
   
-  const flagUrl = `https://flagcdn.com/w320/${nation.countryCode.toLowerCase()}.png`;
   const isPlaceholderVideo = nation.youtubeVideoId === 'dQw4w9WgXcQ';
   const youtubeThumbnailUrl = isPlaceholderVideo 
     ? `https://placehold.co/480x360.png`
@@ -62,27 +62,34 @@ export default async function NationPage({ params }: NationPageProps) {
            <Image
             src={youtubeThumbnailUrl}
             alt={`Miniatura YouTube ${nation.name}`}
-            fill // Changed from layout="fill"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Example sizes, adjust as needed
-            style={{ objectFit: "cover" }} // Changed from objectFit="cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: "cover" }}
             className="opacity-30 blur-sm scale-110"
             data-ai-hint={isPlaceholderVideo ? "music stage" : `youtube thumbnail ${nation.artistName}`}
           />
         </div>
         <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
           <div className="flex flex-col md:flex-row items-start gap-6">
-            <Image
-              src={flagUrl}
-              alt={`Bandiera ${nation.name}`}
-              width={160}
-              height={107}
-              className="rounded-md shadow-lg border-2 border-white/20 object-contain"
-              data-ai-hint={`${nation.name} flag`}
+            <NationDetailImage 
+              nationId={nation.id}
+              nationName={nation.name}
+              countryCode={nation.countryCode}
             />
             <div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary mb-2 drop-shadow-sm">
-                {nation.name}
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <Image
+                  src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+                  alt={`Bandiera ${nation.name}`}
+                  width={30}
+                  height={20}
+                  className="rounded-sm border border-white/30 shadow-sm object-contain"
+                  data-ai-hint={`${nation.name} flag icon`}
+                />
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary drop-shadow-sm">
+                  {nation.name}
+                </h1>
+              </div>
               <div className="flex items-center space-x-2 mb-1">
                 <Music2 className="w-5 h-5 text-accent" />
                 <p className="text-xl md:text-2xl text-foreground font-semibold">{nation.songTitle}</p>
