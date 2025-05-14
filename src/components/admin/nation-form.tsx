@@ -39,10 +39,7 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number().int().positive("La posizione deve essere un numero intero positivo.").optional()
-  ),
+  ranking: z.number().int().positive("La posizione deve essere un numero intero positivo.").optional(),
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
