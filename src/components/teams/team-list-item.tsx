@@ -4,7 +4,7 @@
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,7 +23,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     return (
       <div className="flex items-center gap-2 py-1">
         {label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />}
-        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px] flex-shrink-0">{label}</span>}
+        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[120px] flex-shrink-0">{label}</span>}
         {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } {/* Placeholder for alignment if no label */}
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -34,7 +34,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
   return (
     <div className="flex items-center gap-2 py-1">
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
-      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[100px] flex-shrink-0 font-medium">{label}</span>}
+      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       <Image
         src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
