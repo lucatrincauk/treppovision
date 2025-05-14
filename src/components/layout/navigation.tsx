@@ -4,18 +4,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ListMusic, Users } from "lucide-react"; // Users icon for Teams, BarChart3 removed
+import { ListMusic, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItemsBase = [
   { href: "/nations", label: "Nazioni", icon: ListMusic },
-  // { href: "/charts", label: "Grafici", icon: BarChart3 }, // Removed Charts
   { href: "/teams", label: "Squadre", icon: Users },
 ];
 
-const navItemsAuth = [
-  // No items here for now, Teams moved to base
-];
+// const navItemsAuth = [
+// No auth-specific items moved to base in previous iterations
+// ];
 
 
 export function Navigation() {
@@ -23,46 +22,43 @@ export function Navigation() {
   const { user, isLoading } = useAuth();
 
   let currentNavItems = [...navItemsBase];
-  if (user) {
-    // If there were other auth-specific links, they would be added here
+  // if (user) {
     // currentNavItems = [...currentNavItems, ...navItemsAuth];
-  }
+  // }
   
   if (isLoading) { 
     return (
-        <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-            {navItemsBase.map((item) => ( // Always render base items during loading
-                 <span key={item.href} className="text-sm font-medium text-foreground/30 animate-pulse">
-                    <item.icon className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
-                    {item.label}
+        <nav className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6 mx-auto sm:mx-6"> {/* Adjusted spacing for mobile */}
+            {navItemsBase.map((item) => (
+                 <span 
+                   key={item.href} 
+                   className="text-sm font-medium text-foreground/30 animate-pulse flex items-center p-2 sm:p-0 sm:gap-1.5 rounded-md sm:rounded-none"
+                   aria-label={item.label}
+                 >
+                    <item.icon className="h-5 w-5 sm:h-4 sm:w-4" /> {/* Icon size adjusted */}
+                    <span className="hidden sm:inline">{item.label}</span>
                  </span>
             ))}
-             {/* Placeholder for any auth items if they existed and were loading 
-             <span className="text-sm font-medium text-foreground/30 animate-pulse">
-                <SomeAuthIcon className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
-                Auth Item
-             </span>
-             */}
         </nav>
     );
   }
 
   return (
-    <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
+    <nav className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6 mx-auto sm:mx-6"> {/* Adjusted spacing and centering for mobile */}
       {currentNavItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            "text-sm font-medium transition-colors hover:text-primary",
-            // Updated path matching: exact for /teams, startsWith for others like /nations or /teams/new
+            "text-sm font-medium transition-colors hover:text-primary flex items-center p-2 sm:p-0 sm:gap-1.5 rounded-md sm:rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             (item.href === "/teams" ? pathname === item.href || pathname.startsWith("/teams/") : pathname.startsWith(item.href)) 
-              ? "text-primary"
+              ? "text-primary sm:bg-transparent bg-primary/10" // Slight bg for active mobile icon
               : "text-foreground/60"
           )}
+          aria-label={item.label} // For accessibility
         >
-          <item.icon className="inline-block h-4 w-4 mr-1.5 mb-0.5" />
-          {item.label}
+          <item.icon className="h-5 w-5 sm:h-4 sm:w-4" /> {/* Icon size adjusted */}
+          <span className="hidden sm:inline">{item.label}</span>
         </Link>
       ))}
     </nav>
