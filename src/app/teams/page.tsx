@@ -7,19 +7,23 @@ import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, Loader2, Edit } from "lucide-react";
+import { Input } from "@/components/ui/input"; // Import Input
+import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [allFetchedTeams, setAllFetchedTeams] = useState<Team[]>([]);
   const [userTeams, setUserTeams] = useState<Team[]>([]);
+  const [otherTeams, setOtherTeams] = useState<Team[]>([]);
+  const [filteredOtherTeams, setFilteredOtherTeams] = useState<Team[]>([]);
   const [nations, setNations] = useState<Nation[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -34,16 +38,18 @@ export default function TeamsPage() {
         const nationsData = await getNations();
         setNations(nationsData);
 
-        const teamsData = await getTeams();
-        setTeams(teamsData);
+        const allTeamsData = await getTeams();
+        setAllFetchedTeams(allTeamsData);
 
         if (user) {
-          const userSpecificTeams = await getTeamsByUserId(user.uid);
+          const userSpecificTeams = allTeamsData.filter(team => team.userId === user.uid);
           setUserTeams(userSpecificTeams);
           setShowCreateTeamButton(userSpecificTeams.length === 0);
+          setOtherTeams(allTeamsData.filter(team => team.userId !== user.uid));
         } else {
           setUserTeams([]);
-          setShowCreateTeamButton(false); // Don't show create button if not logged in
+          setShowCreateTeamButton(false); 
+          setOtherTeams(allTeamsData);
         }
 
       } catch (fetchError: any) {
@@ -55,6 +61,20 @@ export default function TeamsPage() {
     }
     fetchData();
   }, [authIsLoading, user]); 
+
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredOtherTeams(otherTeams);
+      return;
+    }
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    const filtered = otherTeams.filter(
+      (team) =>
+        team.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        (team.creatorDisplayName && team.creatorDisplayName.toLowerCase().includes(lowercasedSearchTerm))
+    );
+    setFilteredOtherTeams(filtered);
+  }, [searchTerm, otherTeams]);
 
   const displayHeaderAndButton = () => (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
@@ -117,7 +137,7 @@ export default function TeamsPage() {
     <div className="space-y-8">
       {displayHeaderAndButton()}
 
-      {!user && teams.length > 0 && (
+      {!user && allFetchedTeams.length > 0 && (
          <Alert>
           <Users className="h-4 w-4" />
           <AlertTitle>Visualizzazione Pubblica</AlertTitle>
@@ -145,38 +165,59 @@ export default function TeamsPage() {
         </Alert>
       )}
       
-      {user && !showCreateTeamButton && userTeams.length > 0 && (
-        <Alert>
+      {/* User's Team Section */}
+      {user && userTeams.length > 0 && (
+        <section className="mb-12 pt-6 border-t border-border">
+          <div className="flex items-center gap-3 mb-6">
+            <ThumbsUp className="w-8 h-8 text-secondary" />
+            <h2 className="text-3xl font-semibold tracking-tight text-secondary">
+              La Mia Squadra
+            </h2>
+          </div>
+          <TeamList teams={userTeams} nations={nations} />
+        </section>
+      )}
+
+      {/* Other Teams Section */}
+      <section className="pt-6 border-t border-border">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <h2 className="text-3xl font-semibold tracking-tight text-primary flex-grow">
+            Altre Squadre Create
+          </h2>
+          <div className="relative w-full md:w-auto md:min-w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Cerca squadre per nome o creatore..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+              aria-label="Cerca altre squadre"
+            />
+          </div>
+        </div>
+
+        {nations.length === 0 && allFetchedTeams.length > 0 && (
+          <Alert variant="destructive">
             <Users className="h-4 w-4" />
-            <AlertTitle>Hai Già una Squadra!</AlertTitle>
+            <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
             <AlertDescription>
-                Hai già creato la squadra "{userTeams[0].name}". Puoi modificarla usando il pulsante in alto a destra.
+              Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente.
             </AlertDescription>
-        </Alert>
-      )}
+          </Alert>
+        )}
 
-
-      {nations.length === 0 && teams.length > 0 && (
-         <Alert variant="destructive">
-          <Users className="h-4 w-4" />
-          <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
-          <AlertDescription>
-            Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {teams.length === 0 && nations.length > 0 && (
-         <Alert>
-          <Users className="h-4 w-4" />
-          <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
-          <AlertDescription>
-            Non ci sono ancora squadre. {user && showCreateTeamButton ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
-          </AlertDescription>
-        </Alert>
-      )}
+        {allFetchedTeams.length === 0 && nations.length > 0 && !isLoadingData && (
+          <Alert>
+            <Users className="h-4 w-4" />
+            <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
+            <AlertDescription>
+              Non ci sono ancora squadre. {user && showCreateTeamButton ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
+            </AlertDescription>
+          </Alert>
+        )}
       
-       {nations.length === 0 && teams.length === 0 && !isLoadingData && (
+       {nations.length === 0 && allFetchedTeams.length === 0 && !isLoadingData && (
           <Alert variant="destructive">
             <Users className="h-4 w-4" />
             <AlertTitle>Dati Iniziali Mancanti</AlertTitle>
@@ -187,11 +228,15 @@ export default function TeamsPage() {
           </Alert>
        )}
 
-      {teams.length > 0 && nations.length > 0 ? (
-        <TeamList teams={teams} nations={nations} />
-      ) : teams.length > 0 && nations.length === 0 ? (
-        <p className="text-center text-muted-foreground py-10">Dati delle nazioni non disponibili, impossibile visualizzare le squadre.</p>
-      ) : null}
+        {filteredOtherTeams.length > 0 && nations.length > 0 ? (
+          <TeamList teams={filteredOtherTeams} nations={nations} />
+        ) : searchTerm && nations.length > 0 && !isLoadingData ? (
+          <p className="text-center text-muted-foreground py-10">Nessuna squadra trovata corrispondente alla tua ricerca.</p>
+        ) : filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && nations.length > 0 && !isLoadingData ? (
+           <p className="text-center text-muted-foreground py-10">Nessun'altra squadra creata dagli utenti.</p>
+        ) : null }
+
+      </section>
     </div>
   );
 }
