@@ -40,7 +40,7 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
   // For this example, we're indicating success and the client will handle localStorage.
   // We can revalidate paths if the data displayed on other pages changes.
   revalidatePath(`/nations/${submission.nationId}`);
-  revalidatePath("/charts");
+  // revalidatePath("/charts");
 
   return { success: true, message: "Voto inviato con successo!", vote: newVote };
 }
