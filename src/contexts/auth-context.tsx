@@ -52,9 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Errore durante l'accesso con Google:", error);
       // Potresti voler mostrare un toast di errore qui
-    } finally {
-      // setIsLoading(false); // onAuthStateChanged handles this
     }
+    // setIsLoading is managed by onAuthStateChanged
   };
 
   const logout = async () => {
@@ -64,17 +63,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // onAuthStateChanged will handle setting the user state to null
     } catch (error) {
       console.error("Errore durante il logout:", error);
-    } finally {
-      // setIsLoading(false); // onAuthStateChanged handles this
     }
+    // setIsLoading is managed by onAuthStateChanged
   };
   
-  if (isLoading) {
-    // You might want a global loading spinner here, 
-    // or return null to prevent rendering children until auth state is resolved.
-    // Returning null to match previous behavior for now.
-    return null; 
-  }
+  // Removed: if (isLoading) { return null; }
+  // The AuthContext.Provider should always render its children.
+  // Consumers of the context can use the `isLoading` flag to display loading states.
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isLoading }}>
