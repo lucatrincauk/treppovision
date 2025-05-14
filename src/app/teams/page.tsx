@@ -1,17 +1,113 @@
 
+"use client"; // Mark as client component
+
+import { useEffect, useState } from "react";
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
+import type { Team, Nation } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users } from "lucide-react";
+import { PlusCircle, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AuthProviderClientComponent } from "@/components/auth/auth-provider-client-component";
+import { useAuth } from "@/hooks/use-auth";
 
+export default function TeamsPage() {
+  const { user, isLoading: authIsLoading } = useAuth();
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [nations, setNations] = useState<Nation[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function TeamsPage() {
-  const teams = await getTeams();
-  const nations = await getNations();
+  useEffect(() => {
+    async function fetchData() {
+      if (authIsLoading) {
+        // Wait for authentication to resolve
+        setIsLoadingData(true);
+        return;
+      }
+
+      if (!user) {
+        // User is not authenticated, clear data and stop loading
+        setTeams([]);
+        setNations([]);
+        setIsLoadingData(false);
+        return;
+      }
+      
+      // User is authenticated, proceed to fetch data
+      setIsLoadingData(true);
+      setError(null);
+      try {
+        // Fetch nations first, as they are public and might be needed for context
+        const nationsData = await getNations();
+        setNations(nationsData);
+
+        // Then fetch teams, which require authentication
+        const teamsData = await getTeams();
+        setTeams(teamsData);
+
+      } catch (fetchError: any) {
+        console.error("Failed to fetch teams or nations:", fetchError);
+        setError(fetchError.message || "Si è verificato un errore durante il caricamento dei dati.");
+      } finally {
+        setIsLoadingData(false);
+      }
+    }
+    fetchData();
+  }, [user, authIsLoading]);
+
+  if (authIsLoading || (isLoadingData && !error) ) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Caricamento squadre...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+       <div className="space-y-8">
+        <header className="text-center sm:text-left space-y-2 mb-8">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+                <Users className="mr-3 h-10 w-10" />
+                Squadre TreppoVision
+            </h1>
+        </header>
+        <Alert variant="destructive">
+          <Users className="h-4 w-4" />
+          <AlertTitle>Errore nel Caricamento Dati</AlertTitle>
+          <AlertDescription>
+            {error} Si prega di riprovare più tardi.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
+  if (!user) { 
+    return (
+      <div className="space-y-8">
+        <header className="text-center sm:text-left space-y-2 mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <Users className="mr-3 h-10 w-10" />
+            Squadre TreppoVision
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Scopri tutte le squadre create dagli utenti e le loro scelte.
+          </p>
+        </header>
+        <Alert>
+            <Users className="h-4 w-4" />
+            <AlertTitle>Accesso Richiesto</AlertTitle>
+            <AlertDescription>
+                Devi effettuare il login per visualizzare e creare squadre.
+            </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -25,17 +121,25 @@ export default async function TeamsPage() {
             Scopri tutte le squadre create dagli utenti e le loro scelte.
           </p>
         </header>
-        <AuthProviderClientComponent>
-          {(user) => user ? (
-            <Button asChild variant="outline" size="lg">
-              <Link href="/teams/new">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Crea Nuova Squadra
-              </Link>
-            </Button>
-          ) : null}
-        </AuthProviderClientComponent>
+        {user && (
+          <Button asChild variant="outline" size="lg">
+            <Link href="/teams/new">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Crea Nuova Squadra
+            </Link>
+          </Button>
+        )}
       </div>
+
+      {nations.length === 0 && teams.length > 0 && (
+         <Alert variant="destructive">
+          <Users className="h-4 w-4" />
+          <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
+          <AlertDescription>
+            Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente senza questi dati.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {teams.length === 0 && nations.length > 0 && (
          <Alert>
@@ -47,21 +151,24 @@ export default async function TeamsPage() {
         </Alert>
       )}
       
-      {nations.length === 0 && (
-         <Alert variant="destructive">
-          <Users className="h-4 w-4" />
-          <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
-          <AlertDescription>
-            Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente senza questi dati. Controlla la configurazione di Firestore.
-          </AlertDescription>
-        </Alert>
-      )}
+       {nations.length === 0 && teams.length === 0 && !isLoadingData && (
+          <Alert variant="destructive">
+            <Users className="h-4 w-4" />
+            <AlertTitle>Dati Iniziali Mancanti</AlertTitle>
+            <AlertDescription>
+              Nessuna nazione trovata in Firestore. Le nazioni sono necessarie per creare e visualizzare le squadre.
+              Assicurati che la collezione 'nations' sia popolata.
+            </AlertDescription>
+          </Alert>
+       )}
 
       {teams.length > 0 && nations.length > 0 ? (
         <TeamList teams={teams} nations={nations} />
       ) : teams.length > 0 && nations.length === 0 ? (
-        <p className="text-center text-muted-foreground py-10">Caricamento squadre... i dati delle nazioni sono necessari per visualizzarle.</p>
+        // This case indicates teams loaded but nations didn't, which is an error handled above
+        <p className="text-center text-muted-foreground py-10">Dati delle nazioni non disponibili, impossibile visualizzare le squadre.</p>
       ) : null}
     </div>
   );
 }
+
