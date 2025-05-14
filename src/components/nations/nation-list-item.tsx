@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Music2, UserSquare2, Award } from "lucide-react";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface NationListItemProps {
   nation: Nation;
@@ -20,35 +21,39 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
 
-  // Effect to reset to local thumbnail if the nation prop changes.
-  // This is important if the component is re-used in a list where keys might not force a full remount.
   useEffect(() => {
     setImageUrl(localThumbnailUrl);
     setImageAlt(`Miniatura ${nation.name}`);
   }, [nation.id, localThumbnailUrl]);
 
   const handleImageError = () => {
-    // If the local thumbnail fails to load, switch to the fallback flag URL.
-    // Check imageUrl to prevent infinite loop if fallbackFlagUrl also somehow errors,
-    // though very unlikely for flagcdn.
     if (imageUrl !== fallbackFlagUrl) {
       setImageUrl(fallbackFlagUrl);
       setImageAlt(`Bandiera ${nation.name}`);
     }
   };
 
+  const rankBorderClass = 
+    nation.ranking === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30" :
+    nation.ranking === 2 ? "border-slate-400 border-2 shadow-slate-400/30" :
+    nation.ranking === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
+    "border-border group-hover:border-primary/50";
+
   return (
     <Link href={`/nations/${nation.id}`} className="group">
-      <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:border-primary/50 group-hover:scale-[1.02]">
+      <Card className={cn(
+        "h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:scale-[1.02]",
+        rankBorderClass
+      )}>
         <CardHeader className="p-0 relative">
           <div className="aspect-[3/2] w-full relative">
             <Image
               src={imageUrl}
               alt={imageAlt}
-              width={160} // Intrinsic width for next/image optimization for the 3:2 container
-              height={107} // Intrinsic height for next/image optimization for the 3:2 container
+              width={160} 
+              height={107}
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
-              priority={['gb', 'fr', 'de', 'it', 'es', 'ch'].includes(nation.id) && imageUrl === fallbackFlagUrl} // Prioritize founder flags if it's the fallback
+              priority={['gb', 'fr', 'de', 'it', 'es', 'ch'].includes(nation.id) && imageUrl === fallbackFlagUrl} 
               onError={handleImageError}
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
@@ -58,7 +63,7 @@ export function NationListItem({ nation }: NationListItemProps) {
                 src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
                 alt={`Bandiera ${nation.name}`}
                 width={20}
-                height={13} // Approximate height for a 20px wide flag
+                height={13} 
                 className="rounded-sm object-contain border border-white/20 shadow-sm"
                 data-ai-hint={`${nation.name} flag icon`}
               />
