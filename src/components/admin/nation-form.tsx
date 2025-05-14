@@ -55,7 +55,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   const form = useForm<NationFormData>({
     resolver: zodResolver(nationFormSchema),
     defaultValues: initialData 
-      ? { ...initialData, ranking: initialData.ranking || 1 } 
+      ? { ...initialData, ranking: initialData.ranking || 1 } // Ensure ranking has a default
       : {
           id: "",
           name: "",
@@ -64,7 +64,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: 1,
+          ranking: 1, // Default ranking for new nations
         },
   });
 
@@ -217,7 +217,9 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             <FormItem>
               <FormLabel>Posizione (Ranking)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting} />
+                <Input type="number" placeholder="es. 1" {...field} disabled={isSubmitting} 
+                  onChange={event => field.onChange(+event.target.value)} // Ensure value is number
+                />
               </FormControl>
               <FormDescription>
                 La posizione iniziale o prevista della nazione.
