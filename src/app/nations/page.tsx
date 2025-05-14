@@ -2,7 +2,6 @@
 import { getNations } from "@/lib/nation-service";
 import type { Nation } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
-import { Separator } from "@/components/ui/separator";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,9 +11,10 @@ import { PlusCircle } from "lucide-react";
 export default async function NationsPage() {
   const nations = await getNations();
 
-  const founderNations = nations.filter(n => n.category === 'founders');
-  const day1Nations = nations.filter(n => n.category === 'day1');
-  const day2Nations = nations.filter(n => n.category === 'day2');
+  // No longer grouping by category
+  // const founderNations = nations.filter(n => n.category === 'founders');
+  // const day1Nations = nations.filter(n => n.category === 'day1');
+  // const day2Nations = nations.filter(n => n.category === 'day2');
 
   return (
     <div className="space-y-8"> {/* Adjusted main vertical spacing */}
@@ -25,7 +25,7 @@ export default async function NationsPage() {
             Incontra le Nazioni
           </h1>
           <p className="text-xl text-muted-foreground">
-            Esplora tutti i paesi partecipanti a TreppoVision.
+            Esplora tutti i paesi partecipanti a TreppoVision, ordinati per ordine di esibizione.
           </p>
         </header>
         <AdminNationControls nationId={null}>
@@ -45,14 +45,10 @@ export default async function NationsPage() {
       )}
 
       {nations.length > 0 && (
-        <>
-          <NationList nations={founderNations} title="Fondatori" />
-          <Separator className="my-8 bg-border/50" />
-          <NationList nations={day1Nations} title="Prima Semifinale" />
-          <Separator className="my-8 bg-border/50" />
-          <NationList nations={day2Nations} title="Seconda Semifinale" />
-        </>
+        // Display all nations in a single list
+        <NationList nations={nations} title="Elenco Completo delle Nazioni" />
       )}
+      {/* Removed category-specific lists and separators */}
     </div>
   );
 }
