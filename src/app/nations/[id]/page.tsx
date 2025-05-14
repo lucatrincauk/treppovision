@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, CalendarDays } from "lucide-react";
+import { Music2, UserSquare2, Tag, CalendarDays, ChevronLeft, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { AdminNationControls } from "@/components/admin/admin-nation-controls"; // Import new component
 
 interface NationPageProps {
   params: {
@@ -17,7 +17,6 @@ interface NationPageProps {
   };
 }
 
-// Pre-generate paths for all nations
 export async function generateStaticParams() {
   const nations = await getNations();
   return nations.map((nation) => ({
@@ -33,18 +32,34 @@ export default async function NationPage({ params }: NationPageProps) {
   }
   
   const flagUrl = `https://flagcdn.com/w320/${nation.countryCode.toLowerCase()}.png`;
-  // Use a placeholder if youtubeVideoId is a known placeholder, otherwise construct real thumbnail URL
   const isPlaceholderVideo = nation.youtubeVideoId === 'dQw4w9WgXcQ';
   const youtubeThumbnailUrl = isPlaceholderVideo 
-    ? `https://placehold.co/480x360.png` // Standard YouTube HQ Thumbnail size
+    ? `https://placehold.co/480x360.png`
     : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
 
   return (
     <div className="space-y-8">
-      <Link href="/nations" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
-        <ChevronLeft className="w-4 h-4 mr-1" />
-        Torna all'Elenco Nazioni
-      </Link>
+      <div className="flex justify-between items-center mb-4">
+        <Link href="/nations" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Torna all'Elenco Nazioni
+        </Link>
+        <AdminNationControls nationId={nation.id}>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/nations/${nation.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Modifica
+              </Link>
+            </Button>
+            {/* Delete button will be handled in a later stage with a confirmation dialog */}
+            {/* <Button variant="destructive" size="sm" onClick={() => alert("Delete functionality to be implemented")}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Elimina
+            </Button> */}
+          </div>
+        </AdminNationControls>
+      </div>
 
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
         <div className="absolute inset-0">

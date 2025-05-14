@@ -18,6 +18,7 @@ import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError 
 import { useToast } from "@/hooks/use-toast";
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
+const ADMIN_EMAIL = "admin@treppovision.com"; // Define Admin Email
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -31,19 +32,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       let email = window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY);
       if (!email) {
-        // User opened the link on a different device. To prevent session fixation
-        // attacks, ask the user to provide a FAKE email. WORKAROUND.
-        // Ideally, do not use this workaround. Instruct users to open on same device.
-        // email = window.prompt('Please provide your email for confirmation');
-        // For now, we'll show an error if email is not found in localStorage,
-        // which means the link should be opened on the same browser it was requested from.
         toast({
           title: "Errore di Accesso",
           description: "Link di accesso non valido o scaduto. Apri il link nello stesso browser da cui è stato richiesto.",
           variant: "destructive",
         });
         setIsLoading(false);
-        // Clean up URL
         if (typeof window !== 'undefined') {
             window.history.replaceState({}, document.title, window.location.pathname);
             window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
@@ -53,7 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         await signInWithEmailLink(auth, email, window.location.href);
         window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
-        // onAuthStateChanged will handle user state update
         toast({ title: "Accesso Riuscito", description: "Bentornato!" });
       } catch (error) {
         const authError = error as AuthError;
@@ -62,7 +55,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
       } finally {
         setIsLoading(false);
-        // Clean up URL
         if (typeof window !== 'undefined') {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -71,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   useEffect(() => {
-    completeEmailLinkSignIn(); // Attempt to complete sign in on page load
+    // completeEmailLinkSignIn(); // Call this early
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
@@ -80,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           displayName: firebaseUser.displayName,
           email: firebaseUser.email,
           photoURL: firebaseUser.photoURL,
-          isAdmin: false, 
+          isAdmin: firebaseUser.email === ADMIN_EMAIL, // Set isAdmin based on email
         };
         setUser(appUser);
       } else {
@@ -88,6 +80,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsLoading(false);
     });
+     // Call completeEmailLinkSignIn after onAuthStateChanged is set up
+    // to ensure user state is correctly processed after email link sign-in.
+    // but also ensure it doesn't block initial load if not an email link scenario.
+    if (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href)) {
+      completeEmailLinkSignIn();
+    }
+    
     return () => unsubscribe();
   }, []);
 
@@ -133,17 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       if (data.displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName: data.displayName });
-        const updatedFirebaseUser = auth.currentUser;
-        if (updatedFirebaseUser) {
-            const appUser: User = {
-                uid: updatedFirebaseUser.uid,
-                displayName: updatedFirebaseUser.displayName,
-                email: updatedFirebaseUser.email,
-                photoURL: updatedFirebaseUser.photoURL,
-                isAdmin: false,
-            };
-            setUser(appUser); 
-        }
+        // User state will be updated by onAuthStateChanged
       }
       toast({ title: "Registrazione Riuscita", description: "Benvenuto! Il tuo account è stato creato." });
       setIsLoading(false);
@@ -182,6 +171,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Errore durante il logout:", error);
       toast({ title: "Errore Logout", description: "Non è stato possibile effettuare il logout. Riprova.", variant: "destructive" });
+    } finally {
+      setIsLoading(false); // Ensure loading is set to false
     }
   };
   

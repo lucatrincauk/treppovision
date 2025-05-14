@@ -2,14 +2,25 @@
 export type NationCategory = "founders" | "day1" | "day2";
 
 export interface Nation {
-  id: string;
+  id: string; // Firestore document ID
   name: string;
   countryCode: string; // For flagcdn
   songTitle: string;
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  dataAiHintFlag?: string; // If using picsum as fallback
+  dataAiHintFlag?: string; 
+}
+
+// Used for form validation and submission when adding/editing nations
+export interface NationFormData {
+  id: string; // country code, will be used as Firestore document ID
+  name: string;
+  countryCode: string;
+  songTitle: string;
+  artistName: string;
+  youtubeVideoId: string;
+  category: NationCategory;
 }
 
 export interface User {
@@ -64,4 +75,15 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
+}
+
+// For Server Actions payloads related to admin nation management
+export interface AdminNationPayload {
+  id: string; // document ID (usually country code)
+  name: string;
+  countryCode: string;
+  songTitle: string;
+  artistName: string;
+  youtubeVideoId: string;
+  category: NationCategory;
 }

@@ -3,6 +3,11 @@ import { getNations } from "@/lib/nation-service";
 import type { Nation } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { Separator } from "@/components/ui/separator";
+import { AdminNationControls } from "@/components/admin/admin-nation-controls";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { PlusCircle } from "lucide-react";
+
 
 export default async function NationsPage() {
   const nations = await getNations();
@@ -21,6 +26,17 @@ export default async function NationsPage() {
           Esplora tutti i paesi partecipanti a TreppoVision.
         </p>
       </header>
+
+      <AdminNationControls nationId={null}>
+        <div className="text-center mb-8">
+            <Button asChild variant="outline" size="lg">
+                <Link href="/admin/nations/new">
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Aggiungi Nuova Nazione
+                </Link>
+            </Button>
+        </div>
+      </AdminNationControls>
       
       {nations.length === 0 && (
         <p className="text-center text-muted-foreground">Caricamento nazioni o nessuna nazione disponibile...</p>
