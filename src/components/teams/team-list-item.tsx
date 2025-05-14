@@ -31,8 +31,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
 
   return (
     <div className="flex items-center gap-2 py-1">
-      {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px] flex-shrink-0">{label}</span>}
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
+      {label && <span className="text-xs text-foreground/80 mr-1 min-w-[100px] flex-shrink-0 font-medium">{label}</span>}
       <Image
         src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
@@ -104,3 +104,4 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     </Card>
   );
 }
+
