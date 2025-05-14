@@ -9,7 +9,7 @@ export interface Nation {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: number; // Made optional
+  ranking?: number;
   performingOrder: number;
   songDescription?: string; 
   songLyrics?: string; 
@@ -82,6 +82,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
+  updateUserProfileName: (newName: string) => Promise<boolean>; // Added this
 }
 
 export interface AdminNationPayload {

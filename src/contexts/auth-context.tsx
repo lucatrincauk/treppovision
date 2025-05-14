@@ -63,8 +63,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   useEffect(() => {
-    // completeEmailLinkSignIn(); // Call this early
-
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const appUser: User = {
@@ -72,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           displayName: firebaseUser.displayName,
           email: firebaseUser.email,
           photoURL: firebaseUser.photoURL,
-          isAdmin: firebaseUser.email === ADMIN_EMAIL, // Set isAdmin based on email
+          isAdmin: firebaseUser.email === ADMIN_EMAIL,
         };
         setUser(appUser);
       } else {
@@ -80,9 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsLoading(false);
     });
-     // Call completeEmailLinkSignIn after onAuthStateChanged is set up
-    // to ensure user state is correctly processed after email link sign-in.
-    // but also ensure it doesn't block initial load if not an email link scenario.
     if (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href)) {
       completeEmailLinkSignIn();
     }
@@ -105,6 +100,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return "Link di accesso non valido o scaduto. Potrebbe essere già stato utilizzato o il link è malformato.";
       case "auth/user-disabled":
         return "Questo account utente è stato disabilitato.";
+      case "auth/requires-recent-login":
+        return "Questa operazione richiede un accesso recente. Effettua nuovamente il logout e il login.";
       default:
         return "Si è verificato un errore. Riprova.";
     }
@@ -132,7 +129,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       if (data.displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName: data.displayName });
-        // User state will be updated by onAuthStateChanged
+        // User state will be updated by onAuthStateChanged after profile update
+        setUser(prevUser => prevUser ? { ...prevUser, displayName: data.displayName } : null); // Optimistic update
       }
       toast({ title: "Registrazione Riuscita", description: "Benvenuto! Il tuo account è stato creato." });
       setIsLoading(false);
@@ -172,12 +170,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Errore durante il logout:", error);
       toast({ title: "Errore Logout", description: "Non è stato possibile effettuare il logout. Riprova.", variant: "destructive" });
     } finally {
-      setIsLoading(false); // Ensure loading is set to false
+      setIsLoading(false); 
+    }
+  };
+
+  const updateUserProfileName = async (newName: string) => {
+    if (!auth.currentUser) {
+      toast({ title: "Errore", description: "Utente non trovato.", variant: "destructive" });
+      return false;
+    }
+    if (!newName.trim()) {
+      toast({ title: "Errore", description: "Il nome visualizzato non può essere vuoto.", variant: "destructive" });
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateProfile(auth.currentUser, { displayName: newName });
+      setUser(prevUser => prevUser ? { ...prevUser, displayName: newName } : null);
+      toast({ title: "Nome Aggiornato", description: "Il tuo nome visualizzato è stato aggiornato con successo." });
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error("Errore durante l'aggiornamento del nome:", authError);
+      toast({ title: "Errore Aggiornamento Nome", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
+      setIsLoading(false);
+      return false;
     }
   };
   
   return (
-    <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, sendLoginLink, logout, isLoading, completeEmailLinkSignIn }}>
+    <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, sendLoginLink, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName }}>
       {children}
     </AuthContext.Provider>
   );
