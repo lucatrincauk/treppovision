@@ -22,7 +22,9 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
   if (!nation) {
     return (
       <div className="flex items-center gap-2 py-1">
+        {label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />}
         {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px] flex-shrink-0">{label}</span>}
+        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } {/* Placeholder for alignment if no label */}
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -32,11 +34,11 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
   return (
     <div className="flex items-center gap-2 py-1">
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
-      {label && <span className="text-xs text-foreground/80 mr-1 min-w-[100px] flex-shrink-0 font-medium">{label}</span>}
+      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[100px] flex-shrink-0 font-medium">{label}</span>}
       <Image
         src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
-        width={24} // Slightly smaller for more items
+        width={24}
         height={16}
         className="rounded-sm border border-border/50 object-contain flex-shrink-0"
         data-ai-hint={`${nation.name} flag`}
@@ -86,14 +88,14 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
-        <p className="text-sm font-medium text-muted-foreground mb-1 mt-2">Scelte Principali:</p>
+        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Scelte Principali:</p>
         <SelectedNationDisplay nation={founderNation} IconComponent={BadgeCheck} />
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
         
         {isOwner && (
           <>
-            <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Voti Treppovision:</p>
+            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">Voti Treppovision:</p>
             <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
             <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
             <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
@@ -104,4 +106,3 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     </Card>
   );
 }
-
