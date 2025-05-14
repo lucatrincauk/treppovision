@@ -39,7 +39,7 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.number().int("La posizione deve essere un numero intero.").optional(),
+  ranking: z.coerce.number().int("La posizione deve essere un numero intero.").optional().nullable(),
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
@@ -58,8 +58,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     defaultValues: initialData
       ? { 
           ...initialData, 
-          // Ensure ranking is undefined if not set or was 0 in source initialData (already handled in edit page)
-          ranking: initialData.ranking === undefined || initialData.ranking === null ? undefined : Number(initialData.ranking),
+          ranking: initialData.ranking === undefined || initialData.ranking === null || initialData.ranking === 0 ? undefined : Number(initialData.ranking),
           performingOrder: initialData.performingOrder || 0,
         }
       : {
@@ -78,10 +77,9 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   async function onSubmit(values: NationFormData) {
     setIsSubmitting(true);
     
-    // Ensure that ranking is undefined if it's not a positive number
     const payload = {
       ...values,
-      ranking: values.ranking !== undefined && values.ranking > 0 ? values.ranking : undefined,
+      ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
     };
 
     const action = isEditMode ? updateNationAction : addNationAction;
@@ -232,7 +230,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
               <FormLabel>Posizione (Ranking) (Opzionale)</FormLabel>
               <FormControl>
                 <Input 
-                  type="number" 
+                  type="text" // Changed from "number" to "text"
                   placeholder="es. 1 (lasciare vuoto se non applicabile)" 
                   {...field} 
                   disabled={isSubmitting}
@@ -241,12 +239,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                     if (val === "") {
                       field.onChange(undefined);
                     } else {
-                      const num = parseInt(val, 10); // Use parseInt for robustness
-                      if (!isNaN(num)) {
-                        field.onChange(num);
-                      } else {
-                        field.onChange(undefined); // Or some other error state if desired
-                      }
+                      // Attempt to parse, but let Zod handle coercion/validation primarily
+                      field.onChange(val); 
                     }
                   }}
                   value={field.value === undefined || field.value === null ? "" : String(field.value)} 
@@ -266,11 +260,16 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             <FormItem>
               <FormLabel>Ordine di Esibizione</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="es. 0, 1, 2..." {...field} disabled={isSubmitting} 
+                <Input 
+                  type="number" // Keeping this as number for now as it's less problematic generally
+                  placeholder="es. 0, 1, 2..." 
+                  {...field} 
+                  disabled={isSubmitting} 
                   onChange={event => {
                      const num = parseInt(event.target.value, 10);
-                     field.onChange(isNaN(num) ? 0 : num); // Default to 0 if parse fails
+                     field.onChange(isNaN(num) ? 0 : num); 
                   }}
+                  value={field.value ?? 0} // Ensure it's a number or default
                 />
               </FormControl>
               <FormDescription>
