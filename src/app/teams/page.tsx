@@ -1,13 +1,13 @@
 
-"use client"; // Mark as client component
+"use client"; 
 
 import { useEffect, useState } from "react";
-import { getTeams } from "@/lib/team-service";
+import { getTeams, getTeamsByUserId } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, Loader2 } from "lucide-react";
+import { PlusCircle, Users, Loader2, Edit } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,14 +15,14 @@ import { useAuth } from "@/hooks/use-auth";
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
+  const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [nations, setNations] = useState<Nation[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      // We always try to fetch data now, regardless of auth status.
-      // Auth loading still relevant to show loading spinner for a brief moment.
       if (authIsLoading) {
         setIsLoadingData(true);
         return;
@@ -31,13 +31,20 @@ export default function TeamsPage() {
       setIsLoadingData(true);
       setError(null);
       try {
-        // Fetch nations first, as they are public
         const nationsData = await getNations();
         setNations(nationsData);
 
-        // Then fetch teams. This will work for unauth users if rules allow.
         const teamsData = await getTeams();
         setTeams(teamsData);
+
+        if (user) {
+          const userSpecificTeams = await getTeamsByUserId(user.uid);
+          setUserTeams(userSpecificTeams);
+          setShowCreateTeamButton(userSpecificTeams.length === 0);
+        } else {
+          setUserTeams([]);
+          setShowCreateTeamButton(false); // Don't show create button if not logged in
+        }
 
       } catch (fetchError: any) {
         console.error("Failed to fetch teams or nations:", fetchError);
@@ -47,7 +54,7 @@ export default function TeamsPage() {
       }
     }
     fetchData();
-  }, [authIsLoading]); // Removed 'user' from dependency array as we fetch regardless now
+  }, [authIsLoading, user]); 
 
   const displayHeaderAndButton = () => (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
@@ -60,11 +67,19 @@ export default function TeamsPage() {
           Scopri tutte le squadre create dagli utenti e le loro scelte.
         </p>
       </header>
-      {user && ( // "Create New Team" button only for logged-in users
+      {user && showCreateTeamButton && (
         <Button asChild variant="outline" size="lg">
           <Link href="/teams/new">
             <PlusCircle className="mr-2 h-5 w-5" />
             Crea Nuova Squadra
+          </Link>
+        </Button>
+      )}
+      {user && !showCreateTeamButton && userTeams.length > 0 && (
+         <Button asChild variant="outline" size="lg">
+          <Link href={`/teams/${userTeams[0].id}/edit`}>
+            <Edit className="mr-2 h-5 w-5" />
+            Modifica la Tua Squadra
           </Link>
         </Button>
       )}
@@ -91,7 +106,7 @@ export default function TeamsPage() {
           <Users className="h-4 w-4" />
           <AlertTitle>Errore nel Caricamento Dati</AlertTitle>
           <AlertDescription>
-            {error} Si prega di riprovare più tardi. Se il problema persiste, le regole di accesso ai dati potrebbero non consentire la visualizzazione pubblica.
+            {error} Si prega di riprovare più tardi.
           </AlertDescription>
         </Alert>
       </div>
@@ -102,25 +117,19 @@ export default function TeamsPage() {
     <div className="space-y-8">
       {displayHeaderAndButton()}
 
-      {!user && teams.length > 0 && ( // Message for non-logged in users if teams are shown
+      {!user && teams.length > 0 && (
          <Alert>
           <Users className="h-4 w-4" />
           <AlertTitle>Visualizzazione Pubblica</AlertTitle>
           <AlertDescription>
             Stai visualizzando le squadre come ospite. <Link href="#" className="font-bold hover:underline" onClick={() => {
-              // Attempt to click the AuthButton in the header
               const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
               if (authButtonDialogTrigger) {
-                // If it's the button itself or an icon inside it.
                 if (authButtonDialogTrigger.tagName === 'BUTTON') {
                   authButtonDialogTrigger.click();
                 } else if (authButtonDialogTrigger.parentElement && authButtonDialogTrigger.parentElement.tagName === 'BUTTON'){
                   (authButtonDialogTrigger.parentElement as HTMLElement).click();
                 }
-              } else {
-                // Fallback if the specific button isn't found, you might want to redirect or show a general message
-                // For now, just a console log
-                console.log("Auth button not found, cannot open dialog programmatically.");
               }
             }}>Accedi</Link> o <Link href="#" className="font-bold hover:underline" onClick={() => {
                const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
@@ -131,17 +140,28 @@ export default function TeamsPage() {
                   (authButtonDialogTrigger.parentElement as HTMLElement).click();
                 }
               }
-            }}>registrati</Link> per creare la tua squadra.
+            }}>registrati</Link> per creare o modificare la tua squadra.
           </AlertDescription>
         </Alert>
       )}
+      
+      {user && !showCreateTeamButton && userTeams.length > 0 && (
+        <Alert>
+            <Users className="h-4 w-4" />
+            <AlertTitle>Hai Già una Squadra!</AlertTitle>
+            <AlertDescription>
+                Hai già creato la squadra "{userTeams[0].name}". Puoi modificarla usando il pulsante in alto a destra.
+            </AlertDescription>
+        </Alert>
+      )}
+
 
       {nations.length === 0 && teams.length > 0 && (
          <Alert variant="destructive">
           <Users className="h-4 w-4" />
           <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
           <AlertDescription>
-            Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente senza questi dati.
+            Impossibile caricare i dati delle nazioni. Le squadre non possono essere visualizzate correttamente.
           </AlertDescription>
         </Alert>
       )}
@@ -151,7 +171,7 @@ export default function TeamsPage() {
           <Users className="h-4 w-4" />
           <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
           <AlertDescription>
-            Non ci sono ancora squadre. {user ? "Sii il primo a crearne una!" : "Effettua il login per crearne una."}
+            Non ci sono ancora squadre. {user && showCreateTeamButton ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
           </AlertDescription>
         </Alert>
       )}
@@ -170,7 +190,6 @@ export default function TeamsPage() {
       {teams.length > 0 && nations.length > 0 ? (
         <TeamList teams={teams} nations={nations} />
       ) : teams.length > 0 && nations.length === 0 ? (
-        // This case indicates teams loaded but nations didn't, which is an error handled above
         <p className="text-center text-muted-foreground py-10">Dati delle nazioni non disponibili, impossibile visualizzare le squadre.</p>
       ) : null}
     </div>

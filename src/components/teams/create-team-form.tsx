@@ -1,10 +1,10 @@
 
 "use client";
 
-import * as React from "react";
+import ** React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import ** z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,10 +27,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Nation, TeamFormData, Team } from "@/types";
 import { getNations } from "@/lib/nation-service";
-import { getTeamsByUserId } from "@/lib/team-service"; // Import new service
-import { createTeamAction } from "@/lib/actions/team-actions";
+import { getTeamsByUserId } from "@/lib/team-service";
+import { createTeamAction, updateTeamAction } from "@/lib/actions/team-actions";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Users, Info } from "lucide-react";
+import { Loader2, Save, Users, Info, Edit } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -39,37 +39,47 @@ const teamFormZodSchema = z.object({
   founderNationId: z.string().min(1, "Devi selezionare una nazione Fondatrice."),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la Prima Semifinale."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la Seconda Semifinale."),
-  creatorDisplayName: z.string(), // No validation needed here, will be set internally
+  // creatorDisplayName is not part of the form values validated by Zod from user input
+  // but it is part of TeamFormData which is sent to the action.
 });
 
-// Use Omit for the form values since creatorDisplayName is handled internally
+// Form values will not include creatorDisplayName directly from user input fields
 type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
 
+interface CreateTeamFormProps {
+  initialData?: TeamFormData;
+  isEditMode?: boolean;
+  teamId?: string;
+}
 
-export function CreateTeamForm() {
+export function CreateTeamForm({ initialData, isEditMode = false, teamId }: CreateTeamFormProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [nations, setNations] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
-  const [userHasTeam, setUserHasTeam] = React.useState<boolean | null>(null); // null: loading, true: has team, false: no team
+  const [userHasTeam, setUserHasTeam] = React.useState<boolean | null>(null);
   const [isLoadingUserTeamCheck, setIsLoadingUserTeamCheck] = React.useState(true);
-
 
   React.useEffect(() => {
     async function fetchInitialData() {
       setIsLoadingNations(true);
-      setIsLoadingUserTeamCheck(true);
+      if (!isEditMode) { // Only check for existing team if creating new
+        setIsLoadingUserTeamCheck(true);
+      }
 
       if (user) {
         try {
-          const [fetchedNations, userTeams] = await Promise.all([
-            getNations(),
-            getTeamsByUserId(user.uid)
-          ]);
+          const fetchedNations = await getNations();
           setNations(fetchedNations);
-          setUserHasTeam(userTeams.length > 0);
+
+          if (!isEditMode) {
+            const userTeams = await getTeamsByUserId(user.uid);
+            setUserHasTeam(userTeams.length > 0);
+          } else {
+            setUserHasTeam(true); // In edit mode, user definitely has this team
+          }
         } catch (error) {
           console.error("Failed to fetch initial data for team form:", error);
           toast({
@@ -77,15 +87,13 @@ export function CreateTeamForm() {
             description: "Impossibile caricare i dati necessari. Riprova più tardi.",
             variant: "destructive",
           });
-          // Set nations to empty and assume no team to allow form to show if nations fail
           setNations([]);
-          setUserHasTeam(false); 
+          if (!isEditMode) setUserHasTeam(false);
         } finally {
           setIsLoadingNations(false);
-          setIsLoadingUserTeamCheck(false);
+          if (!isEditMode) setIsLoadingUserTeamCheck(false);
         }
       } else {
-        // If no user, just fetch nations if needed or set defaults
         try {
             const fetchedNations = await getNations();
             setNations(fetchedNations);
@@ -93,32 +101,45 @@ export function CreateTeamForm() {
             console.error("Failed to fetch nations:", error);
             setNations([]);
         }
-        setUserHasTeam(false); // No user means no team
+        if (!isEditMode) setUserHasTeam(false);
         setIsLoadingNations(false);
-        setIsLoadingUserTeamCheck(false);
+        if (!isEditMode) setIsLoadingUserTeamCheck(false);
       }
     }
-    if (!authLoading) { // Only run if auth state is resolved
+    if (!authLoading) {
         fetchInitialData();
     }
-  }, [toast, user, authLoading]);
+  }, [toast, user, authLoading, isEditMode]);
 
-  const form = useForm<TeamFormValues>({ // Use Omit<TeamFormData, 'creatorDisplayName'> for form values
-    resolver: zodResolver(teamFormZodSchema.omit({ creatorDisplayName: true })), // Omit for Zod schema too
-    defaultValues: {
-      name: "",
-      founderNationId: "",
-      day1NationId: "",
-      day2NationId: "",
-    },
+  const form = useForm<TeamFormValues>({ 
+    resolver: zodResolver(teamFormZodSchema),
+    defaultValues: initialData 
+      ? {
+          name: initialData.name,
+          founderNationId: initialData.founderNationId,
+          day1NationId: initialData.day1NationId,
+          day2NationId: initialData.day2NationId,
+        }
+      : {
+          name: "",
+          founderNationId: "",
+          day1NationId: "",
+          day2NationId: "",
+        },
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
 
   async function onSubmit(values: TeamFormValues) {
     if (!user) {
-      toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login per creare un team.", variant: "destructive" });
+      toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login.", variant: "destructive" });
       return;
     }
-    if (userHasTeam) {
+    if (!isEditMode && userHasTeam) {
       toast({ title: "Limite Team Raggiunto", description: "Puoi creare un solo team per account.", variant: "destructive" });
       return;
     }
@@ -130,19 +151,24 @@ export function CreateTeamForm() {
       creatorDisplayName: user.displayName || user.email || "Utente Anonimo",
     };
 
-    const result = await createTeamAction(fullTeamData, user.uid);
+    let result;
+    if (isEditMode && teamId) {
+      result = await updateTeamAction(teamId, fullTeamData, user.uid);
+    } else {
+      result = await createTeamAction(fullTeamData, user.uid);
+    }
 
     if (result.success) {
       toast({
-        title: "Team Creato!",
-        description: `Il tuo team "${values.name}" è stato creato con successo.`,
+        title: isEditMode ? "Team Aggiornato!" : "Team Creato!",
+        description: `Il team "${values.name}" è stato ${isEditMode ? 'aggiornato' : 'creato'} con successo.`,
       });
-      setUserHasTeam(true); // Update client-side state
+      if (!isEditMode) setUserHasTeam(true);
       router.push("/teams"); 
       router.refresh(); 
     } else {
       toast({
-        title: "Errore Creazione Team",
+        title: isEditMode ? "Errore Aggiornamento Team" : "Errore Creazione Team",
         description: result.message || "Si è verificato un errore.",
         variant: "destructive",
       });
@@ -150,7 +176,7 @@ export function CreateTeamForm() {
     setIsSubmitting(false);
   }
 
-  if (authLoading || isLoadingNations || isLoadingUserTeamCheck) {
+  if (authLoading || isLoadingNations || (!isEditMode && isLoadingUserTeamCheck)) {
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
@@ -166,29 +192,25 @@ export function CreateTeamForm() {
             <AlertTitle>Accesso Richiesto</AlertTitle>
             <AlertDescription>
                 Devi effettuare il <Link href="#" className="font-bold hover:underline" onClick={() => {
-                    // Attempt to click the AuthButton in the header
                     const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
                     if (authButtonDialogTrigger) {
-                        if (authButtonDialogTrigger.tagName === 'BUTTON') {
-                        authButtonDialogTrigger.click();
-                        } else if (authButtonDialogTrigger.parentElement && authButtonDialogTrigger.parentElement.tagName === 'BUTTON'){
-                        (authButtonDialogTrigger.parentElement as HTMLElement).click();
-                        }
+                        if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
+                        else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
                     }
-                }}>login</Link> per creare una squadra.
+                }}>login</Link> per {isEditMode ? 'modificare' : 'creare'} una squadra.
             </AlertDescription>
         </Alert>
     );
   }
 
-  if (userHasTeam) {
+  if (!isEditMode && userHasTeam) {
     return (
       <Alert>
         <Info className="h-4 w-4" />
         <AlertTitle>Team Già Creato</AlertTitle>
         <AlertDescription>
-          Hai già creato un team per il tuo account. Puoi creare un solo team.
-          Visualizza il <Link href="/teams" className="font-bold hover:underline">tuo team e gli altri qui</Link>.
+          Hai già creato un team. Puoi creare un solo team.
+          Visualizza o modifica il <Link href="/teams" className="font-bold hover:underline">tuo team e gli altri qui</Link>.
         </AlertDescription>
       </Alert>
     );
@@ -204,7 +226,7 @@ export function CreateTeamForm() {
             <Users className="h-4 w-4" />
             <AlertTitle>Nazioni Mancanti</AlertTitle>
             <AlertDescription>
-                Impossibile caricare l'elenco delle nazioni. Assicurati che ci siano nazioni in Firestore per poter creare un team.
+                Impossibile caricare l'elenco delle nazioni. Assicurati che ci siano nazioni in Firestore.
             </AlertDescription>
         </Alert>
     )
@@ -236,7 +258,7 @@ export function CreateTeamForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Fondatrice (1)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || founderNations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione fondatrice"} />
@@ -261,7 +283,7 @@ export function CreateTeamForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Prima Semifinale (1)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || day1Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione Prima Semifinale disponibile" : "Seleziona nazione Prima Semifinale"} />
@@ -286,7 +308,7 @@ export function CreateTeamForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nazione Seconda Semifinale (1)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting || day2Nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione Seconda Semifinale disponibile" : "Seleziona nazione Seconda Semifinale"} />
@@ -305,13 +327,12 @@ export function CreateTeamForm() {
           )}
         />
 
-        <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting || isLoadingNations || userHasTeam === true}>
+        <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true)}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="mr-2 h-4 w-4" />
-          Crea Team
+          {isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+          {isEditMode ? "Salva Modifiche" : "Crea Team"}
         </Button>
       </form>
     </Form>
   );
 }
-

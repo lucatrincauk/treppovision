@@ -11,25 +11,23 @@ export interface Nation {
   category: NationCategory;
   ranking?: number; // Made optional
   performingOrder: number;
-  songDescription?: string; // New field
-  songLyrics?: string; // New field
+  songDescription?: string; 
+  songLyrics?: string; 
   dataAiHintFlag?: string;
 }
 
-// Used for form validation and submission when adding/editing nations
-// This is the type for the form's internal state, where ranking might be a string.
 export interface NationFormData {
-  id: string; // country code, will be used as Firestore document ID
+  id: string; 
   name: string;
   countryCode: string;
   songTitle: string;
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; // Stored as string in form, converted by Zod
+  ranking?: string; 
   performingOrder: number;
-  songDescription?: string; // New field
-  songLyrics?: string; // New field
+  songDescription?: string; 
+  songLyrics?: string; 
 }
 
 export interface User {
@@ -86,20 +84,18 @@ export interface AuthContextType {
   completeEmailLinkSignIn: () => Promise<void>;
 }
 
-// For Server Actions payloads related to admin nation management
-// This is the type for the actual data payload after Zod transformation (ranking is number | undefined)
 export interface AdminNationPayload {
-  id: string; // document ID (usually country code)
+  id: string; 
   name: string;
   countryCode: string;
   songTitle: string;
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: number; // Made optional, number type
+  ranking?: number; 
   performingOrder: number;
-  songDescription?: string; // New field
-  songLyrics?: string; // New field
+  songDescription?: string; 
+  songLyrics?: string; 
 }
 
 // Team Creation
@@ -108,18 +104,22 @@ export interface TeamFormData {
   founderNationId: string;
   day1NationId: string;
   day2NationId: string;
-  creatorDisplayName: string; // Added
+  creatorDisplayName: string; 
 }
 
-export interface Team extends Omit<TeamFormData, 'creatorDisplayName'> { // Omit to avoid duplication with explicit field below
+export interface Team {
   id: string; // Firestore document ID
   userId: string; // UID of the user who created the team
-  creatorDisplayName: string; // Added
+  creatorDisplayName: string; 
   name: string;
   founderNationId: string;
   day1NationId: string;
   day2NationId: string;
   createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  } | any; // Allow for Firestore Timestamp type
+  updatedAt?: { // Optional: for when the team is updated
     seconds: number;
     nanoseconds: number;
   } | any;

@@ -1,8 +1,11 @@
 
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
 interface TeamListItemProps {
   team: Team;
@@ -40,25 +43,38 @@ const SelectedNationDisplay = ({ nation, IconComponent }: { nation?: Nation, Ico
 };
 
 export function TeamListItem({ team, nations }: TeamListItemProps) {
+  const { user } = useAuth();
   const founderNation = getNationDetailsById(team.founderNationId, nations);
   const day1Nation = getNationDetailsById(team.day1NationId, nations);
   const day2Nation = getNationDetailsById(team.day2NationId, nations);
 
+  const isOwner = user?.uid === team.userId;
+
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-      <CardHeader className="pb-3 pt-4"> {/* Adjusted padding */}
-        <CardTitle className="text-xl text-primary flex items-center gap-2">
-          <Users className="h-5 w-5 text-accent" />
-          {team.name}
-        </CardTitle>
-        {team.creatorDisplayName && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-            <UserCircle className="h-3 w-3" />
-            Creato da: {team.creatorDisplayName}
-          </p>
+      <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
+        <div>
+          <CardTitle className="text-xl text-primary flex items-center gap-2">
+            <Users className="h-5 w-5 text-accent" />
+            {team.name}
+          </CardTitle>
+          {team.creatorDisplayName && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <UserCircle className="h-3 w-3" />
+              Creato da: {team.creatorDisplayName}
+            </p>
+          )}
+        </div>
+        {isOwner && (
+          <Button asChild variant="outline" size="sm" className="ml-auto">
+            <Link href={`/teams/${team.id}/edit`}>
+              <Edit className="h-3 w-3 mr-1.5" />
+              Modifica
+            </Link>
+          </Button>
         )}
       </CardHeader>
-      <CardContent className="flex-grow space-y-1.5 pt-0 pb-4"> {/* Adjusted spacing and padding */}
+      <CardContent className="flex-grow space-y-1.5 pt-0 pb-4">
         <SelectedNationDisplay nation={founderNation} IconComponent={BadgeCheck} />
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
