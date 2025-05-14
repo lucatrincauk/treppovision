@@ -1,13 +1,15 @@
 
 import type { Nation } from '@/types';
 
-// Founders: United Kingdom, France, Germany, Italy, Switzerland, Spain.
-// Day 1: Iceland, Poland, Estonia, Ukraine, Sweden, Portugal, Norway, Azerbaijan, San Marino, Albania, Netherlands, Croatia, Cyprus.
-// Day 2: Australia, Montenegro, Ireland, Latvia, Armenia, Austria, Greece, Lithuania, Malta, Georgia, Denmark, Czechia, Luxembourg, Israel, Serbia, Finland.
+// THIS FILE IS NOW FOR REFERENCE OR SEEDING DATA ONLY.
+// The application fetches nation data from Firebase Firestore.
+// You will need to create a "nations" collection in your Firestore
+// and add documents with the following structure. The document ID
+// should be the nation's 'id' (e.g., 'gb', 'fr').
 
 const YOUTUBE_PLACEHOLDER_ID = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
 
-export const nations: Nation[] = [
+export const sampleNationsForSeeding: Nation[] = [
   // Founders
   { id: 'gb', name: 'Regno Unito', countryCode: 'gb', songTitle: 'Dominare le Onde', artistName: 'Voce di Britannia', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'founders' },
   { id: 'fr', name: 'Francia', countryCode: 'fr', songTitle: 'Canzone d\'Amore', artistName: 'Notti Parigine', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'founders' },
@@ -47,6 +49,8 @@ export const nations: Nation[] = [
   { id: 'fi', name: 'Finlandia', countryCode: 'fi', songTitle: 'Rock di Helsinki', artistName: 'Metallo Artico', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day2' },
 ];
 
-export const getNationById = (id: string): Nation | undefined => {
-  return nations.find(nation => nation.id === id);
+// This function is now superseded by nation-service.ts and should not be used for runtime fetching.
+export const getNationById_DEPRECATED = (id: string): Nation | undefined => {
+  console.warn("getNationById_DEPRECATED from data/nations.ts is called. Use nation-service.ts instead.");
+  return sampleNationsForSeeding.find(nation => nation.id === id);
 };

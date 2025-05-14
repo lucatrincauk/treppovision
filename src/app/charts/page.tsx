@@ -1,16 +1,16 @@
 
-"use client"; // This page needs to be client-side to access localStorage
+"use client"; 
 
 import { useEffect, useState } from "react";
 import { NationVoteChart } from "@/components/charts/nation-vote-chart";
 import { getVotes } from "@/lib/voting-service";
-import { nations } from "@/data/nations";
-import type { AggregatedScore, Vote } from "@/types";
+import { getNations } from "@/lib/nation-service"; // Import from new service
+import type { AggregatedScore, Vote, Nation } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Info } from "lucide-react";
+import { BarChart3, Info, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const aggregateVotes = (votes: Vote[]): AggregatedScore[] => {
+const aggregateVotes = (votes: Vote[], allNations: Nation[]): AggregatedScore[] => {
   const nationScores: Record<string, { song: number[]; performance: number[]; outfit: number[]; count: number }> = {};
 
   votes.forEach(vote => {
@@ -23,7 +23,7 @@ const aggregateVotes = (votes: Vote[]): AggregatedScore[] => {
     nationScores[vote.nationId].count++;
   });
 
-  return nations.map(nation => {
+  return allNations.map(nation => {
     const scores = nationScores[nation.id];
     if (!scores || scores.count === 0) {
       return { 
@@ -47,19 +47,38 @@ const aggregateVotes = (votes: Vote[]): AggregatedScore[] => {
       totalScore: parseFloat((avgSong + avgPerf + avgOutfit).toFixed(2)),
       voteCount: scores.count
     };
-  }).filter(agg => agg.voteCount > 0); // Only show nations with votes
+  }).filter(agg => agg.voteCount > 0); 
 };
 
 export default function ChartsPage() {
   const [aggregatedData, setAggregatedData] = useState<AggregatedScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [allNations, setAllNations] = useState<Nation[]>([]);
 
   useEffect(() => {
-    const votes = getVotes();
-    const data = aggregateVotes(votes);
-    setAggregatedData(data);
-    setIsLoading(false);
-  }, []); // Re-run if votes change (e.g. after a vote submission might require page reload or state management)
+    const fetchNationsAndVotes = async () => {
+      setIsLoading(true);
+      try {
+        const nationsData = await getNations();
+        setAllNations(nationsData);
+        
+        if (nationsData.length > 0) {
+          const votes = getVotes();
+          const data = aggregateVotes(votes, nationsData);
+          setAggregatedData(data);
+        } else {
+          setAggregatedData([]); // No nations, so no aggregated data
+        }
+      } catch (error) {
+        console.error("Failed to fetch nations for charts:", error);
+        setAggregatedData([]); // Error state
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNationsAndVotes();
+  }, []);
 
 
   return (
@@ -88,9 +107,14 @@ export default function ChartsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-             <div className="flex justify-center items-center min-h-[300px]">
+             <div className="flex flex-col justify-center items-center min-h-[300px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
                 <p className="text-muted-foreground">Caricamento dati grafici...</p>
              </div>
+          ) : allNations.length === 0 ? (
+            <div className="flex justify-center items-center min-h-[300px]">
+              <p className="text-muted-foreground">Nessuna nazione trovata. Controlla la configurazione di Firestore o aggiungi nazioni.</p>
+            </div>
           ) : (
             <NationVoteChart data={aggregatedData} />
           )}

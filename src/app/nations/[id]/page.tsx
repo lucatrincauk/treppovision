@@ -1,5 +1,5 @@
 
-import { getNationById, nations as allNations } from "@/data/nations";
+import { getNationById, getNations } from "@/lib/nation-service";
 import { YouTubeEmbed } from "@/components/nations/youtube-embed";
 import { VotingForm } from "@/components/voting/voting-form";
 import { Badge } from "@/components/ui/badge";
@@ -19,20 +19,25 @@ interface NationPageProps {
 
 // Pre-generate paths for all nations
 export async function generateStaticParams() {
-  return allNations.map((nation) => ({
+  const nations = await getNations();
+  return nations.map((nation) => ({
     id: nation.id,
   }));
 }
 
-export default function NationPage({ params }: NationPageProps) {
-  const nation = getNationById(params.id);
+export default async function NationPage({ params }: NationPageProps) {
+  const nation = await getNationById(params.id);
 
   if (!nation) {
     notFound();
   }
   
   const flagUrl = `https://flagcdn.com/w320/${nation.countryCode.toLowerCase()}.png`;
-  const youtubeThumbnailUrl = `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
+  // Use a placeholder if youtubeVideoId is a known placeholder, otherwise construct real thumbnail URL
+  const isPlaceholderVideo = nation.youtubeVideoId === 'dQw4w9WgXcQ';
+  const youtubeThumbnailUrl = isPlaceholderVideo 
+    ? `https://placehold.co/480x360.png` // Standard YouTube HQ Thumbnail size
+    : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
 
   return (
     <div className="space-y-8">
@@ -49,7 +54,7 @@ export default function NationPage({ params }: NationPageProps) {
             layout="fill"
             objectFit="cover"
             className="opacity-30 blur-sm scale-110"
-            data-ai-hint="music concert background"
+            data-ai-hint={isPlaceholderVideo ? "music stage" : `youtube thumbnail ${nation.artistName}`}
           />
         </div>
         <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
@@ -60,6 +65,7 @@ export default function NationPage({ params }: NationPageProps) {
               width={160}
               height={107}
               className="rounded-md shadow-lg border-2 border-white/20 object-contain"
+              data-ai-hint={`${nation.name} flag`}
             />
             <div>
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary mb-2 drop-shadow-sm">
@@ -109,7 +115,7 @@ export default function NationPage({ params }: NationPageProps) {
 }
 
 export async function generateMetadata({ params }: NationPageProps) {
-  const nation = getNationById(params.id);
+  const nation = await getNationById(params.id);
   if (!nation) {
     return { title: "Nazione Non Trovata" };
   }

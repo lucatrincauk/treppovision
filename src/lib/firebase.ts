@@ -10,6 +10,7 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink
 } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // IMPORTANT: Replace these with your actual Firebase project credentials
@@ -26,6 +27,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 const actionCodeSettings = {
   // URL you want to redirect back to. The domain (www.example.com) for this
@@ -37,6 +39,7 @@ const actionCodeSettings = {
 export { 
   app, 
   auth, 
+  db, // Export Firestore instance
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   updateProfile,
@@ -45,3 +48,4 @@ export {
   signInWithEmailLink,
   actionCodeSettings
 };
+

@@ -1,10 +1,12 @@
 
-import { nations } from "@/data/nations";
+import { getNations } from "@/lib/nation-service";
 import type { Nation } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { Separator } from "@/components/ui/separator";
 
-export default function NationsPage() {
+export default async function NationsPage() {
+  const nations = await getNations();
+
   const founderNations = nations.filter(n => n.category === 'founders');
   const day1Nations = nations.filter(n => n.category === 'day1');
   const day2Nations = nations.filter(n => n.category === 'day2');
@@ -20,11 +22,19 @@ export default function NationsPage() {
         </p>
       </header>
       
-      <NationList nations={founderNations} title="Fondatori" />
-      <Separator className="my-8 bg-border/50" />
-      <NationList nations={day1Nations} title="Partecipanti Giorno 1" />
-      <Separator className="my-8 bg-border/50" />
-      <NationList nations={day2Nations} title="Partecipanti Giorno 2" />
+      {nations.length === 0 && (
+        <p className="text-center text-muted-foreground">Caricamento nazioni o nessuna nazione disponibile...</p>
+      )}
+
+      {nations.length > 0 && (
+        <>
+          <NationList nations={founderNations} title="Fondatori" />
+          <Separator className="my-8 bg-border/50" />
+          <NationList nations={day1Nations} title="Partecipanti Giorno 1" />
+          <Separator className="my-8 bg-border/50" />
+          <NationList nations={day2Nations} title="Partecipanti Giorno 2" />
+        </>
+      )}
     </div>
   );
 }
