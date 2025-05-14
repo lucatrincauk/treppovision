@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock } from "lucide-react";
+import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock, Settings } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +39,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "./login-form";
 import { SignupForm } from "./signup-form";
 import { EmailLinkForm } from "./email-link-form";
-import { getTeamsByUserId } from "@/lib/team-service"; 
-import type { Team } from "@/types"; 
+import { getTeamsByUserId } from "@/lib/team-service";
+import type { Team } from "@/types";
 import { useRouter } from "next/navigation";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 
@@ -77,9 +77,9 @@ export function AuthButton() {
             getTeamsByUserId(user.uid),
             getTeamsLockedStatus()
           ]);
-          
+
           if (teams.length > 0) {
-            setUserTeam(teams[0]); 
+            setUserTeam(teams[0]);
           } else {
             setUserTeam(null);
           }
@@ -92,7 +92,7 @@ export function AuthButton() {
           setIsLoadingUserTeam(false);
         }
       } else {
-        setUserTeam(null); 
+        setUserTeam(null);
         setTeamsLocked(null);
       }
     };
@@ -200,6 +200,17 @@ export function AuthButton() {
                 Modifica Squadra Bloccata
               </DropdownMenuItem>
             )}
+
+            {user?.isAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => router.push('/admin/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Impostazioni Admin
+                </DropdownMenuItem>
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
@@ -246,5 +257,3 @@ export function AuthButton() {
     </Dialog>
   );
 }
-
-    
