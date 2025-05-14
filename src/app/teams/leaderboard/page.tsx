@@ -18,12 +18,20 @@ const getPointsForRank = (rank?: number): number => {
     case 4: return 15;
     case 5: return 10;
   }
-  if (rank >= 6 && rank <= 25) {
-    return 10 - (rank - 5);
+  // Ranks 6th to 14th: Points decrease by 1 for each rank, starting from 9 for 6th to 1 for 14th.
+  if (rank >= 6 && rank <= 14) {
+    return 10 - (rank - 5); // 6th: 10-1=9, 7th: 10-2=8, ..., 14th: 10-9=1
   }
+  // 15th place: 0 points
+  if (rank === 15) return 0;
+  // Ranks 16th to 25th: Points decrease by 1 for each rank, starting from -1 for 16th to -10 for 25th.
+  if (rank >= 16 && rank <= 25) {
+    return 0 - (rank - 15); // 16th: 0-1=-1, 17th: 0-2=-2, ..., 25th: 0-10=-10
+  }
+  // 26th place: 25 points
   if (rank === 26) return 25;
   
-  return 0;
+  return 0; // Default for any other rank
 };
 
 interface NationScoreDetail {
@@ -58,7 +66,7 @@ export default async function TeamsLeaderboardPage() {
       day2: null,
     };
 
-    const processNation = (nationId: string, category: 'founder' | 'day1' | 'day2'): NationScoreDetail | null => {
+    const processNation = (nationId: string): NationScoreDetail | null => {
       const nation = nationsMap.get(nationId);
       if (nation) {
         const points = getPointsForRank(nation.ranking);
@@ -74,9 +82,9 @@ export default async function TeamsLeaderboardPage() {
       return null;
     };
 
-    nationDetails.founder = processNation(team.founderNationId, 'founder');
-    nationDetails.day1 = processNation(team.day1NationId, 'day1');
-    nationDetails.day2 = processNation(team.day2NationId, 'day2');
+    nationDetails.founder = processNation(team.founderNationId);
+    nationDetails.day1 = processNation(team.day1NationId);
+    nationDetails.day2 = processNation(team.day2NationId);
     
     return { ...team, score, nationScoreDetails: nationDetails };
   });
@@ -108,7 +116,7 @@ export default async function TeamsLeaderboardPage() {
           className="rounded-sm border border-border/30 object-contain"
           data-ai-hint={`${detail.name} flag`}
         />
-        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Posizione: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
+        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Classifica: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
           <span className="font-medium">{detail.name}</span>
           <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
         </Link>
@@ -142,7 +150,7 @@ export default async function TeamsLeaderboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px] text-center">Pos.</TableHead>
-                  <TableHead>Squadra e Dettaglio Punteggio</TableHead>
+                  <TableHead>Squadra</TableHead>
                   <TableHead className="hidden md:table-cell">Creatore</TableHead>
                   <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
@@ -192,3 +200,4 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
