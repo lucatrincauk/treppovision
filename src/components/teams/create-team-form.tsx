@@ -257,7 +257,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="founderNationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Fondatrice (1)</FormLabel>
+              <FormLabel>Nazione Fondatrice</FormLabel>
               <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -282,7 +282,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="day1NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Prima Semifinale (1)</FormLabel>
+              <FormLabel>Nazione Prima Semifinale</FormLabel>
               <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -307,7 +307,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           name="day2NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nazione Seconda Semifinale (1)</FormLabel>
+              <FormLabel>Nazione Seconda Semifinale</FormLabel>
               <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -336,3 +336,5 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     </Form>
   );
 }
+
+    
