@@ -37,11 +37,13 @@ body {
     --input: 220 40% 20%;
     --ring: 180 90% 55%; /* Cyan for focus rings */
     
-    --chart-1: 180 90% 45%; /* Cyan */
-    --chart-2: 0 80% 55%; /* Red */
-    --chart-3: 51 100% 50%; /* Gold */
-    --chart-4: 210 90% 55%; /* Blue */
-    --chart-5: 270 80% 60%; /* Purple */
+    /* Chart variables removed
+    --chart-1: 180 90% 45%; 
+    --chart-2: 0 80% 55%; 
+    --chart-3: 51 100% 50%; 
+    --chart-4: 210 90% 55%; 
+    --chart-5: 270 80% 60%; 
+    */
 
     --radius: 0.5rem;
 

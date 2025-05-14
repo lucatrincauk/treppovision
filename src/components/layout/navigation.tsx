@@ -4,13 +4,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ListMusic, BarChart3, Users } from "lucide-react"; // Users icon for Teams
+import { ListMusic, Users } from "lucide-react"; // Users icon for Teams, BarChart3 removed
 import { useAuth } from "@/hooks/use-auth";
 
 const navItemsBase = [
   { href: "/nations", label: "Nazioni", icon: ListMusic },
-  { href: "/charts", label: "Grafici", icon: BarChart3 },
-  { href: "/teams", label: "Squadre", icon: Users }, // Moved Teams here
+  // { href: "/charts", label: "Grafici", icon: BarChart3 }, // Removed Charts
+  { href: "/teams", label: "Squadre", icon: Users },
 ];
 
 const navItemsAuth = [

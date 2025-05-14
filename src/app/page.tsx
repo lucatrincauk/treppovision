@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, ListMusic, Star } from "lucide-react";
+import { ListMusic, Star } from "lucide-react"; // Flame icon removed
 import Link from "next/link";
 import Image from "next/image";
 
@@ -31,7 +31,7 @@ export default function HomePage() {
         Tuffati nel mondo dell'Eurovision. Esplora nazioni, scopri canzoni ed esprimi i tuoi voti per i tuoi preferiti. Preparati per un viaggio musicale!
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
         <Card className="hover:shadow-primary/20 hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2"><ListMusic className="text-accent" /> Esplora Nazioni</CardTitle>
@@ -48,6 +48,7 @@ export default function HomePage() {
             <CardDescription>Valuta le partecipazioni per canzone, performance e outfit. Fai sentire la tua voce!</CardDescription>
           </CardContent>
         </Card>
+        {/* Removed Charts Card
         <Card className="hover:shadow-primary/20 hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2"><Flame className="text-accent" /> Guarda i Grafici</CardTitle>
@@ -56,6 +57,7 @@ export default function HomePage() {
             <CardDescription>Consulta le classifiche in tempo reale basate sui voti degli utenti e scopri chi è in testa.</CardDescription>
           </CardContent>
         </Card>
+        */}
       </div>
 
       <Link href="/nations">
