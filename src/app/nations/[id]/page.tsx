@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered } from "lucide-react";
+import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
@@ -139,7 +139,10 @@ export default async function NationPage({ params }: NationPageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-secondary">Guarda la Performance</CardTitle>
+              <CardTitle className="text-2xl text-secondary flex items-center">
+                <PlayCircle className="w-5 h-5 mr-2" />
+                Guarda la Performance
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <YouTubeEmbed videoId={nation.youtubeVideoId} title={`${nation.artistName} - ${nation.songTitle}`} />
