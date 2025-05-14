@@ -1,25 +1,23 @@
 
 import type { Team, Nation } from "@/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Users, Flag, CalendarDays, ShieldQuestion, BadgeCheck, CircleUserRound } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Flag, CalendarDays, BadgeCheck, CircleUserRound } from "lucide-react";
+import Image from "next/image";
 
 interface TeamListItemProps {
   team: Team;
   nations: Nation[];
 }
 
-const getNationNameById = (id: string, nations: Nation[]): string => {
-  const nation = nations.find(n => n.id === id);
-  return nation ? nation.name : "Nazione Sconosciuta";
+const getNationDetailsById = (id: string, nations: Nation[]): Nation | undefined => {
+  return nations.find(n => n.id === id);
 };
 
 export function TeamListItem({ team, nations }: TeamListItemProps) {
-  const founderNationName = getNationNameById(team.founderNationId, nations);
-  const day1NationName = getNationNameById(team.day1NationId, nations);
-  const day2NationName = getNationNameById(team.day2NationId, nations);
+  const founderNation = getNationDetailsById(team.founderNationId, nations);
+  const day1Nation = getNationDetailsById(team.day1NationId, nations);
+  const day2Nation = getNationDetailsById(team.day2NationId, nations);
 
-  // Attempt to format the date, handle potential issues
   let formattedDate = "Data non disponibile";
   if (team.createdAt && typeof team.createdAt.seconds === 'number') {
     try {
@@ -31,6 +29,31 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     }
   }
 
+  const renderNationSelection = (nation: Nation | undefined, categoryTitle: string, IconComponent: React.ElementType) => {
+    return (
+      <div>
+        <h4 className="font-semibold text-secondary flex items-center mb-1">
+          <IconComponent className="h-4 w-4 mr-1.5 text-secondary" />
+          {categoryTitle}:
+        </h4>
+        {nation ? (
+          <div className="pl-6 flex items-center gap-2">
+            <Image 
+              src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`} 
+              alt={`Bandiera ${nation.name}`} 
+              width={30} // Small width for inline display
+              height={20} // Corresponding height (3:2 ratio approx for w40)
+              className="rounded-sm border border-border/50"
+              data-ai-hint={`${nation.name} flag`}
+            />
+            <span className="text-foreground/90">{nation.name}</span>
+          </div>
+        ) : (
+          <p className="pl-6 text-muted-foreground">Nazione Sconosciuta</p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
@@ -45,32 +68,13 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
             <CalendarDays className="h-3 w-3" /> {formattedDate}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow space-y-3 text-sm">
-        <div>
-          <h4 className="font-semibold text-secondary flex items-center mb-1">
-            <BadgeCheck className="h-4 w-4 mr-1.5 text-secondary" />
-            Scelta Fondatori:
-          </h4>
-          <p className="pl-6 text-foreground/90">{founderNationName}</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-secondary flex items-center mb-1">
-             <Flag className="h-4 w-4 mr-1.5 text-secondary" />
-            Scelta Giorno 1:
-          </h4>
-          <p className="pl-6 text-foreground/90">{day1NationName}</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-secondary flex items-center mb-1">
-             <Flag className="h-4 w-4 mr-1.5 text-secondary" />
-            Scelta Giorno 2:
-          </h4>
-          <p className="pl-6 text-foreground/90">{day2NationName}</p>
-        </div>
+      <CardContent className="flex-grow space-y-4 text-sm pt-4"> {/* Added pt-4 for spacing after header */}
+        {renderNationSelection(founderNation, "Scelta Fondatori", BadgeCheck)}
+        {renderNationSelection(day1Nation, "Scelta Giorno 1", Flag)}
+        {renderNationSelection(day2Nation, "Scelta Giorno 2", Flag)}
       </CardContent>
-       <CardFooter>
-        <Badge variant="outline">ID Team: {team.id.substring(0,10)}...</Badge>
-      </CardFooter>
+      {/* CardFooter with Team ID has been removed */}
     </Card>
   );
 }
+
