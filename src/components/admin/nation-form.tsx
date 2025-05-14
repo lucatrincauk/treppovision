@@ -29,7 +29,8 @@ import { addNationAction, updateNationAction } from "@/lib/actions/admin-actions
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 
-const nationFormSchema = z.object({
+// Schema for form values where ranking is a string or undefined
+const nationFormInternalSchema = z.object({
   id: z.string().min(2, "L'ID Nazione è richiesto (es. 'it').").max(3, "L'ID Nazione deve essere di 2-3 caratteri."),
   name: z.string().min(1, "Il nome della nazione è richiesto."),
   countryCode: z.string().min(2, "Il codice paese è richiesto (es. 'it').").max(3, "Il codice paese deve essere di 2-3 caratteri."),
@@ -39,12 +40,31 @@ const nationFormSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.coerce.number().int("La posizione deve essere un numero intero.").optional().nullable(),
+  ranking: z.string().optional(), // Form stores string or undefined for ranking
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
 });
 
+// Schema for the actual data payload (ranking is number | undefined)
+const nationPayloadSchema = nationFormInternalSchema.extend({
+  ranking: z.any().optional().transform((val, ctx) => {
+    if (val === undefined || val === null || String(val).trim() === "") {
+      return undefined;
+    }
+    const num = Number(String(val));
+    if (isNaN(num) || !Number.isInteger(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La posizione deve essere un numero intero valido o vuota.",
+      });
+      return z.NEVER; // Prevents further processing by Zod if invalid
+    }
+    return num;
+  }),
+});
+
+
 interface NationFormProps {
-  initialData?: NationFormData;
+  initialData?: NationFormData; // initialData.ranking is string | undefined
   isEditMode?: boolean;
 }
 
@@ -53,12 +73,13 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const form = useForm<NationFormData>({
-    resolver: zodResolver(nationFormSchema),
+  const form = useForm<z.infer<typeof nationFormInternalSchema>>({ // Form uses internal schema with string ranking
+    resolver: zodResolver(nationPayloadSchema), // Validation uses payload schema that transforms ranking
     defaultValues: initialData
-      ? { 
-          ...initialData, 
-          ranking: initialData.ranking === undefined || initialData.ranking === null || initialData.ranking === 0 ? undefined : Number(initialData.ranking),
+      ? {
+          ...initialData,
+          // initialData.ranking is already string | undefined
+          ranking: initialData.ranking,
           performingOrder: initialData.performingOrder || 0,
         }
       : {
@@ -69,21 +90,22 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           artistName: "",
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
-          ranking: undefined, 
-          performingOrder: 0, 
+          ranking: undefined, // Starts as undefined for string type
+          performingOrder: 0,
         },
   });
 
-  async function onSubmit(values: NationFormData) {
+  async function onSubmit(values: z.infer<typeof nationPayloadSchema>) { // values are after Zod parsing/transform
     setIsSubmitting(true);
-    
-    const payload = {
+
+    // Payload's ranking is now number | undefined, validated by Zod
+    const payloadForAction = {
       ...values,
       ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
     };
 
     const action = isEditMode ? updateNationAction : addNationAction;
-    const result = await action(payload);
+    const result = await action(payloadForAction);
 
     if (result.success) {
       toast({
@@ -98,6 +120,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
         description: result.message || "Si è verificato un errore.",
         variant: "destructive",
       });
+      // If Zod validation failed in the resolver, errors will be on fields.
+      // If action failed for other reasons, general toast is shown.
     }
     setIsSubmitting(false);
   }
@@ -229,27 +253,19 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             <FormItem>
               <FormLabel>Posizione (Ranking) (Opzionale)</FormLabel>
               <FormControl>
-                <Input 
-                  type="text" // Changed from "number" to "text"
-                  placeholder="es. 1 (lasciare vuoto se non applicabile)" 
-                  {...field} 
+                <Input
+                  type="text" // Input type is text
+                  placeholder="es. 1 (lasciare vuoto se non applicabile)"
+                  {...field}
+                  onChange={event => field.onChange(event.target.value)} // Pass raw string
+                  value={field.value ?? ""} // Display "" if form state is undefined
                   disabled={isSubmitting}
-                  onChange={event => {
-                    const val = event.target.value;
-                    if (val === "") {
-                      field.onChange(undefined);
-                    } else {
-                      // Attempt to parse, but let Zod handle coercion/validation primarily
-                      field.onChange(val); 
-                    }
-                  }}
-                  value={field.value === undefined || field.value === null ? "" : String(field.value)} 
                 />
               </FormControl>
               <FormDescription>
                 La posizione iniziale o prevista della nazione. Lasciare vuoto se non si desidera specificare.
               </FormDescription>
-              <FormMessage />
+              <FormMessage /> {/* Will show Zod custom message if validation fails */}
             </FormItem>
           )}
         />
@@ -260,16 +276,16 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
             <FormItem>
               <FormLabel>Ordine di Esibizione</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" // Keeping this as number for now as it's less problematic generally
-                  placeholder="es. 0, 1, 2..." 
-                  {...field} 
-                  disabled={isSubmitting} 
+                <Input
+                  type="number"
+                  placeholder="es. 0, 1, 2..."
+                  {...field}
+                  disabled={isSubmitting}
                   onChange={event => {
                      const num = parseInt(event.target.value, 10);
-                     field.onChange(isNaN(num) ? 0 : num); 
+                     field.onChange(isNaN(num) ? 0 : num); // Default to 0 if not a number
                   }}
-                  value={field.value ?? 0} // Ensure it's a number or default
+                  value={field.value ?? 0}
                 />
               </FormControl>
               <FormDescription>
