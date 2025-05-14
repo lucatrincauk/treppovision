@@ -128,7 +128,7 @@ export default async function NationPage({ params }: NationPageProps) {
               <CardHeader>
                 <CardTitle className="text-2xl text-secondary flex items-center">
                   <Info className="w-5 h-5 mr-2" />
-                  A Proposito della Canzone
+                  L'artista
                 </CardTitle>
               </CardHeader>
               <CardContent>
