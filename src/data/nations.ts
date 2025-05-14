@@ -2,7 +2,7 @@
 import type { Nation } from '@/types';
 
 // Founders: United Kingdom, France, Germany, Italy, Switzerland, Spain.
-// Day 1: Iceland, Poland, Slovenia, Estonia, Ukraine, Sweden, Portugal, Norway, Belgium, Azerbaijan, San Marino, Albania, Netherlands, Croatia, Cyprus.
+// Day 1: Iceland, Poland, Estonia, Ukraine, Sweden, Portugal, Norway, Azerbaijan, San Marino, Albania, Netherlands, Croatia, Cyprus.
 // Day 2: Australia, Montenegro, Ireland, Latvia, Armenia, Austria, Greece, Lithuania, Malta, Georgia, Denmark, Czechia, Luxembourg, Israel, Serbia, Finland.
 
 const YOUTUBE_PLACEHOLDER_ID = 'dQw4w9WgXcQ'; // Rick Astley - Never Gonna Give You Up
@@ -19,20 +19,15 @@ export const nations: Nation[] = [
   // Day 1
   { id: 'is', name: 'Islanda', countryCode: 'is', songTitle: 'Luci del Nord', artistName: 'Gelo Vichingo', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'pl', name: 'Polonia', countryCode: 'pl', songTitle: 'Melodia di Varsavia', artistName: 'Orgoglio Polacco', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-  { id: 'si', name: 'Slovenia', countryCode: 'si', songTitle: 'Canzone di Lubiana', artistName: 'Gemme Adriatiche', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'ee', name: 'Estonia', countryCode: 'ee', songTitle: 'Ballata Baltica', artistName: 'Racconti di Tallinn', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'ua', name: 'Ucraina', countryCode: 'ua', songTitle: 'Kiev Chiama', artistName: 'Cantanti della Libertà', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'se', name: 'Svezia', countryCode: 'se', songTitle: 'Sindrome di Stoccolma', artistName: 'ABBA Nuova Generazione', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'pt', name: 'Portogallo', countryCode: 'pt', songTitle: 'Fado di Lisbona', artistName: 'Anime Atlantiche', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'no', name: 'Norvegia', countryCode: 'no', songTitle: 'Festa dei Fiordi', artistName: 'Ritmi di Oslo', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-  { id: 'be', name: 'Belgio', countryCode: 'be', songTitle: 'Funk dei Cavolini di Bruxelles', artistName: 'Waffle Europei', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-  { id: 'az', name: 'Azerbaigian', countryCode: 'az', songTitle: 'Terra del Fuoco', artistName: 'Fiamme di Baku', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'sm', name: 'San Marino', countryCode: 'sm', songTitle: 'Inno del Microstato', artistName: 'Serenissima', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'al', name: 'Albania', countryCode: 'al', songTitle: 'Grido dell\'Aquila', artistName: 'Rapsodia di Tirana', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
   { id: 'nl', name: 'Paesi Bassi', countryCode: 'nl', songTitle: 'Delizia Olandese', artistName: 'Groove dei Mulini a Vento', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-  { id: 'hr', name: 'Croazia', countryCode: 'hr', songTitle: 'Sogni Adriatici', artistName: 'Vibrazioni di Zagabria', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-  { id: 'cy', name: 'Cipro', countryCode: 'cy', songTitle: 'Battito del Cuore Isolano', artistName: 'Chiamata di Afrodite', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day1' },
-
+  
   // Day 2
   { id: 'au', name: 'Australia', countryCode: 'au', songTitle: 'Pop dell\'Emisfero Australe', artistName: 'Stelle dell\'Outback', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day2' },
   { id: 'me', name: 'Montenegro', countryCode: 'me', songTitle: 'Bellezza Balcanica', artistName: 'Potenza di Podgorica', youtubeVideoId: YOUTUBE_PLACEHOLDER_ID, category: 'day2' },
