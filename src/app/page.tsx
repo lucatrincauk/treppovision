@@ -10,12 +10,12 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center text-center space-y-8">
       <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
         <Image 
-            src="https://picsum.photos/seed/eurovision_stage/1200/600" 
+            src="https://picsum.photos/seed/vibrant_concert/1200/600" 
             alt="Palco Eurovision" 
             layout="fill" 
             objectFit="cover"
             priority
-            data-ai-hint="concert stage lights"
+            data-ai-hint="music concert"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex flex-col items-center justify-end p-8">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary animate-pulse">
