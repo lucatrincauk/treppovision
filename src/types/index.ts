@@ -106,6 +106,10 @@ export interface TeamFormData {
   day1NationId: string;
   day2NationId: string;
   creatorDisplayName: string; 
+  bestSongNationId: string;
+  bestPerformanceNationId: string;
+  bestOutfitNationId: string;
+  worstSongNationId: string;
 }
 
 export interface Team {
@@ -116,6 +120,10 @@ export interface Team {
   founderNationId: string;
   day1NationId: string;
   day2NationId: string;
+  bestSongNationId: string;
+  bestPerformanceNationId: string;
+  bestOutfitNationId: string;
+  worstSongNationId: string;
   createdAt: {
     seconds: number;
     nanoseconds: number;

@@ -39,8 +39,10 @@ const teamFormZodSchema = z.object({
   founderNationId: z.string().min(1, "Devi selezionare una nazione per la prima squadra."),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
-  // creatorDisplayName is part of TeamFormData but not directly part of Zod schema for user input,
-  // as it's derived from the authenticated user state.
+  bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
+  bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
+  bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
+  worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
 });
 
 // Form values will not include creatorDisplayName directly from user input fields
@@ -78,10 +80,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
             const userTeams = await getTeamsByUserId(user.uid);
             setUserHasTeam(userTeams.length > 0);
           } else {
-            // In edit mode, user already has this team.
-            // If initialData isn't provided (e.g., direct navigation to edit page),
-            // this check might still be relevant if we fetched the team here.
-            // For now, assuming initialData is provided for edit mode from parent.
             setUserHasTeam(true); 
           }
         } catch (error) {
@@ -98,7 +96,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           if (!isEditMode) setIsLoadingUserTeamCheck(false);
         }
       } else {
-        // If no user, still try to load nations for selection display (though form will be disabled)
         try {
             const fetchedNations = await getNations();
             setNations(fetchedNations);
@@ -124,22 +121,34 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           founderNationId: initialData.founderNationId,
           day1NationId: initialData.day1NationId,
           day2NationId: initialData.day2NationId,
+          bestSongNationId: initialData.bestSongNationId || "",
+          bestPerformanceNationId: initialData.bestPerformanceNationId || "",
+          bestOutfitNationId: initialData.bestOutfitNationId || "",
+          worstSongNationId: initialData.worstSongNationId || "",
         }
       : {
           name: "",
           founderNationId: "",
           day1NationId: "",
           day2NationId: "",
+          bestSongNationId: "",
+          bestPerformanceNationId: "",
+          bestOutfitNationId: "",
+          worstSongNationId: "",
         },
   });
 
   React.useEffect(() => {
     if (initialData) {
-      form.reset({ // Reset only the fields Zod schema cares about
+      form.reset({ 
         name: initialData.name,
         founderNationId: initialData.founderNationId,
         day1NationId: initialData.day1NationId,
         day2NationId: initialData.day2NationId,
+        bestSongNationId: initialData.bestSongNationId || "",
+        bestPerformanceNationId: initialData.bestPerformanceNationId || "",
+        bestOutfitNationId: initialData.bestOutfitNationId || "",
+        worstSongNationId: initialData.worstSongNationId || "",
       });
     }
   }, [initialData, form]);
@@ -213,7 +222,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     );
   }
 
-  if (!isEditMode && userHasTeam === true) { // Explicitly check true
+  if (!isEditMode && userHasTeam === true) { 
     return (
       <Alert>
         <Info className="h-4 w-4" />
@@ -248,6 +257,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
             <AlertTitle>Categorie Nazioni Incomplete</AlertTitle>
             <AlertDescription>
                 Per creare un team, devono essere disponibili nazioni per tutte e tre le categorie (Fondatrici, Prima Semifinale, Seconda Semifinale). Controlla i dati delle nazioni in Firestore.
+                 Oppure, se sono disponibili nazioni in generale ma non per queste categorie, le selezioni qui sotto potrebbero essere vuote.
             </AlertDescription>
         </Alert>
      )
@@ -283,7 +293,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -308,7 +318,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione disponibile (Prima Semifinale)" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -333,7 +343,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione disponibile (Seconda Semifinale)" : "Seleziona nazione"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -349,10 +359,116 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
           )}
         />
 
+        {/* New Fields */}
+        <FormField
+          control={form.control}
+          name="bestSongNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Migliore canzone</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {nations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name} - {nation.songTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Scegli la migliore canzone secondo gli utenti di Treppovision.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="bestPerformanceNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Migliore performance</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {nations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name} - {nation.artistName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Scegli la migliore performance secondo gli utenti di Treppovision.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="bestOutfitNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Migliore outfit</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {nations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Scegli l'outfit migliore secondo gli utenti di Treppovision.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="worstSongNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Peggiore canzone</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {nations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name} - {nation.songTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>La peggiore canzone secondo gli utenti di Treppovision.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+
         <Button 
             type="submit" 
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
-            disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0}
+            disabled={isSubmitting || isLoadingNations || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
@@ -362,5 +478,3 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId }: Crea
     </Form>
   );
 }
-
-    

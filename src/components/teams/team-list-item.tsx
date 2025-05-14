@@ -1,8 +1,10 @@
 
+"use client"; // Added "use client" as it uses hooks like useAuth and client-side logic
+
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,10 +18,11 @@ const getNationDetailsById = (id: string, nations: Nation[]): Nation | undefined
   return nations.find(n => n.id === id);
 };
 
-const SelectedNationDisplay = ({ nation, IconComponent }: { nation?: Nation, IconComponent: React.ElementType }) => {
+const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nation, IconComponent: React.ElementType, label?: string }) => {
   if (!nation) {
     return (
       <div className="flex items-center gap-2 py-1">
+        {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px]">{label}</span>}
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -28,16 +31,19 @@ const SelectedNationDisplay = ({ nation, IconComponent }: { nation?: Nation, Ico
 
   return (
     <div className="flex items-center gap-2 py-1">
+      {label && <span className="text-xs text-muted-foreground mr-1 min-w-[100px] flex-shrink-0">{label}</span>}
       <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
       <Image
         src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
-        width={32}
-        height={21}
+        width={24} // Slightly smaller for more items
+        height={16}
         className="rounded-sm border border-border/50 object-contain flex-shrink-0"
         data-ai-hint={`${nation.name} flag`}
       />
-      <span className="text-sm text-foreground/90 truncate" title={nation.name}>{nation.name}</span>
+      <span className="text-sm text-foreground/90 truncate" title={`${nation.name} - ${nation.songTitle}`}>
+        {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
+      </span>
     </div>
   );
 };
@@ -47,6 +53,11 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
   const founderNation = getNationDetailsById(team.founderNationId, nations);
   const day1Nation = getNationDetailsById(team.day1NationId, nations);
   const day2Nation = getNationDetailsById(team.day2NationId, nations);
+
+  const bestSongNation = getNationDetailsById(team.bestSongNationId, nations);
+  const bestPerformanceNation = getNationDetailsById(team.bestPerformanceNationId, nations);
+  const bestOutfitNation = getNationDetailsById(team.bestOutfitNationId, nations);
+  const worstSongNation = getNationDetailsById(team.worstSongNationId, nations);
 
   const isOwner = user?.uid === team.userId;
 
@@ -74,10 +85,17 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
           </Button>
         )}
       </CardHeader>
-      <CardContent className="flex-grow space-y-1.5 pt-0 pb-4">
+      <CardContent className="flex-grow space-y-1 pt-0 pb-4">
+        <p className="text-sm font-medium text-muted-foreground mb-1 mt-2">Scelte Principali:</p>
         <SelectedNationDisplay nation={founderNation} IconComponent={BadgeCheck} />
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
+        
+        <p className="text-sm font-medium text-muted-foreground mb-1 mt-3 pt-2 border-t border-border/30">Preferenze Utente:</p>
+        <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
+        <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
+        <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
+        <SelectedNationDisplay nation={worstSongNation} IconComponent={ThumbsDown} label="Peggior Canzone:" />
       </CardContent>
     </Card>
   );

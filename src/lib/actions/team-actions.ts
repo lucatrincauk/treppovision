@@ -42,20 +42,34 @@ export async function createTeamAction(
   if (!data.day2NationId) {
     return { success: false, message: "Devi selezionare una nazione per la Seconda Semifinale." };
   }
+  if (!data.bestSongNationId) {
+    return { success: false, message: "Devi selezionare la migliore canzone." };
+  }
+  if (!data.bestPerformanceNationId) {
+    return { success: false, message: "Devi selezionare la migliore performance." };
+  }
+  if (!data.bestOutfitNationId) {
+    return { success: false, message: "Devi selezionare il migliore outfit." };
+  }
+  if (!data.worstSongNationId) {
+    return { success: false, message: "Devi selezionare la peggiore canzone." };
+  }
   if (!data.creatorDisplayName) {
-    // This should ideally be pulled from the authenticated user on the server if possible,
-    // but for now, we trust the client-provided display name during creation.
     return { success: false, message: "Nome del creatore mancante." };
   }
 
   try {
-    const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any } = { // Ensure correct type for payload
+    const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any } = { 
       userId,
       name: data.name,
       founderNationId: data.founderNationId,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,
+      bestSongNationId: data.bestSongNationId,
+      bestPerformanceNationId: data.bestPerformanceNationId,
+      bestOutfitNationId: data.bestOutfitNationId,
+      worstSongNationId: data.worstSongNationId,
       createdAt: serverTimestamp(),
     };
     
@@ -75,7 +89,7 @@ export async function createTeamAction(
 
 export async function updateTeamAction(
   teamId: string,
-  data: TeamFormData, // Full form data
+  data: TeamFormData, 
   userId: string | undefined
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
@@ -110,8 +124,18 @@ export async function updateTeamAction(
     if (!data.day2NationId) {
       return { success: false, message: "Devi selezionare una nazione per la Seconda Semifinale." };
     }
-    // When updating, ensure creatorDisplayName is also updated if it changed for the current user.
-    // data.creatorDisplayName should be the user's current display name passed from the form.
+    if (!data.bestSongNationId) {
+        return { success: false, message: "Devi selezionare la migliore canzone." };
+    }
+    if (!data.bestPerformanceNationId) {
+        return { success: false, message: "Devi selezionare la migliore performance." };
+    }
+    if (!data.bestOutfitNationId) {
+        return { success: false, message: "Devi selezionare il migliore outfit." };
+    }
+    if (!data.worstSongNationId) {
+        return { success: false, message: "Devi selezionare la peggiore canzone." };
+    }
     if (!data.creatorDisplayName) {
       return { success: false, message: "Nome del creatore mancante per l'aggiornamento." };
     }
@@ -122,7 +146,11 @@ export async function updateTeamAction(
       founderNationId: data.founderNationId,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
-      creatorDisplayName: data.creatorDisplayName, // Use current display name
+      creatorDisplayName: data.creatorDisplayName, 
+      bestSongNationId: data.bestSongNationId,
+      bestPerformanceNationId: data.bestPerformanceNationId,
+      bestOutfitNationId: data.bestOutfitNationId,
+      worstSongNationId: data.worstSongNationId,
       updatedAt: serverTimestamp(),
     };
 
@@ -130,7 +158,7 @@ export async function updateTeamAction(
 
     revalidatePath("/teams");
     revalidatePath(`/teams/${teamId}/edit`);
-    revalidatePath(`/teams`); // Revalidate teams list page
+    revalidatePath(`/teams`); 
     
     return { success: true, message: "Team aggiornato con successo!", teamId: teamId };
   } catch (error)
@@ -145,7 +173,7 @@ export async function updateTeamAction(
 export async function updateTeamCreatorDisplayNameAction(
   teamId: string,
   newDisplayName: string,
-  userId: string // For verification
+  userId: string 
 ): Promise<{ success: boolean; message: string }> {
   if (!userId) {
     return { success: false, message: "Utente non autenticato." };
@@ -162,15 +190,12 @@ export async function updateTeamCreatorDisplayNameAction(
     const teamSnap = await getDoc(teamDocRef);
 
     if (!teamSnap.exists()) {
-      // It's possible the team was deleted, or this is an old/invalid ID.
-      // We can choose to silently ignore or return an error.
       console.warn(`Team con ID ${teamId} non trovato durante l'aggiornamento del nome del creatore.`);
       return { success: false, message: "Team non trovato." };
     }
 
     const teamData = teamSnap.data() as Team;
     if (teamData.userId !== userId) {
-      // Should not happen if getTeamsByUserId was used correctly, but good to double-check.
       return { success: false, message: "Non sei autorizzato a modificare questo team." };
     }
 
@@ -179,8 +204,8 @@ export async function updateTeamCreatorDisplayNameAction(
       updatedAt: serverTimestamp(),
     });
 
-    revalidatePath("/teams"); // Revalidate the main teams list
-    revalidatePath(`/teams/${teamId}/edit`); // Revalidate edit page if open
+    revalidatePath("/teams"); 
+    revalidatePath(`/teams/${teamId}/edit`); 
     
     return { success: true, message: "Nome del creatore del team aggiornato." };
   } catch (error) {
