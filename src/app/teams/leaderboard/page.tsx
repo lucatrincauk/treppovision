@@ -4,8 +4,9 @@ import { getNations } from "@/lib/nation-service";
 import type { Team, Nation } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig } from "lucide-react"; // Changed to BarChartBig
+import { Card, CardContent } from "@/components/ui/card"; // Removed CardHeader, CardTitle as they are not used directly here
+import { Trophy, UserCircle, BarChartBig, Info } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 const getPointsForRank = (rank?: number): number => {
@@ -36,14 +37,27 @@ const getPointsForRank = (rank?: number): number => {
     case 23: return -8;
     case 24: return -9;
     case 25: return -10;
-    case 26: return 25; // As specified
-    default: return 0; // For ranks outside the defined range
+    case 26: return 25; 
+    default: return 0; 
   }
 };
 
+interface NationScoreDetail {
+  id: string;
+  name: string;
+  countryCode: string;
+  actualRank?: number; 
+  points: number;     
+}
+
 interface TeamWithScore extends Team {
   score: number;
-  rank?: number;
+  rank?: number; // Assigned rank in the leaderboard
+  nationScoreDetails: {
+    founder: NationScoreDetail | null;
+    day1: NationScoreDetail | null;
+    day2: NationScoreDetail | null;
+  };
 }
 
 export default async function TeamsLeaderboardPage() {
@@ -54,18 +68,35 @@ export default async function TeamsLeaderboardPage() {
 
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
-    const nation1 = nationsMap.get(team.founderNationId);
-    const nation2 = nationsMap.get(team.day1NationId);
-    const nation3 = nationsMap.get(team.day2NationId);
+    const nationDetails: TeamWithScore['nationScoreDetails'] = {
+      founder: null,
+      day1: null,
+      day2: null,
+    };
 
-    if (nation1) score += getPointsForRank(nation1.ranking);
-    if (nation2) score += getPointsForRank(nation2.ranking);
-    if (nation3) score += getPointsForRank(nation3.ranking);
+    const processNation = (nationId: string, category: 'founder' | 'day1' | 'day2'): NationScoreDetail | null => {
+      const nation = nationsMap.get(nationId);
+      if (nation) {
+        const points = getPointsForRank(nation.ranking);
+        score += points;
+        return { 
+          id: nation.id, 
+          name: nation.name, 
+          countryCode: nation.countryCode, 
+          actualRank: nation.ranking, 
+          points 
+        };
+      }
+      return null;
+    };
+
+    nationDetails.founder = processNation(team.founderNationId, 'founder');
+    nationDetails.day1 = processNation(team.day1NationId, 'day1');
+    nationDetails.day2 = processNation(team.day2NationId, 'day2');
     
-    return { ...team, score };
+    return { ...team, score, nationScoreDetails: nationDetails };
   });
 
-  // Sort teams by score in descending order, then by name alphabetically for ties
   teamsWithScores.sort((a, b) => {
     if (b.score === a.score) {
       return a.name.localeCompare(b.name);
@@ -73,7 +104,6 @@ export default async function TeamsLeaderboardPage() {
     return b.score - a.score;
   });
 
-  // Assign ranks
   let currentRank = 1;
   for (let i = 0; i < teamsWithScores.length; i++) {
     if (i > 0 && teamsWithScores[i].score < teamsWithScores[i-1].score) {
@@ -82,6 +112,25 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
+  const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail | null }) => {
+    if (!detail) return <div className="text-xs text-muted-foreground">Nazione non trovata</div>;
+    return (
+      <div className="flex items-center gap-1.5 py-0.5">
+        <Image
+          src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
+          alt={detail.name}
+          width={20}
+          height={13}
+          className="rounded-sm border border-border/30 object-contain"
+          data-ai-hint={`${detail.name} flag`}
+        />
+        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Pos: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
+          <span className="font-medium">{detail.name}</span>
+          <span className="text-muted-foreground"> (Pos: {detail.actualRank ?? 'N/D'})</span>: {detail.points}pt
+        </Link>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -108,10 +157,11 @@ export default async function TeamsLeaderboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px] text-center">Pos.</TableHead>
+                  <TableHead className="w-[50px] text-center">Pos.</TableHead>
                   <TableHead>Squadra</TableHead>
-                  <TableHead className="hidden sm:table-cell">Creatore</TableHead>
-                  <TableHead className="text-right">Punteggio</TableHead>
+                  <TableHead className="hidden md:table-cell">Creatore</TableHead>
+                  <TableHead className="hidden lg:table-cell min-w-[250px]">Dettaglio Punteggio</TableHead>
+                  <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,14 +169,21 @@ export default async function TeamsLeaderboardPage() {
                   <TableRow key={team.id}>
                     <TableCell className="font-medium text-center">{team.rank}</TableCell>
                     <TableCell>
-                        <span className="font-medium truncate hover:underline">
+                        <span className="font-medium truncate"> {/* Removed Link here, as details are shown */}
                             {team.name}
                         </span>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell truncate" title={team.creatorDisplayName}>
-                      <div className="flex items-center gap-1.5">
+                    <TableCell className="hidden md:table-cell truncate" title={team.creatorDisplayName}>
+                      <div className="flex items-center gap-1.5 text-sm">
                         <UserCircle className="w-4 h-4 text-muted-foreground" />
                         {team.creatorDisplayName}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="space-y-0.5">
+                        <NationDetailDisplay detail={team.nationScoreDetails.founder} />
+                        <NationDetailDisplay detail={team.nationScoreDetails.day1} />
+                        <NationDetailDisplay detail={team.nationScoreDetails.day2} />
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-semibold text-lg text-primary">{team.score}</TableCell>
@@ -137,7 +194,22 @@ export default async function TeamsLeaderboardPage() {
           </CardContent>
         </Card>
       )}
+      <Card className="mt-8 border-primary/20 bg-card/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ogni squadra sceglie 3 nazioni (una per categoria: Fondatrici, Prima Semifinale, Seconda Semifinale).
+                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 3 nazioni in base alla loro classifica finale nell'Eurovision.
+                  Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-10°: 9-5pt, 11°-14°: 4-1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
+                  Le nazioni senza ranking o con ranking 0 non contribuiscono (0 punti).
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
     </div>
   );
 }
-
