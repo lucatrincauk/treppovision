@@ -321,7 +321,6 @@ export default async function TeamsLeaderboardPage() {
           {detail.actualCategoryRank && (
             <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
               ({detail.actualCategoryRank}°
-              {/* Score display removed from here */}
               {detail.categoryName === "Miglior Canzone" ? "" :
                detail.categoryName === "Peggior Canzone" ? " peggiore" :
                " in cat."}
@@ -402,13 +401,13 @@ export default async function TeamsLeaderboardPage() {
                               </div>
                               
                               <div className="mb-2">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Treppovision:</p>
+                                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoVision:</p>
                                   {team.primaSquadraDetails.map(detail => (
                                       <PrimaSquadraNationDisplay key={`${team.id}-${detail.id}-prima`} detail={detail} />
                                   ))}
                               </div>
                               <div>
-                                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Voti TreppoScore:</p>
+                                  <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoScore:</p>
                                   {team.categoryPicksDetails.map(detail => (
                                       <CategoryPickDisplay key={`${team.id}-${detail.categoryName}`} detail={detail} />
                                   ))}
@@ -436,12 +435,12 @@ export default async function TeamsLeaderboardPage() {
                 </p>
                 <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
                     <li>
-                        <strong>Pronostici Treppovision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
+                        <strong>Pronostici TreppoVision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
                         Sistema: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
                         Nazioni senza ranking valido ottengono 0 punti.
                     </li>
                     <li>
-                        <strong>Pronostici Voti TreppoScore</strong>: Punti per aver indovinato le nazioni più o meno votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
+                        <strong>Pronostici TreppoScore</strong>: Punti per aver indovinato le nazioni più o meno votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
                         Per ogni categoria (Migliore/Peggiore): 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
                     </li>
                 </ul>
@@ -452,7 +451,4 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-
-    
-
-    
+  

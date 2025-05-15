@@ -153,13 +153,15 @@ const SelectedNationDisplay = React.memo(({
   };
 
   let rankText = "";
-  const showEurovisionRank = !label;
 
-  if (label) { // For "Voti TreppoScore" items
+  if (label) { // For "Pronostici TreppoScore" items
     if (categoryRank && categoryRank > 0) {
-      rankText = `(${categoryRank}°${label === "Peggior Canzone:" ? " peggiore" : (label === "Miglior Canzone:" ? "" : " in cat.")})`;
+      let suffix = " in cat.";
+      if (label === "Miglior Canzone:") suffix = "";
+      else if (label === "Peggior Canzone:") suffix = " peggiore";
+      rankText = `(${categoryRank}°${suffix})`;
     }
-  } else if (showEurovisionRank && nation.ranking && nation.ranking > 0) { // For "Scelte Principali"
+  } else if (nation.ranking && nation.ranking > 0) { // For "Scelte Principali"
     rankText = `(${nation.ranking}°)`;
   }
   
@@ -167,7 +169,8 @@ const SelectedNationDisplay = React.memo(({
 
   const mainContainerClasses = cn(
     "flex px-2 py-1 items-center gap-1.5",
-    isEvenRow && (label || !label) && "bg-muted/50 rounded-md"
+    label ? "flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 py-1.5" : "items-center gap-1.5",
+    isEvenRow && "bg-muted/50 rounded-md"
   );
 
   const labelAndIconContainerClasses = cn(
@@ -187,14 +190,14 @@ const SelectedNationDisplay = React.memo(({
 
   return (
     <div className={mainContainerClasses}>
-      <div className={cn(labelAndIconContainerClasses, label && "flex-col sm:flex-row items-start sm:items-center")}>
+      <div className={labelAndIconContainerClasses}>
         <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
         {label && <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       </div>
 
       <div className={nationInfoContainerOuterClasses}>
         <Link href={`/nations/${nation.id}`} className="group flex-grow">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Image
               src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
               alt={`Bandiera ${nation.name}`}
@@ -216,7 +219,7 @@ const SelectedNationDisplay = React.memo(({
                   </span>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
+              <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 hidden sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
               </span>
             </div>
@@ -246,7 +249,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
-  const [categoryRanks, setCategoryRanks] = useState<{
+  const [categoryRanksAndCorrectness, setCategoryRanksAndCorrectness] = useState<{
     bestSongNationId?: string;
     worstSongNationId?: string;
     bestPerfNationId?: string;
@@ -255,6 +258,10 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     worstSongRank?: number;
     bestPerfRank?: number;
     bestOutfitRank?: number;
+    isBestSongCorrect?: boolean;
+    isWorstSongCorrect?: boolean;
+    isBestPerfCorrect?: boolean;
+    isBestOutfitCorrect?: boolean;
   }>({});
 
   useEffect(() => {
@@ -290,7 +297,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
       const bestPerfList = getSortedList('averagePerformanceScore', 'desc');
       const bestOutfitList = getSortedList('averageOutfitScore', 'desc');
 
-      setCategoryRanks({
+      setCategoryRanksAndCorrectness({
         bestSongNationId: bestSongList[0]?.id,
         worstSongNationId: worstSongList[0]?.id,
         bestPerfNationId: bestPerfList[0]?.id,
@@ -299,6 +306,10 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
         worstSongRank: getRank(team.worstSongNationId, worstSongList),
         bestPerfRank: getRank(team.bestPerformanceNationId, bestPerfList),
         bestOutfitRank: getRank(team.bestOutfitNationId, bestOutfitList),
+        isBestSongCorrect: team.bestSongNationId === bestSongList[0]?.id,
+        isWorstSongCorrect: team.worstSongNationId === worstSongList[0]?.id,
+        isBestPerfCorrect: team.bestPerformanceNationId === bestPerfList[0]?.id,
+        isBestOutfitCorrect: team.bestOutfitNationId === bestOutfitList[0]?.id,
       });
     }
   }, [nationGlobalCategorizedScoresMap, nations, team]);
@@ -378,19 +389,25 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
-        {isLeaderboardPodiumCard && team.primaSquadraDetails ? (
+        {isLeaderboardPodiumCard && team.primaSquadraDetails && team.categoryPicksDetails ? (
           <>
             <p className="text-xl font-bold text-foreground mt-2 mb-1.5">
-                Pronostici Treppovision
+                Pronostici TreppoVision
             </p>
             {team.primaSquadraDetails.map((detail) => (
               <PrimaSquadraNationDisplayDetailPodium key={`${team.id}-${detail.id}-prima-detail`} detail={detail} />
+            ))}
+            <p className="text-xl font-bold text-secondary mt-4 pt-3 border-t border-border/30 mb-1.5">
+                Pronostici TreppoScore
+            </p>
+            {team.categoryPicksDetails.map((detail) => (
+              <CategoryPickDisplayDetailPodium key={`${team.id}-${detail.categoryName}-detail`} detail={detail} />
             ))}
           </>
         ) : (
           <>
             <p className="text-xl font-bold text-foreground mt-2 mb-1.5">
-                Scelte Principali
+                Pronostici TreppoVision
             </p>
             {founderNationsDetails.map((nation, index) => (
               <SelectedNationDisplay
@@ -400,60 +417,45 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                 isEvenRow={index % 2 !== 0}
               />
             ))}
-          </>
-        )}
-
-        { (isOwnTeamCard || user?.isAdmin || isLeaderboardPodiumCard) && (
-          <>
             <p className="text-xl font-bold text-secondary mt-4 pt-3 border-t border-border/30 mb-1.5">
-                Pronostici Voti TreppoScore
+                Pronostici TreppoScore
             </p>
-            {isLeaderboardPodiumCard && team.categoryPicksDetails ? (
-              <>
-                {team.categoryPicksDetails.map((detail) => (
-                  <CategoryPickDisplayDetailPodium key={`${team.id}-${detail.categoryName}-detail`} detail={detail} />
-                ))}
-              </>
-            ) : (
-              <>
-                <SelectedNationDisplay
-                    nation={bestSongNationDetails}
-                    IconComponent={Music2}
-                    label="Miglior Canzone:"
-                    isEvenRow={false}
-                    categoryRank={categoryRanks.bestSongRank}
-                    isCorrectPick={team.bestSongNationId === categoryRanks.bestSongNationId}
-                />
-                <SelectedNationDisplay
-                    nation={bestPerformanceNationDetails}
-                    IconComponent={Star}
-                    label="Miglior Performance:"
-                    isEvenRow={true}
-                    categoryRank={categoryRanks.bestPerfRank}
-                    isCorrectPick={team.bestPerformanceNationId === categoryRanks.bestPerfNationId}
-                />
-                <SelectedNationDisplay
-                    nation={bestOutfitNationDetails}
-                    IconComponent={Shirt}
-                    label="Miglior Outfit:"
-                    isEvenRow={false}
-                    categoryRank={categoryRanks.bestOutfitRank}
-                    isCorrectPick={team.bestOutfitNationId === categoryRanks.bestOutfitNationId}
-                />
-                <SelectedNationDisplay
-                    nation={worstSongNationDetails}
-                    IconComponent={ThumbsDown}
-                    label="Peggior Canzone:"
-                    isEvenRow={true}
-                    categoryRank={categoryRanks.worstSongRank}
-                    isCorrectPick={team.worstSongNationId === categoryRanks.worstSongNationId}
-                />
-              </>
-            )}
+            <SelectedNationDisplay
+                nation={bestSongNationDetails}
+                IconComponent={Music2}
+                label="Miglior Canzone:"
+                isEvenRow={false}
+                categoryRank={categoryRanksAndCorrectness.bestSongRank}
+                isCorrectPick={categoryRanksAndCorrectness.isBestSongCorrect}
+            />
+            <SelectedNationDisplay
+                nation={bestPerformanceNationDetails}
+                IconComponent={Star}
+                label="Miglior Performance:"
+                isEvenRow={true}
+                categoryRank={categoryRanksAndCorrectness.bestPerfRank}
+                isCorrectPick={categoryRanksAndCorrectness.isBestPerfCorrect}
+            />
+            <SelectedNationDisplay
+                nation={bestOutfitNationDetails}
+                IconComponent={Shirt}
+                label="Miglior Outfit:"
+                isEvenRow={false}
+                categoryRank={categoryRanksAndCorrectness.bestOutfitRank}
+                isCorrectPick={categoryRanksAndCorrectness.isBestOutfitCorrect}
+            />
+            <SelectedNationDisplay
+                nation={worstSongNationDetails}
+                IconComponent={ThumbsDown}
+                label="Peggior Canzone:"
+                isEvenRow={true}
+                categoryRank={categoryRanksAndCorrectness.worstSongRank}
+                isCorrectPick={categoryRanksAndCorrectness.isWorstSongCorrect}
+            />
           </>
         )}
       </CardContent>
     </Card>
   );
 }
-
+  
