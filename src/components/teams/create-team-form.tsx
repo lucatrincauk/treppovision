@@ -42,9 +42,9 @@ import Image from "next/image";
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
   founderChoices: z.array(z.string())
-    .length(3, "Devi selezionare esattamente 3 nazioni per la prima squadra.")
+    .length(3, "Devi selezionare esattamente 3 nazioni.")
     .refine(items => new Set(items).size === items.length, {
-      message: "Le tre nazioni scelte per la prima squadra devono essere diverse.",
+      message: "Le tre nazioni scelte devono essere diverse.",
     }),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
@@ -299,7 +299,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
           name="founderChoices"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prima squadra - Seleziona 3</FormLabel>
+              <FormLabel>Nazioni</FormLabel>
               <Popover open={founderPopoverOpen} onOpenChange={setFounderPopoverOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -371,7 +371,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Scegli esattamente 3 nazioni per la tua prima squadra.
+                Scegli esattamente 3 nazioni per la tua squadra.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -496,3 +496,4 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     </Form>
   );
 }
+
