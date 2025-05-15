@@ -68,7 +68,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
               </span>
-              {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
+               {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
                  <p className="text-xs text-primary font-medium mt-0.5">
                     Punteggio Globale: {globalScoreForCategory.toFixed(2)}
                  </p>
@@ -218,7 +218,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
             key={`founder-${nation.id}`} 
             nation={nation} 
             IconComponent={BadgeCheck} 
-            isCorrectPick={false} // This is for specific category picks, not general founder choices
+            isCorrectPick={false} 
             isEvenRow={index % 2 !== 0} 
           />
         ))}
@@ -266,3 +266,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     </Card>
   );
 }
+
+
+    
