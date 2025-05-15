@@ -250,7 +250,7 @@ export default async function TeamsLeaderboardPage() {
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
-          {detail.actualCategoryRank && detail.pointsAwarded > 0 && ( 
+          {detail.actualCategoryRank && detail.pointsAwarded > 0 && detail.categoryName !== "Peggior Canzone" && ( 
             <span className="text-muted-foreground"> ({detail.actualCategoryRank}° in cat.)</span>
           )}
         </Link>
@@ -352,3 +352,4 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
