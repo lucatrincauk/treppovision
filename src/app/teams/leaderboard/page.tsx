@@ -90,9 +90,9 @@ const getTopNationsForCategory = (
       if (a.score === null) return 1; 
       if (b.score === null) return -1; 
       if (sortOrder === 'desc') {
-        return b.score - a.score;
+        return (b.score as number) - (a.score as number);
       }
-      return a.score - b.score;
+      return (a.score as number) - (b.score as number);
     });
 };
 
@@ -290,9 +290,8 @@ export default async function TeamsLeaderboardPage() {
         return null;
     };
     
-    const iconColor = "text-accent";
-
-    const titleText = `${detail.pickedNationName || 'N/D'} - ${detail.categoryName} (Global Rank: ${detail.actualCategoryRank || 'N/A'}, Score: ${detail.pickedNationScoreInCategory?.toFixed(2) || 'N/A'}, Points: ${detail.pointsAwarded})`;
+    const iconColor = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
+    const titleText = `${detail.pickedNationName || 'N/D'} - ${detail.categoryName} (Global Rank: ${detail.actualCategoryRank || 'N/A'}, Points: ${detail.pointsAwarded})`;
 
     return (
       <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
@@ -300,7 +299,7 @@ export default async function TeamsLeaderboardPage() {
         
         <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
-              className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
+              className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center gap-1", !detail.pickedNationId && "pointer-events-none")}
               title={titleText}
         >
           {detail.pickedNationCountryCode && detail.pickedNationName ? (
@@ -322,12 +321,7 @@ export default async function TeamsLeaderboardPage() {
           {detail.actualCategoryRank && (
             <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
               ({detail.actualCategoryRank}°
-              {detail.pickedNationScoreInCategory !== null && detail.pickedNationScoreInCategory !== undefined && (
-                <span className="ml-1 flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-0.5 text-primary" />
-                  {detail.pickedNationScoreInCategory.toFixed(2)}
-                </span>
-              )}
+              {/* Score display removed from here */}
               {detail.categoryName === "Miglior Canzone" ? "" :
                detail.categoryName === "Peggior Canzone" ? " peggiore" :
                " in cat."}
@@ -398,12 +392,12 @@ export default async function TeamsLeaderboardPage() {
                         <TableRow key={team.id}>
                           <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
                           <TableCell className="align-top">
-                              <div className="font-medium text-base mb-0.5">
+                              <div className="font-medium text-base mb-1">
                                 {team.name}
                                 {team.creatorDisplayName && (
-                                    <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
-                                        (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
-                                    </span>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={team.creatorDisplayName}>
+                                        <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
+                                    </div>
                                 )}
                               </div>
                               
@@ -458,5 +452,7 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
+    
 
     
