@@ -16,34 +16,19 @@ export const dynamic = 'force-dynamic';
 
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
-  switch (rank) {
-    case 1: return 30;
-    case 2: return 25;
-    case 3: return 20;
-    case 4: return 18;
-    case 5: return 16;
-    case 6: return 14;
-    case 7:
-    case 8:
-    case 9:
-    case 10: return 12;
-    case 11:
-    case 12: return 10;
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 24: return -5;
-    case 25: return -10;
-    case 26: return -15;
-  }
+  // Updated scoring based on user request
+  if (rank === 1) return 30;
+  if (rank === 2) return 25;
+  if (rank === 3) return 20;
+  if (rank === 4) return 18;
+  if (rank === 5) return 16;
+  if (rank === 6) return 14;
+  if (rank >= 7 && rank <= 10) return 12;
+  if (rank >= 11 && rank <= 12) return 10;
+  if (rank >= 13 && rank <= 24) return -5;
+  if (rank === 25) return -10;
+  if (rank === 26) return -15;
+  
   return 0; 
 };
 
@@ -61,7 +46,7 @@ interface CategoryPickDetail {
   pickedNationName?: string;
   pickedNationCountryCode?: string;
   actualCategoryRank?: number; 
-  pickedNationScoreInCategory?: number | null;
+  pickedNationScoreInCategory?: number | null; // To store the actual score of the picked nation in that category
   pointsAwarded: number;
   iconName: string; 
 }
@@ -78,7 +63,7 @@ const getTopNationsForCategory = (
   nationsMap: Map<string, Nation>,
   categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
   sortOrder: 'desc' | 'asc' = 'desc'
-): Array<{ id: string; name: string; score: number | null }> => {
+): Array<{ id: string; name: string; score: number | null }> => { // Returns full sorted list
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
       id: nationId,
@@ -284,13 +269,14 @@ export default async function TeamsLeaderboardPage() {
     }
 
     const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
-        if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
-        if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
-        if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />;
+        if (!rank || rank < 1 || rank > 3) return null;
+        if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-0.5" />;
+        if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-0.5" />;
+        if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-0.5" />;
         return null;
     };
     
-    const iconColorClass = "text-accent"; 
+    const iconColorClass = "text-accent";
     
     let rankSuffix = "";
     if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
