@@ -252,6 +252,7 @@ export default async function TeamsLeaderboardPage() {
         if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; 
         return null;
       };
+      const nationData = nationsMap.get(detail.id);
       return (
         <div className="flex items-start gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
           <BadgeCheck className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
@@ -267,17 +268,12 @@ export default async function TeamsLeaderboardPage() {
             <Link 
               href={`/nations/${detail.id}`} 
               className="text-xs hover:underline hover:text-primary flex items-center" 
-              title={`${detail.name}${detail.artistName ? ` - ${detail.artistName}` : ''}${detail.songTitle ? ` - ${detail.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+              title={`${detail.name}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
             >
               <span className="font-medium">{detail.name}</span>
               <MedalIcon rank={detail.actualRank} />
               <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
             </Link>
-             {detail.artistName && detail.songTitle && (
-                <p className="text-[10px] text-muted-foreground truncate sm:text-xs" title={`${detail.artistName} - ${detail.songTitle}`}>
-                    {detail.artistName} - {detail.songTitle}
-                </p>
-            )}
           </div>
           <span className={cn(
             "text-xs ml-auto pl-1 mt-0.5", 
@@ -313,11 +309,14 @@ export default async function TeamsLeaderboardPage() {
         if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
         else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
         else rankSuffix = " in cat.";
-        rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
+        
+        if (!(detail.categoryName === "Miglior Canzone" && detail.actualCategoryRank > 3)){
+             rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
+        }
     }
     
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'} ${rankText} - Punti: ${detail.pointsAwarded}`;
+    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
 
     return (
       <div className="px-2 py-1.5">
@@ -332,32 +331,29 @@ export default async function TeamsLeaderboardPage() {
         </div>
 
         <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
                 {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
                 <Link href={`/nations/${detail.pickedNationId}`}
-                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex flex-col items-start gap-0.5")}
+                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex items-center gap-1")}
                         title={titleText}
                 >
-                    <div className="flex items-center gap-1">
-                        <Image
-                        src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-                        alt={detail.pickedNationName}
-                        width={20}
-                        height={13}
-                        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-                        data-ai-hint={`${detail.pickedNationName} flag`}
-                        />
-                        <span className="font-medium">
-                            {detail.pickedNationName}
+                    <Image
+                    src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+                    alt={detail.pickedNationName}
+                    width={20}
+                    height={13}
+                    className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                    data-ai-hint={`${detail.pickedNationName} flag`}
+                    />
+                    <span className="font-medium">
+                        {detail.pickedNationName}
+                    </span>
+                    <CategoryMedalIcon rank={detail.actualCategoryRank} />
+                    {rankText && (
+                        <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                            {rankText}
                         </span>
-                        <CategoryMedalIcon rank={detail.actualCategoryRank} />
-                        {rankText && detail.actualCategoryRank && (
-                            <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                                {rankText}
-                            </span>
-                        )}
-                    </div>
-                    {/* Artist and Song removed from here */}
+                    )}
                 </Link>
                 ) : (
                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
