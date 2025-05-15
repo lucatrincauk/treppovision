@@ -290,7 +290,7 @@ export default async function TeamsLeaderboardPage() {
         return null;
     };
     
-    const iconColorClass = "text-accent"; // All category icons are now yellow
+    const iconColorClass = "text-accent"; 
     
     let rankSuffix = "";
     if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
