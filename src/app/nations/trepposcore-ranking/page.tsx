@@ -127,9 +127,9 @@ export default function TreppoScoreRankingPage() {
                       <TableRow>
                         <TableHead className="w-[60px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
+                        {user && <TableHead className="text-right w-[120px]">Il Tuo Voto</TableHead>}
                         <TableHead className="text-right w-[140px]">TreppoScore Globale</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
-                        {user && <TableHead className="text-right w-[120px]">Il Tuo Voto</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -156,13 +156,6 @@ export default function TreppoScoreRankingPage() {
                               </div>
                             </Link>
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-accent">
-                            <div className="flex items-center justify-end">
-                              <Star className="w-4 h-4 mr-1 text-yellow-400"/>
-                              {nation.globalTreppoScore?.toFixed(2) ?? 'N/A'}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.globalVoteCount}</TableCell>
                           {user && (
                             <TableCell className="text-right">
                               {nation.userAverageScore !== null && nation.userAverageScore !== undefined ? (
@@ -175,6 +168,13 @@ export default function TreppoScoreRankingPage() {
                               )}
                             </TableCell>
                           )}
+                          <TableCell className="text-right font-semibold text-accent">
+                            <div className="flex items-center justify-end">
+                              <Star className="w-4 h-4 mr-1 text-yellow-400"/>
+                              {nation.globalTreppoScore?.toFixed(2) ?? 'N/A'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.globalVoteCount}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
