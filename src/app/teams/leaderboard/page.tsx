@@ -274,7 +274,7 @@ export default async function TeamsLeaderboardPage() {
               <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
             </Link>
              {detail.artistName && detail.songTitle && (
-                <p className="text-[10px] text-muted-foreground truncate" title={`${detail.artistName} - ${detail.songTitle}`}>
+                <p className="text-[10px] text-muted-foreground truncate sm:text-xs" title={`${detail.artistName} - ${detail.songTitle}`}>
                     {detail.artistName} - {detail.songTitle}
                 </p>
             )}
@@ -321,9 +321,9 @@ export default async function TeamsLeaderboardPage() {
 
 
     return (
-      <div className={cn("px-2 py-1.5 flex flex-col gap-0.5")}>
+      <div className={cn("px-2 py-1.5")}> {/* Removed flex flex-col gap-0.5, rely on block children */}
         {/* Line 1: Icon, Category Name, and Points Awarded */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-1.5">
             <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
             <span className="text-xs text-foreground/90 font-medium">{detail.categoryName}</span>
@@ -335,7 +335,7 @@ export default async function TeamsLeaderboardPage() {
 
         {/* Line 2: Indented Nation Details (if picked) */}
         {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
-          <div className={cn("pl-[calc(1rem+theme(spacing.1_5))]")}> {/* Indent based on icon size (1rem) + gap (0.375rem) */}
+          <div className={cn("w-full pl-[calc(1rem+theme(spacing.1_5))] mt-1")}> {/* Added mt-1 for space */}
             <Link href={`/nations/${detail.pickedNationId}`}
                   className={cn("text-xs hover:underline hover:text-primary flex flex-col items-start")}
                   title={titleText}
@@ -351,7 +351,7 @@ export default async function TeamsLeaderboardPage() {
                 />
                 <span className="font-medium">{detail.pickedNationName}</span>
                 <CategoryMedalIcon rank={detail.actualCategoryRank} />
-                {rankText && (
+                {detail.actualCategoryRank && ( // Always show rank if available
                   <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
                     {rankText}
                   </span>
@@ -365,7 +365,7 @@ export default async function TeamsLeaderboardPage() {
             </Link>
           </div>
         ) : ( /* No selection picked */
-          <div className={cn("pl-[calc(1rem+theme(spacing.1_5))] flex items-center gap-1.5 text-xs text-muted-foreground")}>
+          <div className={cn("w-full pl-[calc(1rem+theme(spacing.1_5))] mt-1 flex items-center gap-1.5 text-xs text-muted-foreground")}> {/* Added mt-1 for space */}
             <UserCircle className="h-4 w-4 flex-shrink-0" />
             <span>Nessuna selezione</span>
           </div>
@@ -432,12 +432,12 @@ export default async function TeamsLeaderboardPage() {
                           <TableCell className="align-top pt-4">
                               <div className="font-medium text-base mb-1">
                                 {team.name}
+                              </div>
                                  {team.creatorDisplayName && (
                                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 mb-2" title={team.creatorDisplayName}>
                                         <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
-                              </div>
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoVision:</p>
