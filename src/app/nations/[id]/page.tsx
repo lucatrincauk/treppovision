@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
 import { NationDetailImage } from "@/components/nations/nation-detail-image";
-import { UserVoteBadge } from "@/components/nations/user-vote-badge"; // New Import
+import { UserVoteBadge } from "@/components/nations/user-vote-badge";
+import { AllUsersAverageVoteBadge } from "@/components/nations/all-users-average-vote-badge"; // New Import
 
 interface NationPageProps {
   params: {
@@ -103,6 +104,7 @@ export default async function NationPage({ params }: NationPageProps) {
           </div>
           <div className="mt-4 flex flex-wrap gap-2 items-center">
             <UserVoteBadge nationId={nation.id} />
+            <AllUsersAverageVoteBadge nationId={nation.id} /> {/* New Badge */}
             <Badge variant="outline" className="text-sm py-1 px-3">
               <ListOrdered className="w-3 h-3 mr-1.5" />
               Ordine Esibizione: {nation.performingOrder}
