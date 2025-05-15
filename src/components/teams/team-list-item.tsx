@@ -85,10 +85,9 @@ interface TeamListItemProps {
   team: Team;
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
-  isEven?: boolean; // Added for zebra striping the whole card
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isEven }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -180,7 +179,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
   const isOwner = user?.uid === team.userId;
 
   return (
-    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300", isEven && "bg-muted")}>
+    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300")}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div>
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -218,14 +217,14 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
             key={`founder-${nation.id}`} 
             nation={nation} 
             IconComponent={BadgeCheck} 
-            isCorrectPick={false} 
+            isCorrectPick={false} // This section doesn't use correctness highlight
             isEvenRow={index % 2 !== 0} 
           />
         ))}
 
         {isOwner && (
           <>
-            <p className="text-xl font-bold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">
+            <p className="text-xl font-bold text-secondary mt-4 mb-1.5 pt-3 border-t border-border/30">
                 Voti TreppoScore
             </p>
             <SelectedNationDisplay 
@@ -266,6 +265,3 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     </Card>
   );
 }
-
-
-    
