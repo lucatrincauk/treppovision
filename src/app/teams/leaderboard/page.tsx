@@ -290,8 +290,14 @@ export default async function TeamsLeaderboardPage() {
         return null;
     };
     
-    const iconColorClass = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
-    const rankText = detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${detail.categoryName === "Peggior Canzone" ? " peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : " in cat.")})` : "";
+    const iconColorClass = "text-accent"; // All category icons are now yellow
+    
+    let rankSuffix = "";
+    if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
+    else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
+    else rankSuffix = " in cat.";
+
+    const rankText = detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${rankSuffix})` : "";
     const titleText = `${detail.pickedNationName || 'N/D'} ${rankText} - Punti: ${detail.pointsAwarded}`;
 
 
