@@ -4,8 +4,8 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; // Import Badge
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp } from "lucide-react"; // Added TrendingUp
+import { Badge } from "@/components/ui/badge";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,7 +35,6 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   }
 
   let nameForDisplay = nation.name;
-  // Display Eurovision rank only if 'label' is not present (i.e., not a "Voti TreppoScore" item)
   if (!label && nation.ranking && nation.ranking > 0) {
     nameForDisplay += ` (${nation.ranking}°)`;
   }
@@ -47,31 +46,35 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
       <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
       
-      <div className="flex flex-grow items-center justify-between w-full">
-        <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
-          <Image
-            src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
-            alt={`Bandiera ${nation.name}`}
-            width={24}
-            height={16}
-            className="rounded-sm border border-border/50 object-contain flex-shrink-0"
-            data-ai-hint={`${nation.name} flag`}
-          />
-          <div className="flex flex-col">
-              <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
+      <div className="flex-grow">
+        <Link href={`/nations/${nation.id}`} className="group">
+          <div className="flex items-center gap-2"> {/* Flag + Text content */}
+            <Image
+              src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+              alt={`Bandiera ${nation.name}`}
+              width={24}
+              height={16}
+              className="rounded-sm border border-border/50 object-contain flex-shrink-0"
+              data-ai-hint={`${nation.name} flag`}
+            />
+            <div className="flex flex-col"> {/* Text content: Name+Badge row, Artist-Song row */}
+              <div className="flex items-center gap-1"> {/* Name + Badge row */}
+                <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
                   {nameForDisplay}
-              </span>
+                </span>
+                {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
+                  <Badge variant="secondary" className="text-[11px] py-px px-1 shrink-0">
+                    <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
+                    {globalScoreForCategory.toFixed(2)}
+                  </Badge>
+                )}
+              </div>
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
-                  {nation.artistName} - {nation.songTitle}
+                {nation.artistName} - {nation.songTitle}
               </span>
+            </div>
           </div>
         </Link>
-        {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
-          <Badge variant="secondary" className="ml-2 text-xs py-0.5 px-1.5 shrink-0">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            {globalScoreForCategory.toFixed(2)}
-          </Badge>
-        )}
       </div>
     </div>
   );
@@ -255,4 +258,3 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
-
