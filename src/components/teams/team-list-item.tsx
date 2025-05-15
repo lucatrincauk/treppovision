@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, ListChecks } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, Award } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,7 +27,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   if (!nation) {
     return (
       <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400 font-bold")} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -35,21 +35,22 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
     );
   }
 
-  let nameForDisplay = nation.name;
-  // Display Eurovision rank only if label is NOT present (i.e., for "Scelte Principali")
-  if (!label && nation.ranking && nation.ranking > 0) {
-    nameForDisplay += ` (${nation.ranking}°)`
-  }
+  const MedalIcon = ({ rank }: { rank?: number }) => {
+    if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
+    if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
+    if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />;
+    return null;
+  };
   
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
     <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400 font-bold")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       
-      <div className="flex-grow">
-        <Link href={`/nations/${nation.id}`} className="group">
+      <div className="flex-grow flex items-center justify-between">
+        <Link href={`/nations/${nation.id}`} className="group flex-grow">
           <div className="flex items-center gap-2">
             <Image
               src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -62,8 +63,16 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
                 <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
-                  {nameForDisplay}
+                  {nation.name}
                 </span>
+                {!label && nation.ranking && nation.ranking > 0 && (
+                  <>
+                    <MedalIcon rank={nation.ranking} />
+                    <span className="text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5">
+                      ({nation.ranking}°)
+                    </span>
+                  </>
+                )}
               </div>
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
@@ -170,6 +179,13 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
   const founderNationsDetails = (team.founderChoices || [])
     .map(id => getNationDetailsById(id, nations))
     .filter(Boolean) as Nation[];
+
+  // Sort founderNationsDetails by actualRank (lower ranks first), undefined ranks last
+  founderNationsDetails.sort((a, b) => {
+      const rankA = a.ranking ?? Infinity;
+      const rankB = b.ranking ?? Infinity;
+      return rankA - rankB;
+  });
     
   const bestSongNationDetails = getNationDetailsById(team.bestSongNationId, nations);
   const bestPerformanceNationDetails = getNationDetailsById(team.bestPerformanceNationId, nations);
@@ -185,13 +201,12 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
           <CardTitle className="text-xl text-primary flex items-center gap-2">
             <Users className="h-5 w-5 text-accent" />
             {team.name}
+             {team.creatorDisplayName && (
+              <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
+                (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
+              </span>
+            )}
           </CardTitle>
-          {team.creatorDisplayName && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <UserCircle className="h-3 w-3" />
-              Creato da: {team.creatorDisplayName}
-            </p>
-          )}
         </div>
         {isOwner && teamsLocked === false && (
           <Button asChild variant="outline" size="sm" className="ml-auto">
@@ -217,7 +232,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
             key={`founder-${nation.id}`} 
             nation={nation} 
             IconComponent={BadgeCheck} 
-            isCorrectPick={false} // This section doesn't use correctness highlight
+            isCorrectPick={false} 
             isEvenRow={index % 2 !== 0} 
           />
         ))}
@@ -265,3 +280,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
+
+
+    
