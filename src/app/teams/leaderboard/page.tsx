@@ -317,12 +317,10 @@ export default async function TeamsLeaderboardPage() {
     }
     
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
-
+    const titleText = `${detail.pickedNationName || 'N/D'} ${rankText} - Punti: ${detail.pointsAwarded}`;
 
     return (
-      <div className={cn("px-2 py-1.5")}> {/* Removed flex flex-col gap-0.5, rely on block children */}
-        {/* Line 1: Icon, Category Name, and Points Awarded */}
+      <div className="px-2 py-1.5">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-1.5">
             <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
@@ -333,43 +331,42 @@ export default async function TeamsLeaderboardPage() {
           </span>
         </div>
 
-        {/* Line 2: Indented Nation Details (if picked) */}
-        {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
-          <div className={cn("w-full pl-[calc(1rem+theme(spacing.1_5))] mt-1")}> {/* Added mt-1 for space */}
-            <Link href={`/nations/${detail.pickedNationId}`}
-                  className={cn("text-xs hover:underline hover:text-primary flex flex-col items-start")}
-                  title={titleText}
-            >
-              <div className="flex items-center gap-1"> {/* Flag, Name, Medal, Rank */}
-                <Image
-                  src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-                  alt={detail.pickedNationName || ""}
-                  width={20}
-                  height={13}
-                  className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-                  data-ai-hint={`${detail.pickedNationName} flag`}
-                />
-                <span className="font-medium">{detail.pickedNationName}</span>
-                <CategoryMedalIcon rank={detail.actualCategoryRank} />
-                {detail.actualCategoryRank && ( // Always show rank if available
-                  <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                    {rankText}
-                  </span>
+        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
+            <div className="flex items-center gap-1.5">
+                {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
+                <Link href={`/nations/${detail.pickedNationId}`}
+                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex flex-col items-start gap-0.5")}
+                        title={titleText}
+                >
+                    <div className="flex items-center gap-1">
+                        <Image
+                        src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+                        alt={detail.pickedNationName}
+                        width={20}
+                        height={13}
+                        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                        data-ai-hint={`${detail.pickedNationName} flag`}
+                        />
+                        <span className="font-medium">
+                            {detail.pickedNationName}
+                        </span>
+                        <CategoryMedalIcon rank={detail.actualCategoryRank} />
+                        {rankText && detail.actualCategoryRank && (
+                            <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                                {rankText}
+                            </span>
+                        )}
+                    </div>
+                    {/* Artist and Song removed from here */}
+                </Link>
+                ) : (
+                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <UserCircle className="h-4 w-4 flex-shrink-0" />
+                        <span>Nessuna selezione</span>
+                    </div>
                 )}
-              </div>
-              {pickedNationFullDetails && ( /* Artist - Song */
-                <span className="text-[10px] text-muted-foreground truncate max-w-[180px] block" title={`${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}`}>
-                  {pickedNationFullDetails.artistName} - {pickedNationFullDetails.songTitle}
-                </span>
-              )}
-            </Link>
-          </div>
-        ) : ( /* No selection picked */
-          <div className={cn("w-full pl-[calc(1rem+theme(spacing.1_5))] mt-1 flex items-center gap-1.5 text-xs text-muted-foreground")}> {/* Added mt-1 for space */}
-            <UserCircle className="h-4 w-4 flex-shrink-0" />
-            <span>Nessuna selezione</span>
-          </div>
-        )}
+            </div>
+        </div>
       </div>
     );
   };
@@ -434,7 +431,7 @@ export default async function TeamsLeaderboardPage() {
                                 {team.name}
                               </div>
                                  {team.creatorDisplayName && (
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 mb-2" title={team.creatorDisplayName}>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
                                         <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
