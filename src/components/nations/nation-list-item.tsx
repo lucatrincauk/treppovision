@@ -138,7 +138,7 @@ export function NationListItem({ nation }: NationListItemProps) {
             <div className="absolute bottom-2 right-2 flex flex-col items-end space-y-0.5 text-xs">
               {/* User's Vote */}
               {!isLoadingUserVote && user && userAverageScore && (
-                <div className="flex items-center justify-center bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
+                <div className="flex items-center justify-start bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
                   <Star className="w-3 h-3 mr-1 text-accent-foreground" />
                   <span className="font-semibold">{userAverageScore}</span>
                 </div>
@@ -146,7 +146,7 @@ export function NationListItem({ nation }: NationListItemProps) {
 
               {/* Global Vote */}
               {!isLoadingGlobalVote && globalAverageScore !== null && globalVoteCount > 0 && (
-                <div className="flex items-center justify-center bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
+                <div className="flex items-center justify-start bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
                   <TrendingUp className="w-3 h-3 mr-1 text-secondary-foreground" />
                   <span className="font-semibold">{globalAverageScore.toFixed(2)}</span>
                   <span className="ml-0.5 text-secondary-foreground/80 font-semibold">({globalVoteCount})</span>
