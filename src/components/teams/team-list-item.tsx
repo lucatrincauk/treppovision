@@ -16,38 +16,36 @@ import { cn } from "@/lib/utils";
 interface SelectedNationDisplayProps {
   nation?: Nation;
   IconComponent: React.ElementType;
-  label?: string;
-  isCorrectPick?: boolean;
-  globalScoreForCategory?: number | null;
+  label?: string; // For "Voti TreppoScore" section labels like "Miglior Canzone:"
+  isCorrectPick?: boolean; // For highlighting "correct" picks based on global scores
+  globalScoreForCategory?: number | null; // The specific global score for this category
 }
 
 const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, globalScoreForCategory }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
       <div className="flex items-center gap-1.5 py-1">
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
-        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", "text-accent")} />
+        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
     );
   }
 
-  let titleText = `${nation.name}`;
-  if (nation.ranking && nation.ranking > 0) {
-    titleText += ` (${nation.ranking}°)`
+  // Determine display name based on context
+  let nameForDisplay = nation.name;
+  // Only show Eurovision rank if it's NOT a "Voti TreppoScore" item (i.e., label is not present)
+  if (!label && nation.ranking && nation.ranking > 0) {
+    nameForDisplay += ` (${nation.ranking}°)`;
   }
-  titleText += ` - ${nation.songTitle} by ${nation.artistName}`;
   
-  let displayName = nation.name;
-  if (nation.ranking && nation.ranking > 0) {
-    displayName += ` (${nation.ranking}°)`;
-  }
+  const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
 
   return (
     <div className="flex items-start gap-1.5 py-1">
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent")} />
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent" )} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
       <div className="flex flex-col">
         <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
@@ -61,16 +59,17 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
           />
           <div className="flex flex-col">
               <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
-                  {displayName}
+                  {nameForDisplay} {/* Nation name, with Eurovision rank only if not a "Voti TreppoScore" item */}
               </span>
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                   {nation.artistName} - {nation.songTitle}
               </span>
           </div>
         </Link>
-        {globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
-          <span className="text-xs text-muted-foreground/80 ml-1 mt-0.5">
-            (Globale: {globalScoreForCategory.toFixed(2)})
+        {/* Display the global score for this category if this is a "Voti TreppoScore" item and score is available */}
+        {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
+          <span className="text-xs text-primary font-medium ml-1 mt-0.5">
+            (Punteggio Globale: {globalScoreForCategory.toFixed(2)})
           </span>
         )}
       </div>
@@ -193,9 +192,15 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
-        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Nazioni:</p>
+        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">
+            Scelte Principali:
+        </p>
         {founderNationsDetails.map(nation => (
-          <SelectedNationDisplay key={nation.id} nation={nation} IconComponent={BadgeCheck} />
+          <SelectedNationDisplay 
+            key={`founder-${nation.id}`} 
+            nation={nation} 
+            IconComponent={BadgeCheck} 
+          />
         ))}
 
         {isOwner && (
