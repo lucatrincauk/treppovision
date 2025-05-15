@@ -200,7 +200,7 @@ export default async function TeamsLeaderboardPage() {
   }
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
-    <div className="flex items-center gap-1.5 py-0.5">
+    <div className="flex items-center gap-1.5 py-0.5"> {/* Consistent item styling */}
       <BadgeCheck className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
       <Image
         src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
@@ -210,10 +210,20 @@ export default async function TeamsLeaderboardPage() {
         className="rounded-sm border border-border/30 object-contain flex-shrink-0"
         data-ai-hint={`${detail.name} flag`}
       />
-      <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
+      <Link 
+        href={`/nations/${detail.id}`} 
+        className="text-xs hover:underline hover:text-primary truncate flex-grow" 
+        title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+      >
         <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-        <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
+        <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
       </Link>
+      <span className={cn(
+        "text-xs ml-auto pl-1", 
+        detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
+      )}>
+        {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
+      </span>
     </div>
   );
 
@@ -236,7 +246,7 @@ export default async function TeamsLeaderboardPage() {
         )}
         
         <span className="text-xs text-muted-foreground min-w-[120px] flex-shrink-0">{detail.categoryName}:</span>
-        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} className={cn("text-xs hover:underline hover:text-primary truncate", !detail.pickedNationId && "pointer-events-none")}>
+        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} className={cn("text-xs hover:underline hover:text-primary truncate flex-grow", !detail.pickedNationId && "pointer-events-none")}>
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
@@ -344,5 +354,7 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
+    
 
     
