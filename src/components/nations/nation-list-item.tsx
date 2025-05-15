@@ -138,18 +138,18 @@ export function NationListItem({ nation }: NationListItemProps) {
             <div className="absolute bottom-2 right-2 flex flex-col items-end space-y-0.5 text-xs">
               {/* User's Vote */}
               {!isLoadingUserVote && user && userAverageScore && (
-                <div className="flex items-center text-white bg-black/50 px-1.5 py-0.5 rounded-sm">
-                  <Star className="w-3 h-3 mr-1 text-yellow-400" />
+                <div className="flex items-center bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm">
+                  <Star className="w-3 h-3 mr-1 text-accent-foreground" />
                   <span>{userAverageScore}</span>
                 </div>
               )}
 
               {/* Global Vote */}
               {!isLoadingGlobalVote && globalAverageScore !== null && globalVoteCount > 0 && (
-                <div className="flex items-center text-white bg-black/50 px-1.5 py-0.5 rounded-sm">
-                  <Users className="w-3 h-3 mr-1" />
+                <div className="flex items-center bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-sm">
+                  <Users className="w-3 h-3 mr-1 text-secondary-foreground" />
                   <span>{globalAverageScore.toFixed(2)}</span>
-                  <span className="ml-0.5 text-white/80">({globalVoteCount})</span>
+                  <span className="ml-0.5 text-secondary-foreground/80">({globalVoteCount})</span>
                 </div>
               )}
             </div>
