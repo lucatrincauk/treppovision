@@ -23,7 +23,7 @@ interface SelectedNationDisplayProps {
 const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
-      <div className="flex items-center gap-2 py-1">
+      <div className="flex items-center gap-1.5 py-1">
         <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment */}
@@ -37,7 +37,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
   const displayName = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''}`;
 
   return (
-    <div className="flex items-center gap-2 py-1">
+    <div className="flex items-center gap-1.5 py-1"> {/* Reduced gap from gap-2 to gap-1.5 */}
       <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-muted-foreground/80")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment if no label */}
@@ -54,7 +54,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
             <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
                 {displayName}
             </span>
-            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80" title={titleText}>
+            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={titleText}>
                 {nation.artistName} - {nation.songTitle}
             </span>
         </div>
@@ -186,7 +186,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         {isOwner && (
           <>
             <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30 flex items-center">
-                 Voti TreppoScore:
+                 Voti TreppoScore
             </p>
             <SelectedNationDisplay 
                 nation={bestSongNationDetails} 
@@ -218,5 +218,3 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
-
-    
