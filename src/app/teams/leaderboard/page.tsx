@@ -5,11 +5,11 @@ import type { Team, Nation } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Flag } from "lucide-react"; // Added BadgeCheck, Flag
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Flag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-export const dynamic = 'force-dynamic'; // Ensures fresh data on every request
+export const dynamic = 'force-dynamic'; 
 
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
@@ -21,15 +21,15 @@ const getPointsForRank = (rank?: number): number => {
     case 5: return 10;
   }
   if (rank >= 6 && rank <= 14) {
-    return 10 - (rank - 5); // 6th=9, 7th=8, ..., 14th=1
+    return 10 - (rank - 5); 
   }
   if (rank === 15) return 0;
   if (rank >= 16 && rank <= 25) {
-    return 0 - (rank - 15); // 16th=-1, 17th=-2, ..., 25th=-10
+    return 0 - (rank - 15); 
   }
   if (rank === 26) return 25;
 
-  return 0; // Default for any other rank
+  return 0; 
 };
 
 interface NationScoreDetail {
@@ -38,7 +38,7 @@ interface NationScoreDetail {
   countryCode: string;
   actualRank?: number;
   points: number;
-  type: 'founder' | 'day1' | 'day2';
+  type: 'founder'; // Only founder type remains
 }
 
 interface TeamWithScore extends Team {
@@ -57,7 +57,7 @@ export default async function TeamsLeaderboardPage() {
     let score = 0;
     const nationDetails: NationScoreDetail[] = [];
 
-    const processNation = (nationId?: string, type: NationScoreDetail['type'] = 'founder'): NationScoreDetail | null => {
+    const processNation = (nationId?: string): NationScoreDetail | null => {
       if (!nationId) return null;
       const nation = nationsMap.get(nationId);
       if (nation) {
@@ -69,21 +69,16 @@ export default async function TeamsLeaderboardPage() {
           countryCode: nation.countryCode,
           actualRank: nation.ranking,
           points,
-          type
+          type: 'founder'
         };
       }
       return null;
     };
 
     (team.founderChoices || []).forEach(nationId => {
-      const detail = processNation(nationId, 'founder');
+      const detail = processNation(nationId);
       if (detail) nationDetails.push(detail);
     });
-    const day1Detail = processNation(team.day1NationId, 'day1');
-    if (day1Detail) nationDetails.push(day1Detail);
-    const day2Detail = processNation(team.day2NationId, 'day2');
-    if (day2Detail) nationDetails.push(day2Detail);
-
 
     return { ...team, score, nationScoreDetails: nationDetails };
   });
@@ -104,14 +99,14 @@ export default async function TeamsLeaderboardPage() {
   }
 
   const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail }) => {
-    const Icon = detail.type === 'founder' ? BadgeCheck : Flag;
+    const Icon = BadgeCheck; // All are now 'founder' type
     return (
       <div className="flex items-center gap-1.5 py-0.5">
         <Icon className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
         <Image
           src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
           alt={detail.name}
-          width={15} // smaller flag
+          width={15} 
           height={10}
           className="rounded-sm border border-border/30 object-contain flex-shrink-0"
           data-ai-hint={`${detail.name} flag`}
@@ -188,8 +183,8 @@ export default async function TeamsLeaderboardPage() {
               <div>
                 <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ogni squadra sceglie 3 nazioni per la "Prima Squadra" (categoria Fondatrici), 1 nazione per la "Seconda Squadra" (Prima Semifinale), e 1 nazione per la "Terza Squadra" (Seconda Semifinale).
-                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 5 nazioni in base alla loro classifica finale nell'Eurovision.
+                  Ogni squadra sceglie 3 nazioni per la "Prima Squadra".
+                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 3 nazioni in base alla loro classifica finale nell'Eurovision.
                   Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
                   Le nazioni senza ranking o con ranking 0 non contribuiscono (0 punti).
                 </p>

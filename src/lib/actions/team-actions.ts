@@ -39,16 +39,10 @@ export async function createTeamAction(
     return { success: false, message: "Il nome del team è obbligatorio." };
   }
   if (!data.founderChoices || data.founderChoices.length !== 3) {
-    return { success: false, message: "Devi selezionare esattamente tre nazioni fondatrici." };
+    return { success: false, message: "Devi selezionare esattamente tre nazioni per la prima squadra." };
   }
   if (new Set(data.founderChoices).size !== 3) {
-    return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
-  }
-  if (!data.day1NationId) {
-    return { success: false, message: "Devi selezionare una nazione per la Prima Semifinale." };
-  }
-  if (!data.day2NationId) {
-    return { success: false, message: "Devi selezionare una nazione per la Seconda Semifinale." };
+    return { success: false, message: "Le tre nazioni per la prima squadra devono essere diverse." };
   }
   if (!data.bestSongNationId) {
     return { success: false, message: "Devi selezionare la migliore canzone." };
@@ -71,8 +65,6 @@ export async function createTeamAction(
       userId,
       name: data.name,
       founderChoices: data.founderChoices,
-      day1NationId: data.day1NationId,
-      day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
@@ -131,16 +123,10 @@ export async function updateTeamAction(
       return { success: false, message: "Il nome del team è obbligatorio." };
     }
     if (!data.founderChoices || data.founderChoices.length !== 3) {
-      return { success: false, message: "Devi selezionare esattamente tre nazioni fondatrici." };
+      return { success: false, message: "Devi selezionare esattamente tre nazioni per la prima squadra." };
     }
     if (new Set(data.founderChoices).size !== 3) {
-      return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
-    }
-    if (!data.day1NationId) {
-      return { success: false, message: "Devi selezionare una nazione per la Prima Semifinale." };
-    }
-    if (!data.day2NationId) {
-      return { success: false, message: "Devi selezionare una nazione per la Seconda Semifinale." };
+      return { success: false, message: "Le tre nazioni per la prima squadra devono essere diverse." };
     }
     if (!data.bestSongNationId) {
         return { success: false, message: "Devi selezionare la migliore canzone." };
@@ -162,8 +148,6 @@ export async function updateTeamAction(
     const teamPayloadToUpdate = {
       name: data.name,
       founderChoices: data.founderChoices,
-      day1NationId: data.day1NationId,
-      day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,

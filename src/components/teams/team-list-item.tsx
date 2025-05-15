@@ -75,9 +75,6 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     .map(id => getNationDetailsById(id, nations))
     .filter(Boolean) as Nation[];
     
-  const day1Nation = getNationDetailsById(team.day1NationId, nations);
-  const day2Nation = getNationDetailsById(team.day2NationId, nations);
-
   const bestSongNation = getNationDetailsById(team.bestSongNationId, nations);
   const bestPerformanceNation = getNationDetailsById(team.bestPerformanceNationId, nations);
   const bestOutfitNation = getNationDetailsById(team.bestOutfitNationId, nations);
@@ -120,8 +117,6 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
         {founderNationsDetails.map(nation => (
           <SelectedNationDisplay key={nation.id} nation={nation} IconComponent={BadgeCheck} />
         ))}
-        <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
-        <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
 
         {isOwner && (
           <>

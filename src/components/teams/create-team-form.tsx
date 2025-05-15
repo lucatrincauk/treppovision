@@ -37,7 +37,7 @@ import { Loader2, Save, Users, Info, Edit, Lock, ListChecks } from "lucide-react
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import Image from "next/image"; // Added Image import
+import Image from "next/image";
 
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
@@ -46,8 +46,6 @@ const teamFormZodSchema = z.object({
     .refine(items => new Set(items).size === items.length, {
       message: "Le tre nazioni scelte per la prima squadra devono essere diverse.",
     }),
-  day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
-  day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
@@ -82,7 +80,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         setIsLoadingUserTeamCheck(true);
       }
 
-      if (user || !authLoading) { // Fetch nations even if user is not logged in initially
+      if (user || !authLoading) {
         try {
           const fetchedNations = await getNations();
           setNations(fetchedNations);
@@ -91,7 +89,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             const userTeams = await getTeamsByUserId(user.uid);
             setUserHasTeam(userTeams.length > 0);
           } else if (isEditMode && user) {
-            setUserHasTeam(true); // If editing, user must have a team
+            setUserHasTeam(true); 
           } else {
              if (!isEditMode) setUserHasTeam(false);
           }
@@ -109,7 +107,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
           if (!isEditMode) setIsLoadingUserTeamCheck(false);
         }
       } else {
-        // Handles case where auth is still loading and no user yet
         setIsLoadingNations(false);
         if (!isEditMode) setIsLoadingUserTeamCheck(false);
         if (!isEditMode) setUserHasTeam(false);
@@ -126,8 +123,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       ? {
           name: initialData.name,
           founderChoices: initialData.founderChoices || [],
-          day1NationId: initialData.day1NationId,
-          day2NationId: initialData.day2NationId,
           bestSongNationId: initialData.bestSongNationId || "",
           bestPerformanceNationId: initialData.bestPerformanceNationId || "",
           bestOutfitNationId: initialData.bestOutfitNationId || "",
@@ -136,8 +131,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       : {
           name: "",
           founderChoices: [],
-          day1NationId: "",
-          day2NationId: "",
           bestSongNationId: "",
           bestPerformanceNationId: "",
           bestOutfitNationId: "",
@@ -150,8 +143,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       form.reset({
         name: initialData.name,
         founderChoices: initialData.founderChoices || [],
-        day1NationId: initialData.day1NationId,
-        day2NationId: initialData.day2NationId,
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
         bestOutfitNationId: initialData.bestOutfitNationId || "",
@@ -258,8 +249,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     );
   }
 
-  const day1Nations = nations.filter(n => n.category === 'day1');
-  const day2Nations = nations.filter(n => n.category === 'day2');
 
   if (nations.length === 0 && !isLoadingNations) {
     return (
@@ -272,13 +261,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
     )
   }
-   if ((day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) { 
+   if (nations.length < 3 && !isLoadingNations) { 
      return (
         <Alert variant="destructive">
             <Users className="h-4 w-4" />
-            <AlertTitle>Categorie Nazioni Incomplete</AlertTitle>
+            <AlertTitle>Nazioni Insufficienti</AlertTitle>
             <AlertDescription>
-                Per creare un team, devono essere disponibili almeno una nazione per Prima Semifinale e Seconda Semifinale. Controlla i dati delle nazioni in Firestore.
+                Per creare un team, devono essere disponibili almeno 3 nazioni in totale. Controlla i dati delle nazioni in Firestore.
             </AlertDescription>
         </Alert>
      )
@@ -354,7 +343,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                                 field.onChange(currentSelections.filter(id => id !== nation.id));
                               }
                             }}
-                            disabled={ (field.value || []).length >= 3 && !(field.value || []).includes(nation.id) }
+                             disabled={ (field.value || []).length >=3 && !(field.value || []).includes(nation.id) }
                           />
                           <label
                             htmlFor={`founder-${nation.id}`}
@@ -384,57 +373,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
               <FormDescription>
                 Scegli esattamente 3 nazioni per la tua prima squadra.
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-
-        <FormField
-          control={form.control}
-          name="day1NationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Seconda squadra (Prima Semifinale)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day1Nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={day1Nations.length === 0 ? "Nessuna nazione disponibile (Prima Semifinale)" : "Seleziona nazione"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {day1Nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="day2NationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Terza squadra (Seconda Semifinale)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day2Nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={day2Nations.length === 0 ? "Nessuna nazione disponibile (Seconda Semifinale)" : "Seleziona nazione"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {day2Nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -548,7 +486,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || nations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0}
+            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || nations.length < 3 }
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}
@@ -558,7 +496,3 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     </Form>
   );
 }
-
-    
-
-    

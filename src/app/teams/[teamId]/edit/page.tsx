@@ -138,8 +138,6 @@ export default function EditTeamPage() {
   const initialFormData: TeamFormData = {
     name: team.name,
     founderChoices: team.founderChoices || [],
-    day1NationId: team.day1NationId,
-    day2NationId: team.day2NationId,
     creatorDisplayName: team.creatorDisplayName,
     bestSongNationId: team.bestSongNationId || "",
     bestPerformanceNationId: team.bestPerformanceNationId || "",

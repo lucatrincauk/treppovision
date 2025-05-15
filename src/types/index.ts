@@ -103,9 +103,7 @@ export interface AdminNationPayload {
 // Team Creation
 export interface TeamFormData {
   name: string;
-  founderChoices: string[]; // Changed from founderChoice1/2/3NationId
-  day1NationId: string;
-  day2NationId: string;
+  founderChoices: string[];
   creatorDisplayName: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
@@ -118,9 +116,7 @@ export interface Team {
   userId: string; // UID of the user who created the team
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; // Changed from founderChoice1/2/3NationId
-  day1NationId: string;
-  day2NationId: string;
+  founderChoices: string[];
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -138,3 +134,4 @@ export interface Team {
 export interface AdminSettings {
   teamsLocked: boolean;
 }
+
