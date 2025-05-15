@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, ListChecks } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -44,7 +44,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
-    <div className={cn("flex items-center gap-1.5", isEvenRow && "bg-muted/50 rounded-md px-2 py-1")}>
+    <div className={cn("flex items-center gap-1.5", isEvenRow ? "bg-muted/50 rounded-md px-2 py-1" : "py-1")}>
       <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       
@@ -212,12 +212,13 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         <p className="text-xl font-bold text-foreground mt-2 mb-1.5">
             Scelte Principali:
         </p>
-        {founderNationsDetails.map(nation => (
+        {founderNationsDetails.map((nation, index) => (
           <SelectedNationDisplay 
             key={`founder-${nation.id}`} 
             nation={nation} 
             IconComponent={BadgeCheck} 
-            isCorrectPick={false} // This logic could be added if founder choices also had a 'correct' state
+            isCorrectPick={false} 
+            isEvenRow={index % 2 !== 0} // Apply alternating background
           />
         ))}
 
