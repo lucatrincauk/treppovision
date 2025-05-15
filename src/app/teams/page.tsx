@@ -2,11 +2,12 @@
 "use client"; 
 
 import { useEffect, useState } from "react";
-import { getTeams, getTeamsByUserId } from "@/lib/team-service";
+import { getTeams, getTeamsByUserId, listenToTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import type { Team, Nation } from "@/types";
+import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; // Import new service
+import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
-import { TeamListItem } from "@/components/teams/team-list-item"; // Import TeamListItem
+import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
 import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp } from "lucide-react";
@@ -26,43 +27,67 @@ export default function TeamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [nationGlobalCategorizedScoresMap, setNationGlobalCategorizedScoresMap] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
+  const [isLoadingGlobalScores, setIsLoadingGlobalScores] = useState(true);
 
+  // Fetch static nations data once
   useEffect(() => {
-    async function fetchData() {
-      if (authIsLoading) {
-        setIsLoadingData(true);
-        return;
-      }
-      
-      setIsLoadingData(true);
-      setError(null);
+    async function fetchNationsData() {
       try {
         const nationsData = await getNations();
         setNations(nationsData);
-
-        const allTeamsData = await getTeams();
-        setAllFetchedTeams(allTeamsData);
-
-        if (user) {
-          const userSpecificTeams = allTeamsData.filter(team => team.userId === user.uid);
-          setUserTeams(userSpecificTeams);
-          setShowCreateTeamButton(userSpecificTeams.length === 0);
-          setOtherTeams(allTeamsData.filter(team => team.userId !== user.uid));
-        } else {
-          setUserTeams([]);
-          setShowCreateTeamButton(false); 
-          setOtherTeams(allTeamsData);
-        }
-
       } catch (fetchError: any) {
-        console.error("Failed to fetch teams or nations:", fetchError);
-        setError(fetchError.message || "Si è verificato un errore durante il caricamento dei dati.");
-      } finally {
-        setIsLoadingData(false);
+        console.error("Failed to fetch nations:", fetchError);
+        setError(prev => prev ? `${prev}\nNazioni non caricate.` : "Nazioni non caricate.");
+        setNations([]);
       }
     }
-    fetchData();
+    fetchNationsData();
+  }, []);
+
+  // Listen to real-time team updates
+  useEffect(() => {
+    if (authIsLoading) {
+      setIsLoadingData(true);
+      return;
+    }
+    
+    setIsLoadingData(true);
+    setError(null);
+
+    const unsubscribeTeams = listenToTeams((teamsData) => {
+      setAllFetchedTeams(teamsData);
+      if (user) {
+        const userSpecificTeams = teamsData.filter(team => team.userId === user.uid);
+        setUserTeams(userSpecificTeams);
+        setShowCreateTeamButton(userSpecificTeams.length === 0);
+        setOtherTeams(teamsData.filter(team => team.userId !== user.uid));
+      } else {
+        setUserTeams([]);
+        setShowCreateTeamButton(false); 
+        setOtherTeams(teamsData);
+      }
+      setIsLoadingData(false); // Set loading to false after first data received
+    }, (err) => {
+      console.error("Failed to fetch teams:", err);
+      setError(err.message || "Si è verificato un errore durante il caricamento delle squadre.");
+      setIsLoadingData(false);
+    });
+
+    return () => {
+      unsubscribeTeams();
+    };
   }, [authIsLoading, user]); 
+
+  // Listen to real-time global categorized scores
+  useEffect(() => {
+    setIsLoadingGlobalScores(true);
+    const unsubscribeGlobalScores = listenToAllVotesForAllNationsCategorized((scores) => {
+      setNationGlobalCategorizedScoresMap(scores);
+      setIsLoadingGlobalScores(false);
+    });
+    return () => unsubscribeGlobalScores();
+  }, []);
 
   useEffect(() => {
     if (!searchTerm) {
@@ -100,14 +125,14 @@ export default function TeamsPage() {
     </div>
   );
 
-  if (authIsLoading || isLoadingData) {
+  if (authIsLoading || isLoadingData || isLoadingGlobalScores) {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
         {displayHeaderAndButton()}
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Caricamento squadre...</p>
+          <p className="text-muted-foreground">Caricamento dati squadre...</p>
         </div>
       </div>
     );
@@ -171,10 +196,13 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
           </div>
-          {/* Render TeamListItem directly for full width */}
           {userTeams.map(team => (
-            <div key={team.id} className="mb-6"> {/* Added margin bottom for spacing if needed */}
-              <TeamListItem team={team} nations={nations} />
+            <div key={team.id} className="mb-6">
+              <TeamListItem 
+                team={team} 
+                nations={nations} 
+                nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+              />
             </div>
           ))}
         </section>
@@ -231,7 +259,11 @@ export default function TeamsPage() {
        )}
 
         {filteredOtherTeams.length > 0 && nations.length > 0 ? (
-          <TeamList teams={filteredOtherTeams} nations={nations} />
+          <TeamList 
+            teams={filteredOtherTeams} 
+            nations={nations} 
+            nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+          />
         ) : searchTerm && nations.length > 0 && !isLoadingData ? (
           <p className="text-center text-muted-foreground py-10">Nessuna squadra trovata corrispondente alla tua ricerca.</p>
         ) : filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && nations.length > 0 && !isLoadingData ? (
@@ -242,4 +274,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-

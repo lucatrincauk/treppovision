@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import type { Team } from "@/types";
-import { collection, getDocs, query, orderBy, where, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, doc, getDoc, onSnapshot, type Unsubscribe } from "firebase/firestore";
 
 const TEAMS_COLLECTION = "teams";
 
@@ -59,3 +59,26 @@ export async function getTeamById(teamId: string): Promise<Team | undefined> {
     return undefined;
   }
 }
+
+export const listenToTeams = (
+  callback: (teams: Team[]) => void,
+  onError: (error: Error) => void
+): Unsubscribe => {
+  const teamsCollectionRef = collection(db, TEAMS_COLLECTION);
+  const q = query(teamsCollectionRef, orderBy("createdAt", "desc"));
+
+  const unsubscribe = onSnapshot(q,
+    (querySnapshot) => {
+      const teamsList = querySnapshot.docs.map(docSnap => ({ // Renamed doc to docSnap to avoid conflict
+        id: docSnap.id,
+        ...docSnap.data(),
+      } as Team));
+      callback(teamsList);
+    },
+    (error) => {
+      console.error("Error listening to teams collection:", error);
+      onError(error);
+    }
+  );
+  return unsubscribe;
+};

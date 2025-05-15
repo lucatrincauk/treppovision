@@ -3,8 +3,8 @@
 
 import * as React from "react";
 import { getNations } from "@/lib/nation-service";
-import { listenToAllVotesForAllNations, getAllUserVotes } from "@/lib/voting-service";
-import type { Nation, NationWithTreppoScore, Vote, NationGlobalScore } from "@/types";
+import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib/voting-service";
+import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
 import { Users, BarChart3, Star, User, Loader2, TrendingUp } from "lucide-react";
@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 export default function TreppoScoreRankingPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [allNations, setAllNations] = React.useState<Nation[]>([]);
-  const [globalScoresMap, setGlobalScoresMap] = React.useState<Map<string, NationGlobalScore>>(new Map());
+  const [globalScoresMap, setGlobalScoresMap] = React.useState<Map<string, NationGlobalCategorizedScores>>(new Map());
   const [userVotesMap, setUserVotesMap] = React.useState<Map<string, Vote | null>>(new Map());
   
   const [nationsWithScores, setNationsWithScores] = React.useState<NationWithTreppoScore[]>([]);
@@ -77,7 +77,7 @@ export default function TreppoScoreRankingPage() {
     // Initial overall loading state
     setIsLoadingData(true); 
     
-    const unsubscribe = listenToAllVotesForAllNations((scores) => {
+    const unsubscribe = listenToAllVotesForAllNationsCategorized((scores) => {
       setGlobalScoresMap(scores);
       // Set loading to false after first data received from listener,
       // or if nations/user votes are still loading, wait for them.
@@ -102,7 +102,7 @@ export default function TreppoScoreRankingPage() {
 
           return {
             ...nation,
-            globalTreppoScore: scoreData?.averageScore ?? null,
+            globalTreppoScore: scoreData?.overallAverageScore ?? null, // Use overallAverageScore from new type
             globalVoteCount: scoreData?.voteCount ?? 0,
             userAverageScore: userAverageScore,
           };

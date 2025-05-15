@@ -136,14 +136,23 @@ export interface AdminSettings {
   teamsLocked: boolean;
 }
 
-export interface NationGlobalScore {
-  averageScore: number | null;
+export interface NationGlobalScore { // Kept for compatibility if used elsewhere, but new type below is more specific
+  averageScore: number | null; // This is the overall TreppoScore
   voteCount: number;
 }
 
+export interface NationGlobalCategorizedScores {
+  averageSongScore: number | null;
+  averagePerformanceScore: number | null;
+  averageOutfitScore: number | null;
+  overallAverageScore: number | null; // This is the TreppoScore (avg of song, perf, outfit for that nation)
+  voteCount: number;
+}
+
+
 export interface NationWithTreppoScore extends Nation {
-  globalTreppoScore: number | null;
+  globalTreppoScore: number | null; // Overall average TreppoScore
   globalVoteCount: number;
-  userAverageScore?: number | null; // Added for user's specific vote on this page
+  userAverageScore?: number | null; // User's specific vote for this nation
 }
 

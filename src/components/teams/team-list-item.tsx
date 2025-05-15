@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Team, Nation } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, ListChecks } from "lucide-react";
@@ -9,18 +9,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import React from "react";
+import React, { useEffect, useState } from "react"; // Import useEffect and useState
+import { cn } from "@/lib/utils";
 
-interface TeamListItemProps {
-  team: Team;
-  nations: Nation[];
+
+interface SelectedNationDisplayProps {
+  nation?: Nation;
+  IconComponent: React.ElementType;
+  label?: string;
+  isCorrectPick?: boolean;
 }
 
-const getNationDetailsById = (id: string, nations: Nation[]): Nation | undefined => {
-  return nations.find(n => n.id === id);
-};
-
-const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nation, IconComponent: React.ElementType, label?: string }) => {
+const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
       <div className="flex items-center gap-2 py-1">
@@ -33,11 +33,11 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
     );
   }
 
-  const titleText = `${nation.name} - ${nation.songTitle}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''}`;
+  const titleText = `${nation.name} - ${nation.songTitle}`;
 
   return (
     <div className="flex items-center gap-2 py-1">
-      <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-muted-foreground/80")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
         <Image
@@ -50,20 +50,29 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
         />
         <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
           {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
-          {nation.ranking && nation.ranking > 0 && (
-            <span className="ml-1 text-xs text-accent font-semibold">({nation.ranking}°)</span>
-          )}
         </span>
       </Link>
     </div>
   );
 };
 
-export function TeamListItem({ team, nations }: TeamListItemProps) {
-  const { user } = useAuth();
-  const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
+interface TeamListItemProps {
+  team: Team;
+  nations: Nation[];
+  nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
+}
 
-  React.useEffect(() => {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }: TeamListItemProps) {
+  const { user } = useAuth();
+  const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
+
+  const [bestSongNationIdGlobal, setBestSongNationIdGlobal] = useState<string | null>(null);
+  const [worstSongNationIdGlobal, setWorstSongNationIdGlobal] = useState<string | null>(null);
+  const [bestPerformanceNationIdGlobal, setBestPerformanceNationIdGlobal] = useState<string | null>(null);
+  const [bestOutfitNationIdGlobal, setBestOutfitNationIdGlobal] = useState<string | null>(null);
+
+
+  useEffect(() => {
     async function fetchLockStatus() {
       const status = await getTeamsLockedStatus();
       setTeamsLocked(status);
@@ -71,14 +80,63 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     fetchLockStatus();
   }, []);
 
+  useEffect(() => {
+    if (nationGlobalCategorizedScoresMap.size > 0) {
+      let maxSongScore = -Infinity;
+      let tempBestSongId: string | null = null;
+      nationGlobalCategorizedScoresMap.forEach((scores, nationId) => {
+        if (scores.averageSongScore !== null && scores.averageSongScore > maxSongScore) {
+          maxSongScore = scores.averageSongScore;
+          tempBestSongId = nationId;
+        }
+      });
+      setBestSongNationIdGlobal(tempBestSongId);
+
+      let minSongScore = Infinity;
+      let tempWorstSongId: string | null = null;
+      nationGlobalCategorizedScoresMap.forEach((scores, nationId) => {
+        if (scores.averageSongScore !== null && scores.voteCount > 0 && scores.averageSongScore < minSongScore) {
+          minSongScore = scores.averageSongScore;
+          tempWorstSongId = nationId;
+        }
+      });
+      setWorstSongNationIdGlobal(tempWorstSongId);
+      
+      let maxPerfScore = -Infinity;
+      let tempBestPerfId: string | null = null;
+      nationGlobalCategorizedScoresMap.forEach((scores, nationId) => {
+        if (scores.averagePerformanceScore !== null && scores.averagePerformanceScore > maxPerfScore) {
+          maxPerfScore = scores.averagePerformanceScore;
+          tempBestPerfId = nationId;
+        }
+      });
+      setBestPerformanceNationIdGlobal(tempBestPerfId);
+
+      let maxOutfitScore = -Infinity;
+      let tempBestOutfitId: string | null = null;
+      nationGlobalCategorizedScoresMap.forEach((scores, nationId) => {
+        if (scores.averageOutfitScore !== null && scores.averageOutfitScore > maxOutfitScore) {
+          maxOutfitScore = scores.averageOutfitScore;
+          tempBestOutfitId = nationId;
+        }
+      });
+      setBestOutfitNationIdGlobal(tempBestOutfitId);
+    }
+  }, [nationGlobalCategorizedScoresMap]);
+
+
+  const getNationDetailsById = (id: string, nationsList: Nation[]): Nation | undefined => {
+    return nationsList.find(n => n.id === id);
+  };
+
   const founderNationsDetails = (team.founderChoices || [])
     .map(id => getNationDetailsById(id, nations))
     .filter(Boolean) as Nation[];
     
-  const bestSongNation = getNationDetailsById(team.bestSongNationId, nations);
-  const bestPerformanceNation = getNationDetailsById(team.bestPerformanceNationId, nations);
-  const bestOutfitNation = getNationDetailsById(team.bestOutfitNationId, nations);
-  const worstSongNation = getNationDetailsById(team.worstSongNationId, nations);
+  const bestSongNationDetails = getNationDetailsById(team.bestSongNationId, nations);
+  const bestPerformanceNationDetails = getNationDetailsById(team.bestPerformanceNationId, nations);
+  const bestOutfitNationDetails = getNationDetailsById(team.bestOutfitNationId, nations);
+  const worstSongNationDetails = getNationDetailsById(team.worstSongNationId, nations);
 
   const isOwner = user?.uid === team.userId;
 
@@ -113,18 +171,40 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
-        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Scelte Principali:</p>
+        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Nazioni:</p>
         {founderNationsDetails.map(nation => (
           <SelectedNationDisplay key={nation.id} nation={nation} IconComponent={BadgeCheck} />
         ))}
 
         {isOwner && (
           <>
-            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">Voti TreppoScore:</p>
-            <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
-            <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
-            <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
-            <SelectedNationDisplay nation={worstSongNation} IconComponent={ThumbsDown} label="Peggior Canzone:" />
+            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30 flex items-center">
+                 Voti TreppoScore:
+            </p>
+            <SelectedNationDisplay 
+                nation={bestSongNationDetails} 
+                IconComponent={Music2} 
+                label="Miglior Canzone:" 
+                isCorrectPick={!!bestSongNationIdGlobal && bestSongNationDetails?.id === bestSongNationIdGlobal}
+            />
+            <SelectedNationDisplay 
+                nation={bestPerformanceNationDetails} 
+                IconComponent={Star} 
+                label="Miglior Performance:"
+                isCorrectPick={!!bestPerformanceNationIdGlobal && bestPerformanceNationDetails?.id === bestPerformanceNationIdGlobal}
+            />
+            <SelectedNationDisplay 
+                nation={bestOutfitNationDetails} 
+                IconComponent={Shirt} 
+                label="Miglior Outfit:"
+                isCorrectPick={!!bestOutfitNationIdGlobal && bestOutfitNationDetails?.id === bestOutfitNationIdGlobal}
+            />
+            <SelectedNationDisplay 
+                nation={worstSongNationDetails} 
+                IconComponent={ThumbsDown} 
+                label="Peggior Canzone:"
+                isCorrectPick={!!worstSongNationIdGlobal && worstSongNationDetails?.id === worstSongNationIdGlobal}
+            />
           </>
         )}
       </CardContent>

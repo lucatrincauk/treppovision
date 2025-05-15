@@ -1,5 +1,5 @@
 
-import type { Vote, NationGlobalScore } from "@/types";
+import type { Vote, NationGlobalScore, NationGlobalCategorizedScores } from "@/types";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot, type Unsubscribe, getDocs } from "firebase/firestore";
 
@@ -58,71 +58,58 @@ export const listenToAllVotesForNation = (
   return unsubscribe;
 };
 
-// Fetches all votes and calculates global scores for all nations (one-time fetch)
-export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlobalScore>> => {
-  const nationScoresMap = new Map<string, { totalAverageSum: number; voteCount: number }>();
 
-  try {
-    const votesCollectionRef = collection(db, "votes");
-    const querySnapshot = await getDocs(votesCollectionRef);
-
-    querySnapshot.forEach((docSnap) => {
-      const vote = docSnap.data() as Vote;
-      if (vote && vote.scores && vote.nationId) {
-        const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
-
-        const currentNationData = nationScoresMap.get(vote.nationId) || { totalAverageSum: 0, voteCount: 0 };
-        currentNationData.totalAverageSum += individualAverage;
-        currentNationData.voteCount += 1;
-        nationScoresMap.set(vote.nationId, currentNationData);
-      }
-    });
-
-    const result = new Map<string, NationGlobalScore>();
-    nationScoresMap.forEach((data, nationId) => {
-      result.set(nationId, {
-        averageScore: data.voteCount > 0 ? data.totalAverageSum / data.voteCount : null,
-        voteCount: data.voteCount,
-      });
-    });
-    return result;
-
-  } catch (error) {
-    console.error("Error fetching all nations global scores:", error);
-    return new Map(); // Return empty map on error
-  }
-};
-
-// Listens to all votes for ALL nations and provides aggregated data in real-time
-export const listenToAllVotesForAllNations = (
-  callback: (scores: Map<string, NationGlobalScore>) => void
+// Listens to all votes for ALL nations and provides detailed categorized aggregated data in real-time
+export const listenToAllVotesForAllNationsCategorized = (
+  callback: (scores: Map<string, NationGlobalCategorizedScores>) => void
 ): Unsubscribe => {
   const votesCollectionRef = collection(db, "votes");
 
   const unsubscribe = onSnapshot(votesCollectionRef, (querySnapshot) => {
-    const nationScoresMap = new Map<string, { totalAverageSum: number; voteCount: number }>();
+    const nationAggregates = new Map<string, {
+      totalSong: number;
+      totalPerformance: number;
+      totalOutfit: number;
+      voteCount: number;
+    }>();
 
     querySnapshot.forEach((docSnap) => {
       const vote = docSnap.data() as Vote;
       if (vote && vote.scores && vote.nationId) {
-        const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
-        const currentNationData = nationScoresMap.get(vote.nationId) || { totalAverageSum: 0, voteCount: 0 };
-        currentNationData.totalAverageSum += individualAverage;
-        currentNationData.voteCount += 1;
-        nationScoresMap.set(vote.nationId, currentNationData);
+        const currentAgg = nationAggregates.get(vote.nationId) || {
+          totalSong: 0,
+          totalPerformance: 0,
+          totalOutfit: 0,
+          voteCount: 0,
+        };
+        currentAgg.totalSong += vote.scores.song;
+        currentAgg.totalPerformance += vote.scores.performance;
+        currentAgg.totalOutfit += vote.scores.outfit;
+        currentAgg.voteCount += 1;
+        nationAggregates.set(vote.nationId, currentAgg);
       }
     });
 
-    const result = new Map<string, NationGlobalScore>();
-    nationScoresMap.forEach((data, nationId) => {
+    const result = new Map<string, NationGlobalCategorizedScores>();
+    nationAggregates.forEach((data, nationId) => {
+      const voteCount = data.voteCount;
+      const avgSong = voteCount > 0 ? data.totalSong / voteCount : null;
+      const avgPerf = voteCount > 0 ? data.totalPerformance / voteCount : null;
+      const avgOutfit = voteCount > 0 ? data.totalOutfit / voteCount : null;
+      const overallAvg = (avgSong !== null && avgPerf !== null && avgOutfit !== null)
+                         ? (avgSong + avgPerf + avgOutfit) / 3
+                         : null;
       result.set(nationId, {
-        averageScore: data.voteCount > 0 ? data.totalAverageSum / data.voteCount : null,
-        voteCount: data.voteCount,
+        averageSongScore: avgSong,
+        averagePerformanceScore: avgPerf,
+        averageOutfitScore: avgOutfit,
+        overallAverageScore: overallAvg,
+        voteCount: voteCount,
       });
     });
     callback(result);
   }, (error) => {
-    console.error("Error listening to all votes for all nations:", error);
+    console.error("Error listening to all votes for all nations (categorized):", error);
     callback(new Map()); // Return empty map on error
   });
 
@@ -154,20 +141,12 @@ export const getAllUserVotes = async (userId: string): Promise<Map<string, Vote 
 };
 
 
-// --- Potentially keep localStorage functions for specific offline/quick-access scenarios if needed,
-// --- but ensure they are not the source of truth for voting.
-// --- For this refactor, we are focusing on Firestore as the source of truth.
-
 export const getVotesForNationFromLocalStorage_DEPRECATED = (nationId: string): Vote[] => {
-  // This function would read from localStorage if you still needed it for some reason.
-  // For now, it's not directly used by the Firestore-backed voting form.
   console.warn("getVotesForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
   return [];
 };
 
 export const getUserVoteForNationFromLocalStorage_DEPRECATED = (nationId: string, userId: string): Vote | undefined => {
-  // This function would read from localStorage if you still needed it for some reason.
   console.warn("getUserVoteForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
   return undefined;
 };
-
