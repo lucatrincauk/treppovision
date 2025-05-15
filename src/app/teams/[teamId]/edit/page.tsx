@@ -104,7 +104,7 @@ export default function EditTeamPage() {
       </Alert>
     );
   }
-  
+
   if (teamsLocked) {
     return (
       <Alert variant="destructive" className="max-w-lg mx-auto">
@@ -134,10 +134,12 @@ export default function EditTeamPage() {
       </Alert>
     );
   }
-  
+
   const initialFormData: TeamFormData = {
     name: team.name,
-    founderNationId: team.founderNationId,
+    founderChoice1NationId: team.founderChoice1NationId || "",
+    founderChoice2NationId: team.founderChoice2NationId || "",
+    founderChoice3NationId: team.founderChoice3NationId || "",
     day1NationId: team.day1NationId,
     day2NationId: team.day2NationId,
     creatorDisplayName: team.creatorDisplayName,
@@ -160,9 +162,9 @@ export default function EditTeamPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateTeamForm 
-            initialData={initialFormData} 
-            isEditMode={true} 
+          <CreateTeamForm
+            initialData={initialFormData}
+            isEditMode={true}
             teamId={team.id}
             teamsLocked={teamsLocked} // Pass locked status to form
           />

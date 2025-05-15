@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import type { TeamFormData, Team } from "@/types"; 
+import type { TeamFormData, Team } from "@/types";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, getDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminSettingsAction } from "./admin-actions"; // Import admin settings
@@ -10,14 +10,13 @@ import { getAdminSettingsAction } from "./admin-actions"; // Import admin settin
 const TEAMS_COLLECTION = "teams";
 
 export async function createTeamAction(
-  data: TeamFormData, 
+  data: TeamFormData,
   userId: string | undefined
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
     return { success: false, message: "Utente non autenticato. Effettua il login per creare un team." };
   }
 
-  // Check admin settings
   const adminSettings = await getAdminSettingsAction();
   if (adminSettings.teamsLocked) {
     return { success: false, message: "La creazione e modifica delle squadre è temporaneamente bloccata dall'amministratore." };
@@ -36,12 +35,14 @@ export async function createTeamAction(
     return { success: false, message: "Errore del server durante la verifica del team. Riprova." };
   }
 
-
   if (!data.name.trim()) {
     return { success: false, message: "Il nome del team è obbligatorio." };
   }
-  if (!data.founderNationId) {
-    return { success: false, message: "Devi selezionare una nazione Fondatrice." };
+  if (!data.founderChoice1NationId || !data.founderChoice2NationId || !data.founderChoice3NationId) {
+    return { success: false, message: "Devi selezionare tre nazioni fondatrici." };
+  }
+  if (new Set([data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId]).size !== 3) {
+    return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
   }
   if (!data.day1NationId) {
     return { success: false, message: "Devi selezionare una nazione per la Prima Semifinale." };
@@ -66,10 +67,12 @@ export async function createTeamAction(
   }
 
   try {
-    const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any } = { 
+    const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any } = {
       userId,
       name: data.name,
-      founderNationId: data.founderNationId,
+      founderChoice1NationId: data.founderChoice1NationId,
+      founderChoice2NationId: data.founderChoice2NationId,
+      founderChoice3NationId: data.founderChoice3NationId,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,
@@ -79,12 +82,14 @@ export async function createTeamAction(
       worstSongNationId: data.worstSongNationId,
       createdAt: serverTimestamp(),
     };
-    
+
     const docRef = await addDoc(collection(db, TEAMS_COLLECTION), teamPayloadToSave);
 
     revalidatePath("/teams");
     revalidatePath("/teams/new");
-    
+    revalidatePath("/teams/leaderboard");
+
+
     return { success: true, message: "Team creato con successo!", teamId: docRef.id };
   } catch (error) {
     console.error("Errore durante la creazione del team:", error);
@@ -96,7 +101,7 @@ export async function createTeamAction(
 
 export async function updateTeamAction(
   teamId: string,
-  data: TeamFormData, 
+  data: TeamFormData,
   userId: string | undefined
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
@@ -106,7 +111,6 @@ export async function updateTeamAction(
     return { success: false, message: "ID del team mancante." };
   }
 
-  // Check admin settings
   const adminSettings = await getAdminSettingsAction();
   if (adminSettings.teamsLocked) {
     return { success: false, message: "La creazione e modifica delle squadre è temporaneamente bloccata dall'amministratore." };
@@ -128,8 +132,11 @@ export async function updateTeamAction(
     if (!data.name.trim()) {
       return { success: false, message: "Il nome del team è obbligatorio." };
     }
-     if (!data.founderNationId) {
-      return { success: false, message: "Devi selezionare una nazione Fondatrice." };
+    if (!data.founderChoice1NationId || !data.founderChoice2NationId || !data.founderChoice3NationId) {
+      return { success: false, message: "Devi selezionare tre nazioni fondatrici." };
+    }
+    if (new Set([data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId]).size !== 3) {
+      return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
     }
     if (!data.day1NationId) {
       return { success: false, message: "Devi selezionare una nazione per la Prima Semifinale." };
@@ -156,10 +163,12 @@ export async function updateTeamAction(
 
     const teamPayloadToUpdate = {
       name: data.name,
-      founderNationId: data.founderNationId,
+      founderChoice1NationId: data.founderChoice1NationId,
+      founderChoice2NationId: data.founderChoice2NationId,
+      founderChoice3NationId: data.founderChoice3NationId,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
-      creatorDisplayName: data.creatorDisplayName, 
+      creatorDisplayName: data.creatorDisplayName,
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,
@@ -171,8 +180,10 @@ export async function updateTeamAction(
 
     revalidatePath("/teams");
     revalidatePath(`/teams/${teamId}/edit`);
-    revalidatePath(`/teams`); 
-    
+    revalidatePath(`/teams`);
+    revalidatePath("/teams/leaderboard");
+
+
     return { success: true, message: "Team aggiornato con successo!", teamId: teamId };
   } catch (error)
  {
@@ -186,7 +197,7 @@ export async function updateTeamAction(
 export async function updateTeamCreatorDisplayNameAction(
   teamId: string,
   newDisplayName: string,
-  userId: string 
+  userId: string
 ): Promise<{ success: boolean; message: string }> {
   if (!userId) {
     return { success: false, message: "Utente non autenticato." };
@@ -197,11 +208,6 @@ export async function updateTeamCreatorDisplayNameAction(
   if (!newDisplayName.trim()) {
     return { success: false, message: "Il nuovo nome visualizzato non può essere vuoto." };
   }
-  
-  // Note: This action might also need to check adminSettings.teamsLocked
-  // if changing display name is considered part of "team editing".
-  // For now, let's assume display name sync is allowed even if general editing is locked.
-  // If not, add the adminSettings check here as well.
 
   try {
     const teamDocRef = doc(db, TEAMS_COLLECTION, teamId);
@@ -222,9 +228,11 @@ export async function updateTeamCreatorDisplayNameAction(
       updatedAt: serverTimestamp(),
     });
 
-    revalidatePath("/teams"); 
-    revalidatePath(`/teams/${teamId}/edit`); 
-    
+    revalidatePath("/teams");
+    revalidatePath(`/teams/${teamId}/edit`);
+    revalidatePath("/teams/leaderboard");
+
+
     return { success: true, message: "Nome del creatore del team aggiornato." };
   } catch (error) {
     console.error(`Errore durante l'aggiornamento del nome del creatore per il team ${teamId}:`, error);

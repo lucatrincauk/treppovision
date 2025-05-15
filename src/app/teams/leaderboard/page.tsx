@@ -20,19 +20,15 @@ const getPointsForRank = (rank?: number): number => {
     case 4: return 15;
     case 5: return 10;
   }
-  // Ranks 6th to 14th: Points decrease by 1 for each rank, starting from 9 for 6th to 1 for 14th.
   if (rank >= 6 && rank <= 14) {
-    return 10 - (rank - 5); 
+    return 10 - (rank - 5);
   }
-  // 15th place: 0 points
   if (rank === 15) return 0;
-  // Ranks 16th to 25th: Points decrease by 1 for each rank, starting from -1 for 16th to -10 for 25th.
   if (rank >= 16 && rank <= 25) {
-    return 0 - (rank - 15); 
+    return 0 - (rank - 15);
   }
-  // 26th place: 25 points
   if (rank === 26) return 25;
-  
+
   return 0; // Default for any other rank
 };
 
@@ -40,15 +36,17 @@ interface NationScoreDetail {
   id: string;
   name: string;
   countryCode: string;
-  actualRank?: number; 
-  points: number;     
+  actualRank?: number;
+  points: number;
 }
 
 interface TeamWithScore extends Team {
   score: number;
-  rank?: number; 
+  rank?: number;
   nationScoreDetails: {
-    founder: NationScoreDetail | null;
+    founder1: NationScoreDetail | null;
+    founder2: NationScoreDetail | null;
+    founder3: NationScoreDetail | null;
     day1: NationScoreDetail | null;
     day2: NationScoreDetail | null;
   };
@@ -63,31 +61,36 @@ export default async function TeamsLeaderboardPage() {
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
     const nationDetails: TeamWithScore['nationScoreDetails'] = {
-      founder: null,
+      founder1: null,
+      founder2: null,
+      founder3: null,
       day1: null,
       day2: null,
     };
 
-    const processNation = (nationId: string): NationScoreDetail | null => {
+    const processNation = (nationId?: string): NationScoreDetail | null => {
+      if (!nationId) return null;
       const nation = nationsMap.get(nationId);
       if (nation) {
         const points = getPointsForRank(nation.ranking);
         score += points;
-        return { 
-          id: nation.id, 
-          name: nation.name, 
-          countryCode: nation.countryCode, 
-          actualRank: nation.ranking, 
-          points 
+        return {
+          id: nation.id,
+          name: nation.name,
+          countryCode: nation.countryCode,
+          actualRank: nation.ranking,
+          points
         };
       }
       return null;
     };
 
-    nationDetails.founder = processNation(team.founderNationId);
+    nationDetails.founder1 = processNation(team.founderChoice1NationId);
+    nationDetails.founder2 = processNation(team.founderChoice2NationId);
+    nationDetails.founder3 = processNation(team.founderChoice3NationId);
     nationDetails.day1 = processNation(team.day1NationId);
     nationDetails.day2 = processNation(team.day2NationId);
-    
+
     return { ...team, score, nationScoreDetails: nationDetails };
   });
 
@@ -106,8 +109,8 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail | null }) => {
-    if (!detail) return <div className="text-xs text-muted-foreground/80">Nazione non trovata</div>;
+  const NationDetailDisplay = ({ detail, type }: { detail: NationScoreDetail | null, type?: string }) => {
+    if (!detail) return <div className="text-xs text-muted-foreground/80">{type ? `${type}: ` : ''}Nazione non trovata</div>;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
         <Image
@@ -164,9 +167,11 @@ export default async function TeamsLeaderboardPage() {
                     <TableCell className="align-top">
                         <div className="font-medium truncate mb-1">{team.name}</div>
                         <div className="space-y-0.5 text-xs text-muted-foreground">
-                            <NationDetailDisplay detail={team.nationScoreDetails.founder} />
-                            <NationDetailDisplay detail={team.nationScoreDetails.day1} />
-                            <NationDetailDisplay detail={team.nationScoreDetails.day2} />
+                            <NationDetailDisplay detail={team.nationScoreDetails.founder1} type="F1"/>
+                            <NationDetailDisplay detail={team.nationScoreDetails.founder2} type="F2"/>
+                            <NationDetailDisplay detail={team.nationScoreDetails.founder3} type="F3"/>
+                            <NationDetailDisplay detail={team.nationScoreDetails.day1} type="S1"/>
+                            <NationDetailDisplay detail={team.nationScoreDetails.day2} type="S2"/>
                         </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell truncate align-top" title={team.creatorDisplayName}>
@@ -190,8 +195,8 @@ export default async function TeamsLeaderboardPage() {
               <div>
                 <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ogni squadra sceglie 3 nazioni (una per categoria: Fondatrici, Prima Semifinale, Seconda Semifinale).
-                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 3 nazioni in base alla loro classifica finale nell'Eurovision.
+                  Ogni squadra sceglie 3 nazioni per la "Prima Squadra" (categoria Fondatrici), 1 nazione per la "Seconda Squadra" (Prima Semifinale), e 1 nazione per la "Terza Squadra" (Seconda Semifinale).
+                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 5 nazioni in base alla loro classifica finale nell'Eurovision.
                   Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
                   Le nazioni senza ranking o con ranking 0 non contribuiscono (0 punti).
                 </p>
@@ -202,4 +207,3 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-

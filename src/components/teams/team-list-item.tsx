@@ -1,10 +1,10 @@
 
-"use client"; 
+"use client";
 
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, ListChecks, Lock } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,9 +24,9 @@ const SelectedNationDisplay = ({ nation, IconComponent, label }: { nation?: Nati
   if (!nation) {
     return (
       <div className="flex items-center gap-2 py-1">
-        {label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />}
+        <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" /> } 
+        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" />}
         <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -72,7 +72,9 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
   }, []);
 
 
-  const founderNation = getNationDetailsById(team.founderNationId, nations);
+  const founderNation1 = getNationDetailsById(team.founderChoice1NationId, nations);
+  const founderNation2 = getNationDetailsById(team.founderChoice2NationId, nations);
+  const founderNation3 = getNationDetailsById(team.founderChoice3NationId, nations);
   const day1Nation = getNationDetailsById(team.day1NationId, nations);
   const day2Nation = getNationDetailsById(team.day2NationId, nations);
 
@@ -115,10 +117,12 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
         <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Scelte Principali:</p>
-        <SelectedNationDisplay nation={founderNation} IconComponent={BadgeCheck} />
+        <SelectedNationDisplay nation={founderNation1} IconComponent={BadgeCheck} />
+        <SelectedNationDisplay nation={founderNation2} IconComponent={BadgeCheck} />
+        <SelectedNationDisplay nation={founderNation3} IconComponent={BadgeCheck} />
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
-        
+
         {isOwner && (
           <>
             <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">Voti Treppovision:</p>

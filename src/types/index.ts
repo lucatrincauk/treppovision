@@ -11,23 +11,23 @@ export interface Nation {
   category: NationCategory;
   ranking?: number;
   performingOrder: number;
-  songDescription?: string; 
-  songLyrics?: string; 
+  songDescription?: string;
+  songLyrics?: string;
   dataAiHintFlag?: string;
 }
 
 export interface NationFormData {
-  id: string; 
+  id: string;
   name: string;
   countryCode: string;
   songTitle: string;
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; 
+  ranking?: string;
   performingOrder: number;
-  songDescription?: string; 
-  songLyrics?: string; 
+  songDescription?: string;
+  songLyrics?: string;
 }
 
 export interface User {
@@ -87,26 +87,28 @@ export interface AuthContextType {
 }
 
 export interface AdminNationPayload {
-  id: string; 
+  id: string;
   name: string;
   countryCode: string;
   songTitle: string;
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: number; 
+  ranking?: number;
   performingOrder: number;
-  songDescription?: string; 
-  songLyrics?: string; 
+  songDescription?: string;
+  songLyrics?: string;
 }
 
 // Team Creation
 export interface TeamFormData {
   name: string;
-  founderNationId: string;
+  founderChoice1NationId: string; // Changed from founderNationId
+  founderChoice2NationId: string; // New
+  founderChoice3NationId: string; // New
   day1NationId: string;
   day2NationId: string;
-  creatorDisplayName: string; 
+  creatorDisplayName: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -116,9 +118,11 @@ export interface TeamFormData {
 export interface Team {
   id: string; // Firestore document ID
   userId: string; // UID of the user who created the team
-  creatorDisplayName: string; 
+  creatorDisplayName: string;
   name: string;
-  founderNationId: string;
+  founderChoice1NationId: string; // Changed from founderNationId
+  founderChoice2NationId: string; // New
+  founderChoice3NationId: string; // New
   day1NationId: string;
   day2NationId: string;
   bestSongNationId: string;
@@ -128,11 +132,11 @@ export interface Team {
   createdAt: {
     seconds: number;
     nanoseconds: number;
-  } | any; // Allow for Firestore Timestamp type
+  } | number | null; // Allow for Firestore Timestamp type or milliseconds
   updatedAt?: { // Optional: for when the team is updated
     seconds: number;
     nanoseconds: number;
-  } | any;
+  } | number | null;
 }
 
 export interface AdminSettings {

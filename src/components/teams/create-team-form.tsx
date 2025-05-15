@@ -36,14 +36,26 @@ import Link from "next/link";
 
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
-  founderNationId: z.string().min(1, "Devi selezionare una nazione per la prima squadra."),
+  founderChoice1NationId: z.string().min(1, "Devi selezionare la prima nazione per la prima squadra."),
+  founderChoice2NationId: z.string().min(1, "Devi selezionare la seconda nazione per la prima squadra."),
+  founderChoice3NationId: z.string().min(1, "Devi selezionare la terza nazione per la prima squadra."),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
   worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
-});
+}).refine(
+  (data) => {
+    const founderSelections = [data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId];
+    const uniqueSelections = new Set(founderSelections);
+    return uniqueSelections.size === founderSelections.length;
+  },
+  {
+    message: "Le tre nazioni fondatrici scelte per la prima squadra devono essere diverse.",
+    path: ["founderChoice1NationId"], // You can also set it to one of the other fields or a general error
+  }
+);
 
 type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
 
@@ -51,7 +63,7 @@ interface CreateTeamFormProps {
   initialData?: TeamFormData;
   isEditMode?: boolean;
   teamId?: string;
-  teamsLocked?: boolean | null; // Add this prop
+  teamsLocked?: boolean | null;
 }
 
 export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsLocked }: CreateTeamFormProps) {
@@ -67,7 +79,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   React.useEffect(() => {
     async function fetchInitialData() {
       setIsLoadingNations(true);
-      if (!isEditMode) { 
+      if (!isEditMode) {
         setIsLoadingUserTeamCheck(true);
       }
 
@@ -80,7 +92,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             const userTeams = await getTeamsByUserId(user.uid);
             setUserHasTeam(userTeams.length > 0);
           } else {
-            setUserHasTeam(true); 
+            setUserHasTeam(true);
           }
         } catch (error) {
           console.error("Failed to fetch initial data for team form:", error);
@@ -113,12 +125,14 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     }
   }, [toast, user, authLoading, isEditMode]);
 
-  const form = useForm<TeamFormValues>({ 
+  const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormZodSchema),
-    defaultValues: initialData 
+    defaultValues: initialData
       ? {
           name: initialData.name,
-          founderNationId: initialData.founderNationId,
+          founderChoice1NationId: initialData.founderChoice1NationId || "",
+          founderChoice2NationId: initialData.founderChoice2NationId || "",
+          founderChoice3NationId: initialData.founderChoice3NationId || "",
           day1NationId: initialData.day1NationId,
           day2NationId: initialData.day2NationId,
           bestSongNationId: initialData.bestSongNationId || "",
@@ -128,7 +142,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         }
       : {
           name: "",
-          founderNationId: "",
+          founderChoice1NationId: "",
+          founderChoice2NationId: "",
+          founderChoice3NationId: "",
           day1NationId: "",
           day2NationId: "",
           bestSongNationId: "",
@@ -140,9 +156,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
 
   React.useEffect(() => {
     if (initialData) {
-      form.reset({ 
+      form.reset({
         name: initialData.name,
-        founderNationId: initialData.founderNationId,
+        founderChoice1NationId: initialData.founderChoice1NationId || "",
+        founderChoice2NationId: initialData.founderChoice2NationId || "",
+        founderChoice3NationId: initialData.founderChoice3NationId || "",
         day1NationId: initialData.day1NationId,
         day2NationId: initialData.day2NationId,
         bestSongNationId: initialData.bestSongNationId || "",
@@ -187,8 +205,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         description: `Il team "${values.name}" è stato ${isEditMode ? 'aggiornato' : 'creato'} con successo.`,
       });
       if (!isEditMode) setUserHasTeam(true);
-      router.push("/teams"); 
-      router.refresh(); 
+      router.push("/teams");
+      router.refresh();
     } else {
       toast({
         title: isEditMode ? "Errore Aggiornamento Team" : "Errore Creazione Team",
@@ -238,7 +256,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     );
   }
 
-  if (!isEditMode && userHasTeam === true) { 
+  if (!isEditMode && userHasTeam === true) {
     return (
       <Alert>
         <Info className="h-4 w-4" />
@@ -250,7 +268,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       </Alert>
     );
   }
-  
+
   const founderNations = nations.filter(n => n.category === 'founders');
   const day1Nations = nations.filter(n => n.category === 'day1');
   const day2Nations = nations.filter(n => n.category === 'day2');
@@ -302,10 +320,60 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
 
         <FormField
           control={form.control}
-          name="founderNationId"
+          name="founderChoice1NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prima squadra (nazioni fondatrici)</FormLabel>
+              <FormLabel>Prima squadra - Scelta 1 (Nazioni Fondatrici)</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {founderNations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="founderChoice2NationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prima squadra - Scelta 2 (Nazioni Fondatrici)</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {founderNations.map((nation) => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {nation.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="founderChoice3NationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prima squadra - Scelta 3 (Nazioni Fondatrici)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -330,7 +398,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
           name="day1NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Seconda squadra (Prima semifinale)</FormLabel>
+              <FormLabel>Seconda squadra (Prima Semifinale)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day1Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -349,13 +417,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="day2NationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Terza squadra (Seconda semifinale)</FormLabel>
+              <FormLabel>Terza squadra (Seconda Semifinale)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || day2Nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
@@ -480,9 +548,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         />
 
 
-        <Button 
-            type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
+        <Button
+            type="submit"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
