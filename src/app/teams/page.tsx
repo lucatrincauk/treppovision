@@ -129,7 +129,7 @@ export default function TeamsPage() {
       return;
     }
 
-    const processedTeams = allFetchedTeams.map(team => ({ ...team })); // No score calculation here
+    const processedTeams = allFetchedTeams.map(team => ({ ...team })); 
 
     if (user) {
       const userSpecificTeams = processedTeams.filter(team => team.userId === user.uid);
@@ -369,11 +369,11 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Squadra</TableHead>
-                    <TableHead className="hidden lg:table-cell">Pronostici Treppovision</TableHead>
+                    <TableHead>Pronostici Treppovision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
-                    <TableHead className="hidden xl:table-cell">Miglior Outfit</TableHead>
-                    <TableHead className="hidden xl:table-cell">Peggior Canzone</TableHead>
+                    <TableHead className="hidden lg:table-cell">Miglior Outfit</TableHead>
+                    <TableHead className="hidden lg:table-cell">Peggior Canzone</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -386,7 +386,7 @@ export default function TeamsPage() {
                           {team.creatorDisplayName}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
+                      <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
                             const nation = nationsMap.get(nationId);
@@ -409,8 +409,8 @@ export default function TeamsPage() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestSong')}</TableCell>
                       <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestPerf')}</TableCell>
-                      <TableCell className="hidden xl:table-cell">{renderCategoryPickCell(team, 'bestOutfit')}</TableCell>
-                      <TableCell className="hidden xl:table-cell">{renderCategoryPickCell(team, 'worstSong')}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{renderCategoryPickCell(team, 'bestOutfit')}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{renderCategoryPickCell(team, 'worstSong')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
