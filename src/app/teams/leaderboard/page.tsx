@@ -1,7 +1,7 @@
 
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; // Updated import
+import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -63,7 +63,7 @@ interface CategoryPickDetail {
   actualCategoryRank?: number; 
   pickedNationScoreInCategory?: number | null;
   pointsAwarded: number;
-  iconName: string; // Changed from icon: React.ElementType to iconName: string
+  iconName: string; 
 }
 
 interface TeamWithScore extends Team {
@@ -87,8 +87,8 @@ const getTopNationsForCategory = (
     }))
     .filter(item => item.score !== null && (scoresMap.get(item.id)?.voteCount || 0) > 0) 
     .sort((a, b) => {
-      if (a.score === null) return 1; // push nulls to the end
-      if (b.score === null) return -1; // push nulls to the end
+      if (a.score === null) return 1; 
+      if (b.score === null) return -1; 
       if (sortOrder === 'desc') {
         return b.score - a.score;
       }
@@ -316,8 +316,9 @@ export default async function TeamsLeaderboardPage() {
           </span>
           <CategoryMedalIcon rank={detail.actualCategoryRank} />
             {detail.actualCategoryRank && (
-                <span className="text-muted-foreground ml-0.5 text-xs">
-                    ({detail.actualCategoryRank}°
+                <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                    (
+                    {detail.actualCategoryRank}°
                     {detail.pickedNationScoreInCategory !== null && detail.pickedNationScoreInCategory !== undefined && (
                         <span className="ml-1 flex items-center">
                             <TrendingUp className="w-3 h-3 mr-0.5 text-primary" />
@@ -369,6 +370,7 @@ export default async function TeamsLeaderboardPage() {
                 teams={top3Teams}
                 nations={allNations}
                 nationGlobalCategorizedScoresMap={globalCategorizedScoresMap}
+                disableListItemEdit={true} 
               />
             </section>
           )}

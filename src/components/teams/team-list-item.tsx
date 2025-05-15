@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListChecks, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,12 +18,11 @@ interface SelectedNationDisplayProps {
   label?: string;
   isEvenRow?: boolean;
   isOwnTeamCard?: boolean;
-  categoryRank?: number; 
+  categoryRank?: number;
   isCorrectPick?: boolean;
-  globalScoreForCategory?: number | null;
 }
 
-const SelectedNationDisplay = ({ nation, IconComponent, label, isEvenRow, categoryRank, isCorrectPick, globalScoreForCategory }: SelectedNationDisplayProps) => {
+const SelectedNationDisplay = ({ nation, IconComponent, label, isEvenRow, categoryRank, isCorrectPick }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
       <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
@@ -43,32 +42,50 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isEvenRow, catego
   };
 
   let rankText = "";
-  if (label && categoryRank && categoryRank > 0) { 
-    let categorySuffix = "in cat.";
-    if (label === "Peggior Canzone:") categorySuffix = "peggiore";
-    else if (label === "Miglior Canzone:") categorySuffix = "";
-    
-    rankText = `(${categoryRank}°${categorySuffix ? ' ' + categorySuffix : ''})`;
-  } else if (!label && nation.ranking && nation.ranking > 0) { 
-    rankText = `(${nation.ranking}°)`;
+  let nameForDisplay = nation.name;
+  let titleText = `${nation.name} - ${nation.artistName} - ${nation.songTitle}`;
+
+  if (label) { // Voti TreppoScore context
+    if (categoryRank && categoryRank > 0) {
+      let categorySuffix = "in cat.";
+      if (label === "Peggior Canzone:") categorySuffix = "peggiore";
+      else if (label === "Miglior Canzone:") categorySuffix = "";
+      rankText = `(${categoryRank}°${categorySuffix ? ' ' + categorySuffix : ''})`;
+    }
+    titleText = `${nation.name}${rankText} - ${nation.artistName} - ${nation.songTitle}`;
+  } else { // Scelte Principali context
+    if (nation.ranking && nation.ranking > 0) {
+      rankText = `(${nation.ranking}°)`;
+    }
+    titleText = `${nation.name}${rankText} - ${nation.artistName} - ${nation.songTitle}`;
   }
-  
-  const nameForDisplay = nation.name;
-  const titleText = `${nation.name}${rankText} - ${nation.artistName} - ${nation.songTitle}${globalScoreForCategory ? ` (Punteggio Globale: ${globalScoreForCategory.toFixed(2)})` : ''}`;
+
   const iconColor = isCorrectPick ? "text-accent" : "text-accent";
+  
+  const mainContainerClasses = cn(
+    "flex gap-1.5 px-2 py-1",
+    label ? "flex-col sm:flex-row sm:items-center py-1.5" : "items-center", // Vertical stack on mobile for labeled items
+    isEvenRow && "bg-muted/50 rounded-md"
+  );
+
+  const labelAndIconContainerClasses = cn(
+    "flex items-center gap-1.5",
+    label && "w-full sm:w-auto" // Full width on mobile for label group
+  );
+  
+  const nationInfoContainerClasses = cn(
+    "flex-grow flex items-center",
+    label && "w-full sm:w-auto" // Full width on mobile for nation info
+  );
 
   return (
-    <div className={cn(
-        "flex items-center gap-1.5 px-2 py-1", 
-        isEvenRow && "bg-muted/50 rounded-md",
-        label && "flex-col sm:flex-row sm:items-center sm:gap-1.5 py-1.5" 
-    )}>
-      <div className={cn("flex items-center gap-1.5", label && "w-full sm:w-auto")}>
+    <div className={mainContainerClasses}>
+      <div className={labelAndIconContainerClasses}>
         <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       </div>
       
-      <div className={cn("flex-grow flex items-center justify-between", label && "w-full sm:w-auto")}>
+      <div className={nationInfoContainerClasses}>
          <Link href={`/nations/${nation.id}`} className="group flex-grow">
           <div className="flex items-center gap-2">
             <Image
@@ -86,7 +103,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isEvenRow, catego
                 </span>
                 {!label && nation.ranking && <MedalIcon rank={nation.ranking} />}
                 {label && categoryRank && <MedalIcon rank={categoryRank} />}
-                {rankText && (
+                 {rankText && (
                   <span className="text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5">
                     {rankText}
                   </span>
@@ -95,11 +112,6 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isEvenRow, catego
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
               </span>
-              {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
-                <span className="text-xs text-primary font-medium mt-0.5">
-                  Punteggio Globale: {globalScoreForCategory.toFixed(2)}
-                </span>
-              )}
             </div>
           </div>
         </Link>
@@ -114,9 +126,10 @@ interface TeamListItemProps {
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
   isOwnTeamCard?: boolean;
+  disableEdit?: boolean; // New prop
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isOwnTeamCard = false }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isOwnTeamCard = false, disableEdit = false }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -169,18 +182,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     const rankIndex = sortedList.findIndex(n => n.id === nationId);
     return rankIndex !== -1 ? rankIndex + 1 : undefined;
   };
-
-  const getGlobalScoreForCategory = (nationId?: string, category?: 'song' | 'performance' | 'outfit'): number | null | undefined => {
-    if (!nationId || !category || !nationGlobalCategorizedScoresMap.has(nationId)) return undefined;
-    const scores = nationGlobalCategorizedScoresMap.get(nationId);
-    if (!scores) return undefined;
-    switch (category) {
-      case 'song': return scores.averageSongScore;
-      case 'performance': return scores.averagePerformanceScore;
-      case 'outfit': return scores.averageOutfitScore;
-      default: return undefined;
-    }
-  };
   
   const founderNationsDetails = (team.founderChoices || [])
     .map(id => getNationDetailsById(id, nations))
@@ -205,8 +206,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
   const bestPerfPickRank = sortedCategoryNations ? getCategoryRank(team.bestPerformanceNationId, sortedCategoryNations.bestPerf) : undefined;
   const bestOutfitPickRank = sortedCategoryNations ? getCategoryRank(team.bestOutfitNationId, sortedCategoryNations.bestOutfit) : undefined;
 
-  const teamScore = team.score; 
-
   return (
     <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300")}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
@@ -221,21 +220,16 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
             )}
           </CardTitle>
         </div>
-        <div className="flex flex-col items-end ml-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
-          {typeof teamScore === 'number' && (
-            <div className="text-lg font-bold text-primary mb-1 whitespace-nowrap">
-              {teamScore} pt
+        <div className={cn(
+            "ml-2 flex-shrink-0 flex gap-2",
+            isOwnTeamCard ? "flex-row-reverse items-center" : "flex-col items-end" 
+        )}>
+          {typeof team.score === 'number' && (
+            <div className="text-lg font-bold text-primary whitespace-nowrap">
+              {team.score} pt
             </div>
           )}
-          {isOwner && teamsLocked === false && !isOwnTeamCard && ( // Hide general edit button if it's the own team card shown on /teams page
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/teams/${team.id}/edit`}>
-                <Edit className="h-3 w-3 mr-1.5" />
-                Modifica
-              </Link>
-            </Button>
-          )}
-           {isOwner && teamsLocked === false && isOwnTeamCard && ( // Specific placement for own team card edit
+          {isOwner && teamsLocked === false && isOwnTeamCard && !disableEdit && (
             <Button asChild variant="outline" size="sm">
               <Link href={`/teams/${team.id}/edit`}>
                 <Edit className="h-3 w-3 mr-1.5" />
@@ -243,7 +237,15 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
               </Link>
             </Button>
           )}
-          {isOwner && teamsLocked === true && (
+          {isOwner && teamsLocked === false && !isOwnTeamCard && !disableEdit && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/teams/${team.id}/edit`}>
+                <Edit className="h-3 w-3 mr-1.5" />
+                Modifica
+              </Link>
+            </Button>
+          )}
+          {isOwner && teamsLocked === true && !disableEdit && ( // Also check !disableEdit here
               <Button variant="outline" size="sm" disabled>
                   <Lock className="h-3 w-3 mr-1.5 text-destructive"/>
                   Bloccato
@@ -259,14 +261,16 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
           <SelectedNationDisplay 
             key={`founder-${nation.id}`} 
             nation={nation} 
-            IconComponent={BadgeCheck} 
+            IconComponent={BadgeCheck}
+            isCorrectPick={nation.ranking !== undefined && nation.ranking > 0 && nation.ranking <= 3} // Example: highlight if actual Eurovision rank is top 3
+            categoryRank={nation.ranking} // Pass actual Eurovision rank for potential medal display
             isEvenRow={index % 2 !== 0}
           />
         ))}
 
         { (isOwnTeamCard || user?.isAdmin) && ( 
           <>
-            <p className="text-xl font-bold text-secondary mt-4 mb-1.5 pt-3 border-t border-border/30">
+            <p className="text-xl font-bold text-secondary mt-4 pt-3 border-t border-border/30 mb-1.5">
                 Voti TreppoScore:
             </p>
             <SelectedNationDisplay 
@@ -276,7 +280,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                 isEvenRow={false}
                 categoryRank={bestSongPickRank}
                 isCorrectPick={bestSongPickRank !== undefined && bestSongPickRank <= 3}
-                globalScoreForCategory={getGlobalScoreForCategory(team.bestSongNationId, 'song')}
             />
             <SelectedNationDisplay 
                 nation={bestPerformanceNationDetails} 
@@ -285,7 +288,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                 isEvenRow={true}
                 categoryRank={bestPerfPickRank}
                 isCorrectPick={bestPerfPickRank !== undefined && bestPerfPickRank <=3 }
-                globalScoreForCategory={getGlobalScoreForCategory(team.bestPerformanceNationId, 'performance')}
             />
             <SelectedNationDisplay 
                 nation={bestOutfitNationDetails} 
@@ -294,8 +296,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                 isEvenRow={false}
                 categoryRank={bestOutfitPickRank}
                 isCorrectPick={bestOutfitPickRank !== undefined && bestOutfitPickRank <= 3}
-                globalScoreForCategory={getGlobalScoreForCategory(team.bestOutfitNationId, 'outfit')}
-
             />
             <SelectedNationDisplay 
                 nation={worstSongNationDetails} 
@@ -304,7 +304,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                 isEvenRow={true}
                 categoryRank={worstSongPickRank}
                 isCorrectPick={worstSongPickRank !== undefined && worstSongPickRank <= 3} 
-                globalScoreForCategory={getGlobalScoreForCategory(team.worstSongNationId, 'song')} 
             />
           </>
         )}
@@ -312,5 +311,4 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     </Card>
   );
 }
-
     

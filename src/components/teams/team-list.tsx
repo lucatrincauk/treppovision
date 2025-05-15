@@ -6,9 +6,10 @@ interface TeamListProps {
   teams: Team[];
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
+  disableListItemEdit?: boolean; // New prop
 }
 
-export function TeamList({ teams, nations, nationGlobalCategorizedScoresMap }: TeamListProps) {
+export function TeamList({ teams, nations, nationGlobalCategorizedScoresMap, disableListItemEdit = false }: TeamListProps) {
   if (teams.length === 0) {
     return <p className="text-muted-foreground text-center py-10">Nessuna squadra trovata.</p>;
   }
@@ -24,6 +25,7 @@ export function TeamList({ teams, nations, nationGlobalCategorizedScoresMap }: T
           team={team} 
           nations={nations} 
           nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+          disableEdit={disableListItemEdit} // Pass it down
         />
       ))}
     </div>
