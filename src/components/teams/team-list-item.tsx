@@ -26,7 +26,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   if (!nation) {
     return (
       <div className="flex items-center gap-1.5 py-1">
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400")} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -35,20 +35,21 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   }
 
   let nameForDisplay = nation.name;
-  if (!label && nation.ranking && nation.ranking > 0) { // Only show Eurovision rank for non-labeled items (Scelte Principali)
+  // Only show Eurovision rank if label is NOT present (i.e., for "Scelte Principali")
+  if (!label && nation.ranking && nation.ranking > 0) {
     nameForDisplay += ` (${nation.ranking}°)`
   }
   
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
-    <div className="flex items-center gap-1.5 py-1"> {/* Changed from items-start to items-center */}
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} /> {/* Removed mt-0.5 */}
-      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>} {/* Removed mt-0.5 */}
+    <div className="flex items-center gap-1.5 py-1">
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400")} />
+      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       
       <div className="flex-grow">
         <Link href={`/nations/${nation.id}`} className="group">
-          <div className="flex items-center gap-2"> {/* Flag + Text content */}
+          <div className="flex items-center gap-2">
             <Image
               src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
               alt={`Bandiera ${nation.name}`}
@@ -57,8 +58,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
               className="rounded-sm border border-border/50 object-contain flex-shrink-0"
               data-ai-hint={`${nation.name} flag`}
             />
-            <div className="flex flex-col"> {/* Text content: Name+Badge row, Artist-Song row */}
-              <div className="flex items-center gap-1"> {/* Name + (Badge if applicable) row */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1">
                 <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
                   {nameForDisplay}
                 </span>
@@ -83,9 +84,10 @@ interface TeamListItemProps {
   team: Team;
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
+  isEven?: boolean;
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isEven }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -177,7 +179,10 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
   const isOwner = user?.uid === team.userId;
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+    <Card className={cn(
+      "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300",
+      isEven ? "bg-muted" : "" // Default bg-card will apply if not isEven
+    )}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div>
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -207,7 +212,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
-        <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">
+        <p className="text-xl font-semibold text-foreground mt-2 mb-1.5">
             Scelte Principali:
         </p>
         {founderNationsDetails.map(nation => (
@@ -220,7 +225,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
 
         {isOwner && (
           <>
-            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">
+            <p className="text-xl font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">
                  Voti TreppoScore
             </p>
             <SelectedNationDisplay 
