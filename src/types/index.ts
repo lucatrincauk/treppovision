@@ -39,14 +39,15 @@ export interface User {
 }
 
 export interface Vote {
-  nationId: string;
   userId: string;
+  nationId: string;
   scores: {
     song: number;
     performance: number;
     outfit: number;
   };
-  timestamp: number;
+  timestamp: number; // Client-side timestamp
+  serverTimestamp?: any; // Firestore server timestamp
 }
 
 export interface AggregatedScore extends Nation {
@@ -79,7 +80,7 @@ export interface AuthContextType {
   loginWithEmail: (data: LoginFormData) => Promise<boolean>;
   signupWithEmail: (data: SignupFormData) => Promise<boolean>;
   sendLoginLink: (email: string) => Promise<boolean>;
-  sendPasswordReset: (email: string) => Promise<boolean>; // New method
+  sendPasswordReset: (email: string) => Promise<boolean>; 
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
@@ -103,7 +104,7 @@ export interface AdminNationPayload {
 // Team Creation
 export interface TeamFormData {
   name: string;
-  founderChoices: string[];
+  founderChoices: string[]; // Array of nation IDs
   creatorDisplayName: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
@@ -116,7 +117,7 @@ export interface Team {
   userId: string; // UID of the user who created the team
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[];
+  founderChoices: string[]; // Array of nation IDs
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -124,8 +125,8 @@ export interface Team {
   createdAt: {
     seconds: number;
     nanoseconds: number;
-  } | number | null; // Allow for Firestore Timestamp type or milliseconds
-  updatedAt?: { // Optional: for when the team is updated
+  } | number | null; 
+  updatedAt?: { 
     seconds: number;
     nanoseconds: number;
   } | number | null;
@@ -135,3 +136,12 @@ export interface AdminSettings {
   teamsLocked: boolean;
 }
 
+export interface NationGlobalScore {
+  averageScore: number | null;
+  voteCount: number;
+}
+
+export interface NationWithTreppoScore extends Nation {
+  globalTreppoScore: number | null;
+  globalVoteCount: number;
+}

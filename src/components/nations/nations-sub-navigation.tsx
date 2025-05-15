@@ -4,11 +4,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ListMusic, Award } from "lucide-react"; // Changed ListChecks to Award for ranking
+import { ListMusic, Award, Users } from "lucide-react"; 
 
 const subNavItems = [
   { href: "/nations", label: "Elenco Completo", icon: ListMusic },
   { href: "/nations/ranking", label: "Classifica Finale", icon: Award },
+  { href: "/nations/trepposcore-ranking", label: "Classifica TreppoScore", icon: Users },
 ];
 
 export function NationsSubNavigation() {
@@ -29,7 +30,10 @@ export function NationsSubNavigation() {
         >
           <item.icon className="h-4 w-4" />
           <span className="hidden sm:inline">{item.label}</span>
-          <span className="sm:hidden">{item.href === "/nations" ? "Elenco" : "Classifica"}</span>
+          <span className="sm:hidden">{
+            item.href === "/nations" ? "Elenco" : 
+            item.href === "/nations/ranking" ? "Finale" : "TreppoScore"
+          }</span>
         </Link>
       ))}
     </nav>

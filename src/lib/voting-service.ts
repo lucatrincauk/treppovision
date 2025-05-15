@@ -1,11 +1,8 @@
 
 "use client";
-import type { Vote } from "@/types";
+import type { Vote, NationGlobalScore } from "@/types";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, onSnapshot, type Unsubscribe } from "firebase/firestore";
-
-// This key can be removed or repurposed if localStorage backup is no longer needed.
-// const VOTES_STORAGE_KEY = "treppoVotes";
+import { doc, getDoc, collection, query, where, onSnapshot, type Unsubscribe, getDocs } from "firebase/firestore";
 
 // Fetches a user's vote for a specific nation from Firestore
 export const getUserVoteForNationFromDB = async (nationId: string, userId: string): Promise<Vote | null> => {
@@ -14,13 +11,12 @@ export const getUserVoteForNationFromDB = async (nationId: string, userId: strin
     const voteDocRef = doc(db, "votes", `${userId}_${nationId}`);
     const voteSnap = await getDoc(voteDocRef);
     if (voteSnap.exists()) {
-      // The document data might include serverTimestamp, but we only care about the Vote structure for the app
       const voteData = voteSnap.data();
       return {
         userId: voteData.userId,
         nationId: voteData.nationId,
         scores: voteData.scores,
-        timestamp: voteData.timestamp, // Use the original client timestamp
+        timestamp: voteData.timestamp, 
       } as Vote;
     }
     return null;
@@ -48,7 +44,7 @@ export const listenToAllVotesForNation = (
     }
 
     querySnapshot.forEach((docSnap) => {
-      const vote = docSnap.data() as Vote; // Assuming data matches Vote type
+      const vote = docSnap.data() as Vote; 
       const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
       totalIndividualAverageSum += individualAverage;
     });
@@ -57,10 +53,45 @@ export const listenToAllVotesForNation = (
     callback(globalAverage, voteCount);
   }, (error) => {
     console.error("Error listening to all votes for nation:", error);
-    callback(null, 0); // Call with null/0 on error
+    callback(null, 0); 
   });
 
-  return unsubscribe; // Return the unsubscribe function for cleanup
+  return unsubscribe; 
+};
+
+// Fetches all votes and calculates global scores for all nations
+export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlobalScore>> => {
+  const nationScoresMap = new Map<string, { totalAverageSum: number; voteCount: number }>();
+  
+  try {
+    const votesCollectionRef = collection(db, "votes");
+    const querySnapshot = await getDocs(votesCollectionRef);
+
+    querySnapshot.forEach((docSnap) => {
+      const vote = docSnap.data() as Vote;
+      if (vote && vote.scores && vote.nationId) {
+        const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
+        
+        const currentNationData = nationScoresMap.get(vote.nationId) || { totalAverageSum: 0, voteCount: 0 };
+        currentNationData.totalAverageSum += individualAverage;
+        currentNationData.voteCount += 1;
+        nationScoresMap.set(vote.nationId, currentNationData);
+      }
+    });
+
+    const result = new Map<string, NationGlobalScore>();
+    nationScoresMap.forEach((data, nationId) => {
+      result.set(nationId, {
+        averageScore: data.voteCount > 0 ? data.totalAverageSum / data.voteCount : null,
+        voteCount: data.voteCount,
+      });
+    });
+    return result;
+
+  } catch (error) {
+    console.error("Error fetching all nations global scores:", error);
+    return new Map(); // Return empty map on error
+  }
 };
 
 
