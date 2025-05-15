@@ -19,23 +19,24 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
 
   useEffect(() => {
     if (authLoading) {
-      setUserVote(undefined);
+      setUserVote(undefined); // Still loading auth state
       return;
     }
 
     if (!user) {
-      setUserVote(null);
+      setUserVote(null); // User not logged in
       setAverageScore(null);
       return;
     }
 
+    // User is logged in, proceed to fetch vote
     let isMounted = true;
-    setUserVote(undefined);
+    setUserVote(undefined); // Set to loading while fetching vote
 
     getUserVoteForNationFromDB(nationId, user.uid)
       .then((vote) => {
         if (isMounted) {
-          setUserVote(vote);
+          setUserVote(vote); // vote can be Vote or null
           if (vote) {
             const avg = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
             setAverageScore(avg.toFixed(2));
@@ -47,7 +48,7 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
       .catch(error => {
         console.error("Error fetching user vote for badge:", error);
         if (isMounted) {
-          setUserVote(null);
+          setUserVote(null); // Error fetching, treat as no vote
           setAverageScore(null);
         }
       });
@@ -66,7 +67,7 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
     );
   }
 
-  if (userVote && averageScore) {
+  if (user && userVote && averageScore) { // User is logged in and has voted
     return (
       <Badge className="text-sm py-1 px-3 border-transparent bg-accent text-accent-foreground hover:bg-accent/90">
         <Star className="w-3 h-3 mr-1.5 text-accent-foreground" /> {/* Icon color matches text on accent background */}
@@ -75,13 +76,17 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
     );
   }
 
-  // If no vote or user not logged in (VotingForm handles detailed prompt for login)
-  return (
-    <a href="#voting-form" className="inline-block">
-      <Badge variant="default" className="text-sm py-1 px-3 cursor-pointer hover:bg-primary/80">
-        <Edit3 className="w-3 h-3 mr-1.5" />
-        Vota ora
-      </Badge>
-    </a>
-  );
+  if (user && !userVote) { // User is logged in but has NOT voted for this nation
+    return (
+      <a href="#voting-form" className="inline-block">
+        <Badge variant="default" className="text-sm py-1 px-3 cursor-pointer hover:bg-primary/80">
+          <Edit3 className="w-3 h-3 mr-1.5" />
+          Vota ora
+        </Badge>
+      </a>
+    );
+  }
+
+  // If user is not logged in (user is null), or any other case not covered (shouldn't happen)
+  return null;
 }
