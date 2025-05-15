@@ -4,8 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, ListChecks } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, ListChecks } from "lucide-react"; // Removed TrendingUp, Badge
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,7 +35,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
 
   let nameForDisplay = nation.name;
   if (!label && nation.ranking && nation.ranking > 0) {
-    nameForDisplay += ` (${nation.ranking}°)`;
+    nameForDisplay += ` (${nation.ranking}°)`
   }
   
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
@@ -58,20 +57,19 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
               data-ai-hint={`${nation.name} flag`}
             />
             <div className="flex flex-col"> {/* Text content: Name+Badge row, Artist-Song row */}
-              <div className="flex items-center gap-1"> {/* Name + Badge row */}
+              <div className="flex items-center gap-1"> {/* Name + (Badge if applicable) row */}
                 <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
                   {nameForDisplay}
                 </span>
-                {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
-                  <Badge variant="secondary" className="text-[11px] py-px px-1 shrink-0">
-                    <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
-                    {globalScoreForCategory.toFixed(2)}
-                  </Badge>
-                )}
               </div>
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
               </span>
+              {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
+                 <p className="text-xs text-primary font-medium mt-0.5">
+                    Punteggio Globale: {globalScoreForCategory.toFixed(2)}
+                 </p>
+              )}
             </div>
           </div>
         </Link>
@@ -154,17 +152,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     return nationsList.find(n => n.id === id);
   };
 
-  const founderNationsDetails = (team.founderChoices || [])
-    .map(id => getNationDetailsById(id, nations))
-    .filter(Boolean) as Nation[];
-    
-  const bestSongNationDetails = getNationDetailsById(team.bestSongNationId, nations);
-  const bestPerformanceNationDetails = getNationDetailsById(team.bestPerformanceNationId, nations);
-  const bestOutfitNationDetails = getNationDetailsById(team.bestOutfitNationId, nations);
-  const worstSongNationDetails = getNationDetailsById(team.worstSongNationId, nations);
-
-  const isOwner = user?.uid === team.userId;
-
   const getGlobalScoreForCategory = (nationId?: string, category?: 'song' | 'performance' | 'outfit'): number | null => {
     if (!nationId || !category || !nationGlobalCategorizedScoresMap.has(nationId)) return null;
     const scores = nationGlobalCategorizedScoresMap.get(nationId);
@@ -176,6 +163,17 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
       default: return null;
     }
   };
+
+  const founderNationsDetails = (team.founderChoices || [])
+    .map(id => getNationDetailsById(id, nations))
+    .filter(Boolean) as Nation[];
+    
+  const bestSongNationDetails = getNationDetailsById(team.bestSongNationId, nations);
+  const bestPerformanceNationDetails = getNationDetailsById(team.bestPerformanceNationId, nations);
+  const bestOutfitNationDetails = getNationDetailsById(team.bestOutfitNationId, nations);
+  const worstSongNationDetails = getNationDetailsById(team.worstSongNationId, nations);
+
+  const isOwner = user?.uid === team.userId;
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
@@ -258,3 +256,4 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
+
