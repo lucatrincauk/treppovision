@@ -7,10 +7,10 @@ import { getAllNationsGlobalScores, getAllUserVotes } from "@/lib/voting-service
 import type { Nation, NationWithTreppoScore, Vote } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
-import { Users, BarChart3, Star, User, Loader2 } from "lucide-react";
+import { Users, BarChart3, Star, User, Loader2, TrendingUp } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // Import Badge
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,8 +34,8 @@ export default function TreppoScoreRankingPage() {
           .map(nation => {
             const scoreData = globalScoresMap.get(nation.id);
             const userVote = user ? userVotesMap.get(nation.id) : null;
-            const userAverageScore = userVote 
-              ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3 
+            const userAverageScore = userVote
+              ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3
               : null;
 
             return {
@@ -47,7 +47,7 @@ export default function TreppoScoreRankingPage() {
           })
           .filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0)
           .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
-        
+
         setNationsWithScores(processedNations);
       } catch (error) {
         console.error("Error fetching data for TreppoScore ranking:", error);
@@ -68,7 +68,7 @@ export default function TreppoScoreRankingPage() {
         <NationsSubNavigation />
         <header className="text-center sm:text-left space-y-2 mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-            <Users className="mr-3 h-10 w-10" />
+            <TrendingUp className="mr-3 h-10 w-10" />
             Classifica TreppoScore
           </h1>
           <p className="text-xl text-muted-foreground">
@@ -81,7 +81,7 @@ export default function TreppoScoreRankingPage() {
       </div>
     );
   }
-  
+
   const top3Nations = nationsWithScores.slice(0, 3);
   const otherRankedNations = nationsWithScores.slice(3);
 
@@ -90,14 +90,14 @@ export default function TreppoScoreRankingPage() {
       <NationsSubNavigation />
       <header className="text-center sm:text-left space-y-2 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-          <Users className="mr-3 h-10 w-10" />
+          <TrendingUp className="mr-3 h-10 w-10" />
           Classifica TreppoScore
         </h1>
         <p className="text-xl text-muted-foreground">
           Le nazioni partecipanti, ordinate in base al voto medio degli utenti (TreppoScore).
         </p>
       </header>
-      
+
       {nationsWithScores.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
           <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -110,7 +110,8 @@ export default function TreppoScoreRankingPage() {
             <NationList
               nations={top3Nations.map((nation, index) => ({
                 ...nation,
-                ranking: index + 1, 
+                ranking: index + 1, // Assign display ranking for border styling
+                // userAverageScore is already on nation from processedNations
               }))}
               title="Il Podio TreppoScore"
             />
@@ -128,6 +129,9 @@ export default function TreppoScoreRankingPage() {
                       <TableRow>
                         <TableHead className="w-[60px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
+                        {user && (
+                          <TableHead className="text-right w-[120px] hidden md:table-cell">Il Tuo Voto</TableHead>
+                        )}
                         <TableHead className="text-right w-[140px]">TreppoScore Globale</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
                       </TableRow>
@@ -137,36 +141,34 @@ export default function TreppoScoreRankingPage() {
                         <TableRow key={nation.id}>
                           <TableCell className="font-medium text-center">{index + 4}</TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group mb-1">
-                                <Image
-                                  src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
-                                  alt={`Bandiera ${nation.name}`}
-                                  width={30}
-                                  height={20}
-                                  className="rounded-sm border border-border/50 object-contain"
-                                  data-ai-hint={`${nation.name} flag`}
-                                />
-                                <div>
-                                  <span className="group-hover:underline group-hover:text-primary font-medium truncate">
-                                    {nation.name}
-                                  </span>
-                                  <p className="text-xs text-muted-foreground truncate hidden sm:block" title={`${nation.artistName} - ${nation.songTitle}`}>
-                                    {nation.artistName} - {nation.songTitle}
-                                  </p>
-                                </div>
-                              </Link>
-                              {user && nation.userAverageScore !== null && nation.userAverageScore !== undefined && (
-                                <Badge variant="outline" className="mt-1 text-xs py-0.5 px-1.5 self-start">
-                                  <User className="w-3 h-3 mr-1" />
-                                  Tuo Voto: {nation.userAverageScore.toFixed(2)}
-                                </Badge>
-                              )}
-                              {user && (nation.userAverageScore === null || nation.userAverageScore === undefined) && (
-                                 <Badge variant="secondary" className="mt-1 text-xs py-0.5 px-1.5 self-start">Tuo Voto: N/D</Badge>
-                              )}
-                            </div>
+                            <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group">
+                              <Image
+                                src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+                                alt={`Bandiera ${nation.name}`}
+                                width={30}
+                                height={20}
+                                className="rounded-sm border border-border/50 object-contain"
+                                data-ai-hint={`${nation.name} flag`}
+                              />
+                              <div>
+                                <span className="group-hover:underline group-hover:text-primary font-medium truncate">
+                                  {nation.name}
+                                </span>
+                                <p className="text-xs text-muted-foreground truncate hidden sm:block" title={`${nation.artistName} - ${nation.songTitle}`}>
+                                  {nation.artistName} - {nation.songTitle}
+                                </p>
+                              </div>
+                            </Link>
                           </TableCell>
+                          {user && (
+                            <TableCell className="text-right hidden md:table-cell">
+                              {nation.userAverageScore !== null && nation.userAverageScore !== undefined ? (
+                                <span className="font-medium text-primary">{nation.userAverageScore.toFixed(2)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">N/D</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right font-semibold text-accent">
                             <div className="flex items-center justify-end">
                               <Star className="w-4 h-4 mr-1 text-yellow-400"/>
