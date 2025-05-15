@@ -9,7 +9,7 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp, Star, Music2, Shirt, BadgeCheck, UserCircle } from "lucide-react";
+import { PlusCircle, Users, Loader2, Edit, Search, ThumbsUp, Star, Music2, Shirt, BadgeCheck, UserCircle, ThumbsDown } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
@@ -516,3 +516,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+
