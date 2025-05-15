@@ -26,7 +26,6 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
       <div className="flex items-center gap-1.5 py-1">
         <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-        {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment */}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -34,13 +33,18 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
   }
 
   const titleText = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
-  const displayName = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''}`;
+  
+  let displayName = nation.name;
+  if (nation.ranking && nation.ranking > 0) {
+    displayName += ` (${nation.ranking}°)`
+  }
+
 
   return (
-    <div className="flex items-center gap-1.5 py-1"> {/* Reduced gap from gap-2 to gap-1.5 */}
+    <div className="flex items-center gap-1.5 py-1">
       <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-muted-foreground/80")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-      {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment if no label */}
+      {/* {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} Removed this placeholder */}
       <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
         <Image
           src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -218,3 +222,4 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
+
