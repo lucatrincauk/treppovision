@@ -32,7 +32,11 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
     );
   }
 
-  const titleText = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
+  let titleText = `${nation.name}`;
+  if (nation.ranking && nation.ranking > 0) {
+    titleText += ` (${nation.ranking}°)`
+  }
+  titleText += ` - ${nation.songTitle} by ${nation.artistName}`;
   
   let displayName = nation.name;
   if (nation.ranking && nation.ranking > 0) {
@@ -42,9 +46,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
 
   return (
     <div className="flex items-center gap-1.5 py-1">
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-muted-foreground/80")} />
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-      {/* {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} Removed this placeholder */}
       <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
         <Image
           src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -190,6 +193,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         {isOwner && (
           <>
             <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30 flex items-center">
+                 <ListChecks className="mr-2 h-5 w-5 text-accent" />
                  Voti TreppoScore
             </p>
             <SelectedNationDisplay 
