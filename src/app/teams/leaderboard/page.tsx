@@ -200,7 +200,7 @@ export default async function TeamsLeaderboardPage() {
   }
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
-    <div className="flex items-center gap-1.5 py-0.5"> {/* Consistent item styling */}
+    <div className="flex items-center gap-1.5 py-0.5"> 
       <BadgeCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" />
       <Image
         src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
@@ -231,7 +231,7 @@ export default async function TeamsLeaderboardPage() {
     const Icon = detail.icon;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
-        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", detail.pointsAwarded > 0 ? "text-accent" : "text-accent")} />
+        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0 text-accent")} />
         {detail.pickedNationCountryCode && detail.pickedNationName ? (
             <Image
             src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
@@ -289,7 +289,6 @@ export default async function TeamsLeaderboardPage() {
                 <TableRow>
                   <TableHead className="w-[50px] text-center">Pos.</TableHead>
                   <TableHead>Squadra</TableHead>
-                  <TableHead className="hidden md:table-cell">Creatore</TableHead>
                   <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
               </TableHeader>
@@ -298,7 +297,12 @@ export default async function TeamsLeaderboardPage() {
                   <TableRow key={team.id}>
                     <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
                     <TableCell className="align-top">
-                        <div className="font-medium truncate mb-1 text-base">{team.name}</div>
+                        <div className="font-medium truncate mb-1 text-base flex items-center">
+                          <span>{team.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
+                            (<UserCircle className="w-3 h-3" />{team.creatorDisplayName})
+                          </span>
+                        </div>
                         
                         <div className="mb-2">
                             <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Treppovision:</p>
@@ -312,12 +316,6 @@ export default async function TeamsLeaderboardPage() {
                                 <CategoryPickDisplay key={`${team.id}-${detail.categoryName}`} detail={detail} />
                             ))}
                         </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell truncate align-top" title={team.creatorDisplayName}>
-                      <div className="flex items-center gap-1.5 text-sm">
-                        <UserCircle className="w-4 h-4 text-muted-foreground" />
-                        {team.creatorDisplayName}
-                      </div>
                     </TableCell>
                     <TableCell className="text-right font-semibold text-lg text-primary align-top">{team.score}</TableCell>
                   </TableRow>
@@ -354,7 +352,3 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-
-    
-
-    
