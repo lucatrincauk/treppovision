@@ -135,10 +135,10 @@ export function NationListItem({ nation }: NationListItemProps) {
             </CardTitle>
 
             {/* Vote Scores on Thumbnail */}
-            <div className="absolute bottom-2 right-2 flex flex-col items-end space-y-0.5 text-xs">
+            <div className="absolute bottom-2 right-2 flex flex-col items-end text-xs">
               {/* User's Vote */}
               {!isLoadingUserVote && user && userAverageScore && (
-                <div className="flex items-center justify-start bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
+                <div className="flex items-center justify-start bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm min-w-[70px] mb-[2px]">
                   <Star className="w-3 h-3 mr-1 text-accent-foreground" />
                   <span className="font-semibold">{userAverageScore}</span>
                 </div>
@@ -189,3 +189,4 @@ export function NationListItem({ nation }: NationListItemProps) {
     </Link>
   );
 }
+
