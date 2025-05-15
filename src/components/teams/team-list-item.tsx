@@ -84,10 +84,9 @@ interface TeamListItemProps {
   team: Team;
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
-  isEven?: boolean;
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isEven }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -179,10 +178,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
   const isOwner = user?.uid === team.userId;
 
   return (
-    <Card className={cn(
-      "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300",
-      isEven ? "bg-muted" : "" // Default bg-card will apply if not isEven
-    )}>
+    <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div>
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -226,7 +222,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
         {isOwner && (
           <>
             <p className="text-xl font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">
-                 Voti TreppoScore
+                Voti TreppoScore
             </p>
             <SelectedNationDisplay 
                 nation={bestSongNationDetails} 
