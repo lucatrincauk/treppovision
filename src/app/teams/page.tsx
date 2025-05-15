@@ -2,9 +2,9 @@
 "use client"; 
 
 import { useEffect, useState } from "react";
-import { getTeams, getTeamsByUserId, listenToTeams } from "@/lib/team-service";
+import { getTeamsByUserId, listenToTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; // Import new service
+import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamList } from "@/components/teams/team-list";
 import { TeamListItem } from "@/components/teams/team-list-item";
@@ -67,7 +67,7 @@ export default function TeamsPage() {
         setShowCreateTeamButton(false); 
         setOtherTeams(teamsData);
       }
-      setIsLoadingData(false); // Set loading to false after first data received
+      setIsLoadingData(false); 
     }, (err) => {
       console.error("Failed to fetch teams:", err);
       setError(err.message || "Si è verificato un errore durante il caricamento delle squadre.");
@@ -202,6 +202,7 @@ export default function TeamsPage() {
                 team={team} 
                 nations={nations} 
                 nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+                isOwnTeamCard={true}
               />
             </div>
           ))}
