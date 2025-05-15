@@ -78,7 +78,6 @@ const getTopNationsForCategory = (
       }
       return (a.score as number) - (b.score as number);
     });
-    // Removed .slice(0, 3) to return the full sorted list
 };
 
 const getCategoryPickPointsAndRank = (
@@ -276,17 +275,20 @@ export default async function TeamsLeaderboardPage() {
         <span className="text-xs text-muted-foreground min-w-[120px] flex-shrink-0">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
               className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
-              title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° in cat.)` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
+              title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° ${detail.categoryName === "Peggior Canzone" ? "peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : "in cat.")})` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
         >
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
           <CategoryMedalIcon rank={detail.actualCategoryRank} />
-          {detail.actualCategoryRank && detail.categoryName !== "Peggior Canzone" && ( 
-            <span className="text-muted-foreground ml-1">({detail.actualCategoryRank}° in cat.)</span>
-          )}
-           {detail.actualCategoryRank && detail.categoryName === "Peggior Canzone" && ( 
-            <span className="text-muted-foreground ml-1">({detail.actualCategoryRank}° peggiore)</span>
+          {detail.actualCategoryRank && ( 
+            <span className="text-muted-foreground ml-1">
+              ({detail.actualCategoryRank}°
+              {detail.categoryName === "Peggior Canzone" ? " peggiore" : 
+               detail.categoryName === "Miglior Canzone" ? "" :
+               " in cat."}
+              )
+            </span>
           )}
         </Link>
          <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
@@ -389,9 +391,3 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
