@@ -16,13 +16,95 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 
+interface TeamWithScore extends Team {
+  score?: number;
+}
+
+// Scoring logic adapted from leaderboard/page.tsx
+const getPointsForRank = (rank?: number): number => {
+  if (rank === undefined || rank === null || rank === 0) return 0;
+  switch (rank) {
+    case 1: return 50;
+    case 2: return 35;
+    case 3: return 25;
+    case 4: return 15;
+    case 5: return 10;
+    case 6: return 9;
+    case 7: return 8;
+    case 8: return 7;
+    case 9: return 6;
+    case 10: return 5;
+    case 11: return 4;
+    case 12: return 3;
+    case 13: return 2;
+    case 14: return 1;
+    case 15: return 0;
+    case 16: return -1;
+    case 17: return -2;
+    case 18: return -3;
+    case 19: return -4;
+    case 20: return -5;
+    case 21: return -6;
+    case 22: return -7;
+    case 23: return -8;
+    case 24: return -9;
+    case 25: return -10;
+    case 26: return 25;
+  }
+  return 0; 
+};
+
+const getTopNationsForCategory = (
+  scoresMap: Map<string, NationGlobalCategorizedScores>,
+  nationsMap: Map<string, Nation>,
+  categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
+  sortOrder: 'desc' | 'asc' = 'desc'
+): Array<{ id: string; name: string; score: number | null }> => {
+  if (!scoresMap || scoresMap.size === 0 || !nationsMap || nationsMap.size === 0) return [];
+  return Array.from(scoresMap.entries())
+    .map(([nationId, scores]) => ({
+      id: nationId,
+      name: nationsMap.get(nationId)?.name || 'Sconosciuto',
+      score: scores[categoryKey]
+    }))
+    .filter(item => item.score !== null && (scoresMap.get(item.id)?.voteCount || 0) > 0) 
+    .sort((a, b) => {
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      if (sortOrder === 'desc') {
+        return b.score - a.score;
+      }
+      return a.score - b.score;
+    });
+};
+
+const getCategoryPickPointsAndRank = (
+  pickedNationId: string | undefined,
+  sortedNationsForCategory: Array<{ id: string; score: number | null }> 
+): { points: number; rank?: number; score?: number | null } => {
+  if (!pickedNationId || !sortedNationsForCategory || sortedNationsForCategory.length === 0) return { points: 0, rank: undefined, score: null };
+  
+  const rankIndex = sortedNationsForCategory.findIndex(n => n.id === pickedNationId);
+  const actualRank = rankIndex !== -1 ? rankIndex + 1 : undefined;
+  const actualScore = actualRank && rankIndex < sortedNationsForCategory.length ? sortedNationsForCategory[rankIndex].score : null;
+
+  let points = 0;
+  if (actualRank === 1) points = 15;
+  else if (actualRank === 2) points = 10;
+  else if (actualRank === 3) points = 5;
+  
+  return { points, rank: actualRank, score: actualScore };
+};
+
+
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
-  const [allFetchedTeams, setAllFetchedTeams] = useState<Team[]>([]);
-  const [userTeams, setUserTeams] = useState<Team[]>([]);
-  const [otherTeams, setOtherTeams] = useState<Team[]>([]);
-  const [filteredOtherTeams, setFilteredOtherTeams] = useState<Team[]>([]);
+  const [allFetchedTeams, setAllFetchedTeams] = useState<TeamWithScore[]>([]); // Now TeamWithScore
+  const [userTeams, setUserTeams] = useState<TeamWithScore[]>([]); // Now TeamWithScore
+  const [otherTeams, setOtherTeams] = useState<TeamWithScore[]>([]); // Now TeamWithScore
+  const [filteredOtherTeams, setFilteredOtherTeams] = useState<TeamWithScore[]>([]); // Now TeamWithScore
   const [nations, setNations] = useState<Nation[]>([]);
+  const [nationsMap, setNationsMap] = useState<Map<string, Nation>>(new Map());
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
@@ -36,10 +118,12 @@ export default function TeamsPage() {
       try {
         const nationsData = await getNations();
         setNations(nationsData);
+        setNationsMap(new Map(nationsData.map(n => [n.id, n])));
       } catch (fetchError: any) {
         console.error("Failed to fetch nations:", fetchError);
         setError(prev => prev ? `${prev}\nNazioni non caricate.` : "Nazioni non caricate.");
         setNations([]);
+        setNationsMap(new Map());
       }
     }
     fetchNationsData();
@@ -56,17 +140,8 @@ export default function TeamsPage() {
     setError(null);
 
     const unsubscribeTeams = listenToTeams((teamsData) => {
-      setAllFetchedTeams(teamsData);
-      if (user) {
-        const userSpecificTeams = teamsData.filter(team => team.userId === user.uid);
-        setUserTeams(userSpecificTeams);
-        setShowCreateTeamButton(userSpecificTeams.length === 0);
-        setOtherTeams(teamsData.filter(team => team.userId !== user.uid));
-      } else {
-        setUserTeams([]);
-        setShowCreateTeamButton(false); 
-        setOtherTeams(teamsData);
-      }
+      setAllFetchedTeams(teamsData); // Temporarily set raw teams; scores will be added
+      // Further processing will happen in another useEffect that depends on allFetchedTeams, nations, and global scores
       setIsLoadingData(false); 
     }, (err) => {
       console.error("Failed to fetch teams:", err);
@@ -88,6 +163,59 @@ export default function TeamsPage() {
     });
     return () => unsubscribeGlobalScores();
   }, []);
+
+  // Process teams with scores when all data is available
+  useEffect(() => {
+    if (isLoadingData || isLoadingGlobalScores || nations.length === 0 || allFetchedTeams.length === 0) {
+      // Wait for all data sources
+      if (!isLoadingData && !isLoadingGlobalScores && nations.length > 0 && allFetchedTeams.length === 0) {
+        // All data sources loaded, but no teams found
+        setUserTeams([]);
+        setOtherTeams([]);
+        setShowCreateTeamButton(!!user);
+      }
+      return;
+    }
+
+    const topSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+    const bottomSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); 
+    const topPerformanceNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+    const topOutfitNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
+
+    const teamsWithCalculatedScores: TeamWithScore[] = allFetchedTeams.map(team => {
+      let score = 0;
+      (team.founderChoices || []).forEach(nationId => {
+        const nation = nationsMap.get(nationId);
+        if (nation) {
+          score += getPointsForRank(nation.ranking);
+        }
+      });
+
+      const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
+      score += bestSongPick.points;
+      const bestPerformancePick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerformanceNations);
+      score += bestPerformancePick.points;
+      const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
+      score += bestOutfitPick.points;
+      const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, bottomSongNations);
+      score += worstSongPick.points;
+      
+      return { ...team, score };
+    });
+
+    if (user) {
+      const userSpecificTeams = teamsWithCalculatedScores.filter(team => team.userId === user.uid);
+      setUserTeams(userSpecificTeams);
+      setShowCreateTeamButton(userSpecificTeams.length === 0);
+      setOtherTeams(teamsWithCalculatedScores.filter(team => team.userId !== user.uid));
+    } else {
+      setUserTeams([]);
+      setShowCreateTeamButton(false); 
+      setOtherTeams(teamsWithCalculatedScores);
+    }
+
+  }, [allFetchedTeams, nations, nationsMap, nationGlobalCategorizedScoresMap, user, isLoadingData, isLoadingGlobalScores]);
+
 
   useEffect(() => {
     if (!searchTerm) {
@@ -125,7 +253,7 @@ export default function TeamsPage() {
     </div>
   );
 
-  if (authIsLoading || isLoadingData || isLoadingGlobalScores) {
+  if (authIsLoading || isLoadingData || isLoadingGlobalScores && nations.length === 0) {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
@@ -275,3 +403,6 @@ export default function TeamsPage() {
     </div>
   );
 }
+
+
+    
