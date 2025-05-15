@@ -103,6 +103,8 @@ export function NationListItem({ nation }: NationListItemProps) {
     nation.ranking === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
     "border-border group-hover:border-primary/50";
 
+  const isTopRankedForScoreDisplay = nation.ranking && [1, 2, 3].includes(nation.ranking);
+
   return (
     <Link href={`/nations/${nation.id}`} className="group block h-full">
       <Card className={cn(
@@ -135,21 +137,40 @@ export function NationListItem({ nation }: NationListItemProps) {
             </CardTitle>
 
             {/* Vote Scores on Thumbnail */}
-            <div className="absolute bottom-2 right-2 flex flex-col items-end text-xs">
+            <div className="absolute bottom-2 right-2 flex flex-col items-end">
               {/* User's Vote */}
-              {!isLoadingUserVote && user && userAverageScore && (
+              {isLoadingUserVote ? (
+                 <div className="flex items-center justify-start bg-accent/70 text-accent-foreground/70 px-1.5 py-0.5 rounded-sm min-w-[70px] mb-[2px] animate-pulse">
+                    <Star className="w-3 h-3 mr-1" /> <span className="w-6 h-3 bg-accent-foreground/30 rounded"></span>
+                 </div>
+              ) : user && userAverageScore && (
                 <div className="flex items-center justify-start bg-accent text-accent-foreground px-1.5 py-0.5 rounded-sm min-w-[70px] mb-[2px]">
-                  <Star className="w-3 h-3 mr-1 text-accent-foreground" />
-                  <span className="font-semibold">{userAverageScore}</span>
+                  <Star className="w-3 h-3 mr-1" />
+                  <span className="font-semibold text-xs">{userAverageScore}</span>
                 </div>
               )}
 
               {/* Global Vote */}
-              {!isLoadingGlobalVote && globalAverageScore !== null && globalVoteCount > 0 && (
-                <div className="flex items-center justify-start bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-sm min-w-[70px]">
-                  <TrendingUp className="w-3 h-3 mr-1 text-secondary-foreground" />
-                  <span className="font-semibold">{globalAverageScore.toFixed(2)}</span>
-                  <span className="ml-0.5 text-secondary-foreground/80 font-semibold">({globalVoteCount})</span>
+              {isLoadingGlobalVote ? (
+                 <div className={cn(
+                    "flex items-center justify-start bg-secondary/70 text-secondary-foreground/70 rounded-sm animate-pulse",
+                    isTopRankedForScoreDisplay ? "px-2 py-1 min-w-[80px]" : "px-1.5 py-0.5 min-w-[70px]"
+                 )}>
+                    <TrendingUp className={cn("mr-1", isTopRankedForScoreDisplay ? "w-3.5 h-3.5" : "w-3 h-3")} />
+                    <span className={cn("w-6 h-3 bg-secondary-foreground/30 rounded", isTopRankedForScoreDisplay ? "h-3.5" : "h-3")}></span>
+                 </div>
+              ) : globalAverageScore !== null && globalVoteCount > 0 && (
+                <div className={cn(
+                  "flex items-center justify-start bg-secondary text-secondary-foreground rounded-sm",
+                  isTopRankedForScoreDisplay ? "px-2 py-1 min-w-[80px]" : "px-1.5 py-0.5 min-w-[70px]"
+                )}>
+                  <TrendingUp className={cn("mr-1", isTopRankedForScoreDisplay ? "w-3.5 h-3.5" : "w-3 h-3")} />
+                  <span className={cn(isTopRankedForScoreDisplay ? "text-sm font-bold" : "text-xs font-semibold")}>
+                    {globalAverageScore.toFixed(2)}
+                  </span>
+                  <span className={cn("ml-1 font-semibold text-secondary-foreground/80", isTopRankedForScoreDisplay ? "text-xs" : "text-[0.7rem]")}> 
+                    ({globalVoteCount})
+                  </span>
                 </div>
               )}
             </div>
@@ -172,11 +193,10 @@ export function NationListItem({ nation }: NationListItemProps) {
               </p>
             )}
           </div>
-
-          {/* Placeholder for alignment if scores were here - kept for structure but content moved */}
-          <div className="space-y-1 mt-auto">
-             <div className="h-5"></div> {/* Placeholder for user vote alignment */}
-             <div className="h-5"></div> {/* Placeholder for global vote alignment */}
+          
+          <div className="space-y-1 mt-auto"> {/* Retained for consistent card height, content moved to thumbnail */}
+             <div className="h-5"></div> 
+             <div className="h-5"></div> 
           </div>
 
         </CardContent>
