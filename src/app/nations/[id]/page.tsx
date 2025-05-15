@@ -3,15 +3,16 @@ import { getNationById, getNations } from "@/lib/nation-service";
 import { YouTubeEmbed } from "@/components/nations/youtube-embed";
 import { VotingForm } from "@/components/voting/voting-form";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Music2, UserSquare2, Tag, ChevronLeft, Edit, Award, FileText, Info, ListOrdered, PlayCircle } from "lucide-react";
+import { Music2, UserSquare2, ChevronLeft, Edit, Award, FileText, Info, ListOrdered, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
-import { NationDetailImage } from "@/components/nations/nation-detail-image"; // New Import
+import { NationDetailImage } from "@/components/nations/nation-detail-image";
+import { UserVoteBadge } from "@/components/nations/user-vote-badge"; // New Import
 
 interface NationPageProps {
   params: {
@@ -100,12 +101,9 @@ export default async function NationPage({ params }: NationPageProps) {
               </div>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="text-sm py-1 px-3 bg-accent text-accent-foreground">
-              <Tag className="w-3 h-3 mr-1.5" />
-              {nation.category === 'founders' ? 'Fondatori' : nation.category === 'day1' ? 'Prima Semifinale' : 'Seconda Semifinale'}
-            </Badge>
-             <Badge variant="outline" className="text-sm py-1 px-3">
+          <div className="mt-4 flex flex-wrap gap-2 items-center">
+            <UserVoteBadge nationId={nation.id} />
+            <Badge variant="outline" className="text-sm py-1 px-3">
               <ListOrdered className="w-3 h-3 mr-1.5" />
               Ordine Esibizione: {nation.performingOrder}
             </Badge>
@@ -173,7 +171,7 @@ export default async function NationPage({ params }: NationPageProps) {
           )}
         </div>
 
-        <div className="md:col-span-1">
+        <div id="voting-form" className="md:col-span-1">
           <VotingForm nation={nation} />
         </div>
       </div>
