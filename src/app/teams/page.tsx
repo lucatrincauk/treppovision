@@ -9,7 +9,7 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, Music2, Star, Shirt, UserCircle, ThumbsDown, ThumbsUp } from "lucide-react"; // Added ThumbsUp
+import { PlusCircle, Users, Loader2, Edit, Search, Music2, Star, Shirt, UserCircle, ThumbsDown } from "lucide-react"; 
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
@@ -295,7 +295,6 @@ export default function TeamsPage() {
       {user && userTeams.length > 0 && nations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
           <div className="flex items-center gap-3 mb-6">
-            <ThumbsUp className="w-8 h-8 text-secondary" />
             <h2 className="text-3xl font-semibold tracking-tight text-secondary">
               La Mia Squadra
             </h2>
@@ -369,7 +368,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Squadra</TableHead>
-                    <TableHead>Pronostici Treppovision</TableHead>
+                    <TableHead>Pronostici TreppoVision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
                     <TableHead className="hidden lg:table-cell">Miglior Outfit</TableHead>
