@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, TrendingUp, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +26,7 @@ interface SelectedNationDisplayProps {
 const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, globalScoreForCategory, isEvenRow }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
-      <div className={cn("flex items-center gap-1.5 py-1", isEvenRow && "bg-muted/50 rounded-md px-2 py-1")}>
+      <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
         <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -36,7 +36,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   }
 
   let nameForDisplay = nation.name;
-  // Only show Eurovision rank if label is NOT present (i.e., for "Scelte Principali")
+  // Display Eurovision rank only if label is NOT present (i.e., for "Scelte Principali")
   if (!label && nation.ranking && nation.ranking > 0) {
     nameForDisplay += ` (${nation.ranking}°)`
   }
@@ -44,7 +44,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
-    <div className={cn("flex items-center gap-1.5", isEvenRow ? "bg-muted/50 rounded-md px-2 py-1" : "py-1")}>
+    <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
       <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       
@@ -85,9 +85,10 @@ interface TeamListItemProps {
   team: Team;
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
+  isEven?: boolean; // Added for zebra striping the whole card
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isEven }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -179,7 +180,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
   const isOwner = user?.uid === team.userId;
 
   return (
-    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300")}>
+    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300", isEven && "bg-muted")}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div>
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -217,8 +218,8 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
             key={`founder-${nation.id}`} 
             nation={nation} 
             IconComponent={BadgeCheck} 
-            isCorrectPick={false} 
-            isEvenRow={index % 2 !== 0} // Apply alternating background
+            isCorrectPick={false} // This is for specific category picks, not general founder choices
+            isEvenRow={index % 2 !== 0} 
           />
         ))}
 
