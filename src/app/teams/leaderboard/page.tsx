@@ -38,6 +38,8 @@ interface NationScoreDetail {
   id: string;
   name: string;
   countryCode: string;
+  artistName?: string;
+  songTitle?: string;
   actualRank?: number;
   points: number;
 }
@@ -145,6 +147,8 @@ export default async function TeamsLeaderboardPage() {
           id: nation.id,
           name: nation.name,
           countryCode: nation.countryCode,
+          artistName: nation.artistName,
+          songTitle: nation.songTitle,
           actualRank: nation.ranking,
           points,
         });
@@ -155,7 +159,7 @@ export default async function TeamsLeaderboardPage() {
       const rankA = a.actualRank ?? Infinity;
       const rankB = b.actualRank ?? Infinity;
       if (rankA === rankB) {
-        return (nationsMap.get(a.id)?.name || '').localeCompare(nationsMap.get(b.id)?.name || '');
+        return (a.name || '').localeCompare(b.name || '');
       }
       return rankA - rankB;
     });
@@ -248,27 +252,34 @@ export default async function TeamsLeaderboardPage() {
         return null;
       };
       return (
-        <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
-          <BadgeCheck className="w-4 h-4 text-accent flex-shrink-0" />
-          <Image
+        <div className="flex items-start gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
+          <BadgeCheck className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+           <Image
             src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
             alt={detail.name}
             width={20} 
             height={13}
-            className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+            className="rounded-sm border border-border/30 object-contain flex-shrink-0 mt-1"
             data-ai-hint={`${detail.name} flag`}
           />
-          <Link 
-            href={`/nations/${detail.id}`} 
-            className="text-xs hover:underline hover:text-primary truncate flex-grow flex items-center" 
-            title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
-          >
-            <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-            <MedalIcon rank={detail.actualRank} />
-            <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
-          </Link>
+          <div className="flex-grow">
+            <Link 
+              href={`/nations/${detail.id}`} 
+              className="text-xs hover:underline hover:text-primary flex items-center" 
+              title={`${detail.name} - ${detail.artistName} - ${detail.songTitle} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+            >
+              <span className="font-medium">{detail.name}</span>
+              <MedalIcon rank={detail.actualRank} />
+              <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+            </Link>
+             {detail.artistName && detail.songTitle && (
+                <p className="text-[11px] text-muted-foreground truncate" title={`${detail.artistName} - ${detail.songTitle}`}>
+                    {detail.artistName} - {detail.songTitle}
+                </p>
+            )}
+          </div>
           <span className={cn(
-            "text-xs ml-auto pl-1", 
+            "text-xs ml-auto pl-1 mt-0.5", 
             detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
           )}>
             {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
@@ -289,56 +300,71 @@ export default async function TeamsLeaderboardPage() {
 
     const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
         if (!rank || rank < 1 || rank > 3) return null;
-        if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-0.5" />;
-        if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-0.5" />;
-        if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-0.5" />;
-        return null;
+        const colorClass = rank === 1 ? "text-yellow-400" : rank === 2 ? "text-slate-400" : "text-amber-500";
+        return <Award className={cn("w-3.5 h-3.5 flex-shrink-0 ml-0.5", colorClass)} />;
     };
     
     const iconColorClass = "text-accent";
     
     let rankSuffix = "";
-    if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
-    else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
-    else rankSuffix = " in cat.";
+    if (detail.actualCategoryRank && detail.actualCategoryRank > 0) {
+        if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
+        else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
+        else rankSuffix = " in cat.";
+    }
 
     const rankText = detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${rankSuffix})` : "";
-    const titleText = `${detail.pickedNationName || 'N/D'} ${rankText} - Punti: ${detail.pointsAwarded}`;
+    const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
+    const titleText = `${detail.pickedNationName || 'N/D'} - ${pickedNationFullDetails?.artistName || ''} - ${pickedNationFullDetails?.songTitle || ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
 
 
     return (
-      <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
-        <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
-        <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}:</span>
-        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
-              className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center gap-1", !detail.pickedNationId && "pointer-events-none")}
-              title={titleText}
-        >
-          {detail.pickedNationCountryCode && detail.pickedNationName ? (
-            <Image
-              src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-              alt={detail.pickedNationName}
-              width={20}
-              height={13}
-              className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-              data-ai-hint={`${detail.pickedNationName} flag`}
-            />
-          ) : (
-            <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
-          )}
-          <span className="font-medium">
-            {detail.pickedNationName ? (detail.pickedNationName.substring(0, 12) + (detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
-          </span>
-          <CategoryMedalIcon rank={detail.actualCategoryRank} />
-          {detail.actualCategoryRank && (
-             <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                {rankText}
-            </span>
-          )}
-        </Link>
-         <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-            {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
-        </span>
+      <div className={cn(
+        "px-2 py-1.5"
+      )}>
+         <div className="flex items-center gap-1.5">
+            <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
+            <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}:</span>
+        </div>
+        <div className={cn(
+            "mt-1 sm:mt-0",
+            "sm:ml-[calc(1rem+0.375rem)]" 
+        )}>
+            <div className="flex items-center gap-1.5">
+                {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
+                <Link href={`/nations/${detail.pickedNationId}`}
+                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex items-center gap-1")}
+                        title={titleText}
+                >
+                    <Image
+                    src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+                    alt={detail.pickedNationName}
+                    width={20}
+                    height={13}
+                    className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                    data-ai-hint={`${detail.pickedNationName} flag`}
+                    />
+                    <span className="font-medium">
+                    {detail.pickedNationName}
+                    </span>
+                    <CategoryMedalIcon rank={detail.actualCategoryRank} />
+                    {rankText && (
+                        <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                        {rankText}
+                    </span>
+                    )}
+                </Link>
+                ) : (
+                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <UserCircle className="h-4 w-4 flex-shrink-0" />
+                        <span>Nessuna selezione</span>
+                    </div>
+                )}
+                <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+                    {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+                </span>
+            </div>
+        </div>
       </div>
     );
   };
@@ -397,16 +423,16 @@ export default async function TeamsLeaderboardPage() {
                     <TableBody>
                       {otherRankedTeams.map((team) => (
                         <TableRow key={team.id}>
-                          <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
-                          <TableCell className="align-top">
+                          <TableCell className="font-medium text-center align-top pt-4">{team.rank}</TableCell>
+                          <TableCell className="align-top pt-4">
                               <div className="font-medium text-base mb-1">
                                 {team.name}
-                                {team.creatorDisplayName && (
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={team.creatorDisplayName}>
+                              </div>
+                               {team.creatorDisplayName && (
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 mb-2" title={team.creatorDisplayName}>
                                         <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
-                              </div>
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoVision:</p>
@@ -421,7 +447,7 @@ export default async function TeamsLeaderboardPage() {
                                   ))}
                               </div>
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-lg text-primary align-top">{team.score}</TableCell>
+                          <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">{team.score}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
