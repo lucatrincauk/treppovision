@@ -51,8 +51,13 @@ export default async function TreppoScoreRankingPage() {
       ) : (
         <>
           {top3Nations.length > 0 && (
-            // Pass only Nation data to NationList, it doesn't need TreppoScore specifics
-            <NationList nations={top3Nations as Nation[]} title="Il Podio TreppoScore" />
+            <NationList
+              nations={top3Nations.map((nation, index) => ({
+                ...nation,
+                ranking: index + 1, // Assign 1st, 2nd, 3rd for styling
+              }))}
+              title="Il Podio TreppoScore"
+            />
           )}
 
           {otherRankedNations.length > 0 && (
