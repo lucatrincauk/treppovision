@@ -1,5 +1,4 @@
 
-"use client";
 import type { Vote, NationGlobalScore } from "@/types";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot, type Unsubscribe, getDocs } from "firebase/firestore";
