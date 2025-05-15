@@ -18,13 +18,14 @@ interface SelectedNationDisplayProps {
   IconComponent: React.ElementType;
   label?: string;
   isCorrectPick?: boolean;
+  globalScoreForCategory?: number | null;
 }
 
-const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: SelectedNationDisplayProps) => {
+const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, globalScoreForCategory }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
       <div className="flex items-center gap-1.5 py-1">
-        <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -45,27 +46,34 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
 
 
   return (
-    <div className="flex items-center gap-1.5 py-1">
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
-      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-      <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
-        <Image
-          src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
-          alt={`Bandiera ${nation.name}`}
-          width={24}
-          height={16}
-          className="rounded-sm border border-border/50 object-contain flex-shrink-0"
-          data-ai-hint={`${nation.name} flag`}
-        />
-        <div className="flex flex-col">
-            <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
-                {displayName}
-            </span>
-            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
-                {nation.artistName} - {nation.songTitle}
-            </span>
-        </div>
-      </Link>
+    <div className="flex items-start gap-1.5 py-1">
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent")} />
+      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
+      <div className="flex flex-col">
+        <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
+          <Image
+            src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+            alt={`Bandiera ${nation.name}`}
+            width={24}
+            height={16}
+            className="rounded-sm border border-border/50 object-contain flex-shrink-0"
+            data-ai-hint={`${nation.name} flag`}
+          />
+          <div className="flex flex-col">
+              <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
+                  {displayName}
+              </span>
+              <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
+                  {nation.artistName} - {nation.songTitle}
+              </span>
+          </div>
+        </Link>
+        {globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
+          <span className="text-xs text-muted-foreground/80 ml-1 mt-0.5">
+            (Globale: {globalScoreForCategory.toFixed(2)})
+          </span>
+        )}
+      </div>
     </div>
   );
 };
@@ -192,7 +200,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
 
         {isOwner && (
           <>
-            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30 flex items-center">
+            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">
                  Voti TreppoScore
             </p>
             <SelectedNationDisplay 
@@ -200,24 +208,28 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
                 IconComponent={Music2} 
                 label="Miglior Canzone:" 
                 isCorrectPick={!!bestSongNationIdGlobal && bestSongNationDetails?.id === bestSongNationIdGlobal}
+                globalScoreForCategory={bestSongNationDetails ? nationGlobalCategorizedScoresMap.get(bestSongNationDetails.id)?.averageSongScore : null}
             />
             <SelectedNationDisplay 
                 nation={bestPerformanceNationDetails} 
                 IconComponent={Star} 
                 label="Miglior Performance:"
                 isCorrectPick={!!bestPerformanceNationIdGlobal && bestPerformanceNationDetails?.id === bestPerformanceNationIdGlobal}
+                globalScoreForCategory={bestPerformanceNationDetails ? nationGlobalCategorizedScoresMap.get(bestPerformanceNationDetails.id)?.averagePerformanceScore : null}
             />
             <SelectedNationDisplay 
                 nation={bestOutfitNationDetails} 
                 IconComponent={Shirt} 
                 label="Miglior Outfit:"
                 isCorrectPick={!!bestOutfitNationIdGlobal && bestOutfitNationDetails?.id === bestOutfitNationIdGlobal}
+                globalScoreForCategory={bestOutfitNationDetails ? nationGlobalCategorizedScoresMap.get(bestOutfitNationDetails.id)?.averageOutfitScore : null}
             />
             <SelectedNationDisplay 
                 nation={worstSongNationDetails} 
                 IconComponent={ThumbsDown} 
                 label="Peggior Canzone:"
                 isCorrectPick={!!worstSongNationIdGlobal && worstSongNationDetails?.id === worstSongNationIdGlobal}
+                globalScoreForCategory={worstSongNationDetails ? nationGlobalCategorizedScoresMap.get(worstSongNationDetails.id)?.averageSongScore : null}
             />
           </>
         )}
@@ -225,4 +237,3 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
-
