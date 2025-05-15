@@ -290,43 +290,50 @@ export default async function TeamsLeaderboardPage() {
         return null;
     };
     
-    const iconColor = detail.iconName === "Star" ? "text-secondary" : "text-accent";
+    const iconColor = "text-accent";
+
+    const titleText = `${detail.pickedNationName || 'N/D'} - ${detail.categoryName} (Global Rank: ${detail.actualCategoryRank || 'N/A'}, Score: ${detail.pickedNationScoreInCategory?.toFixed(2) || 'N/A'}, Points: ${detail.pointsAwarded})`;
 
     return (
       <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
         <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColor)} />
-        {detail.pickedNationCountryCode && detail.pickedNationName ? (
-            <Image
-            src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-            alt={detail.pickedNationName}
-            width={20}
-            height={13}
-            className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-            data-ai-hint={`${detail.pickedNationName} flag`}
-            />
-        ) : (
-            <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
-        )}
         
         <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
               className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
-              title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° ${detail.categoryName === "Peggior Canzone" ? "peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : "in cat.")})` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
+              title={titleText}
         >
+          {detail.pickedNationCountryCode && detail.pickedNationName ? (
+            <Image
+              src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+              alt={detail.pickedNationName}
+              width={20}
+              height={13}
+              className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+              data-ai-hint={`${detail.pickedNationName} flag`}
+            />
+          ) : (
+            <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
+          )}
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
           <CategoryMedalIcon rank={detail.actualCategoryRank} />
-            {detail.actualCategoryRank && (
-                <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                    (
-                    {detail.actualCategoryRank}°
-                     {detail.categoryName === "Miglior Canzone" ? "" :
-                     detail.categoryName === "Peggior Canzone" ? " peggiore" :
-                     " in cat."}
-                    )
+          {detail.actualCategoryRank && (
+            <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+              ({detail.actualCategoryRank}°
+              {detail.pickedNationScoreInCategory !== null && detail.pickedNationScoreInCategory !== undefined && (
+                <span className="ml-1 flex items-center">
+                  <TrendingUp className="w-3 h-3 mr-0.5 text-primary" />
+                  {detail.pickedNationScoreInCategory.toFixed(2)}
                 </span>
-            )}
+              )}
+              {detail.categoryName === "Miglior Canzone" ? "" :
+               detail.categoryName === "Peggior Canzone" ? " peggiore" :
+               " in cat."}
+              )
+            </span>
+          )}
         </Link>
          <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
             {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
@@ -393,12 +400,12 @@ export default async function TeamsLeaderboardPage() {
                           <TableCell className="align-top">
                               <div className="font-medium text-base mb-0.5">
                                 {team.name}
+                                {team.creatorDisplayName && (
+                                    <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
+                                        (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
+                                    </span>
+                                )}
                               </div>
-                              {team.creatorDisplayName && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" title={team.creatorDisplayName}>
-                                    <UserCircle className="w-3 h-3" />{team.creatorDisplayName}
-                                </div>
-                              )}
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Treppovision:</p>
