@@ -37,7 +37,7 @@ export function NationListItem({ nation }: NationListItemProps) {
   useEffect(() => {
     setImageUrl(localThumbnailUrl);
     setImageAlt(`Miniatura ${nation.name}`);
-  }, [nation.id, localThumbnailUrl, nation.name]); // Added nation.name to dependencies
+  }, [nation.id, localThumbnailUrl, nation.name]);
 
   const handleImageError = () => {
     if (imageUrl !== fallbackFlagUrl) {
@@ -104,7 +104,7 @@ export function NationListItem({ nation }: NationListItemProps) {
     "border-border group-hover:border-primary/50";
 
   return (
-    <Link href={`/nations/${nation.id}`} className="group block h-full"> {/* Ensure Link takes full height for card */}
+    <Link href={`/nations/${nation.id}`} className="group block h-full">
       <Card className={cn(
         "h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:scale-[1.02]",
         rankBorderClass
@@ -114,7 +114,7 @@ export function NationListItem({ nation }: NationListItemProps) {
             <Image
               src={imageUrl}
               alt={imageAlt}
-              fill // Use fill for aspect ratio container
+              fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
               priority={['gb', 'fr', 'de', 'it', 'es', 'ch'].includes(nation.id) && imageUrl === fallbackFlagUrl}
@@ -133,10 +133,30 @@ export function NationListItem({ nation }: NationListItemProps) {
               />
               <span>{nation.name}</span>
             </CardTitle>
+
+            {/* Vote Scores on Thumbnail */}
+            <div className="absolute bottom-2 right-2 flex flex-col items-end space-y-0.5 text-xs">
+              {/* User's Vote */}
+              {!isLoadingUserVote && user && userAverageScore && (
+                <div className="flex items-center text-white bg-black/50 px-1.5 py-0.5 rounded-sm">
+                  <Star className="w-3 h-3 mr-1 text-yellow-400" />
+                  <span>{userAverageScore}</span>
+                </div>
+              )}
+
+              {/* Global Vote */}
+              {!isLoadingGlobalVote && globalAverageScore !== null && globalVoteCount > 0 && (
+                <div className="flex items-center text-white bg-black/50 px-1.5 py-0.5 rounded-sm">
+                  <Users className="w-3 h-3 mr-1" />
+                  <span>{globalAverageScore.toFixed(2)}</span>
+                  <span className="ml-0.5 text-white/80">({globalVoteCount})</span>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4 flex-grow flex flex-col justify-between"> {/* Allow content to grow and manage space */}
-          <div className="space-y-1 text-sm mb-3"> {/* Add mb-3 for spacing */}
+        <CardContent className="p-4 flex-grow flex flex-col justify-between">
+          <div className="space-y-1 text-sm mb-3">
             <p className="flex items-center text-muted-foreground">
               <Music2 className="w-4 h-4 mr-2 text-accent flex-shrink-0" />
               <span className="font-medium text-foreground truncate" title={nation.songTitle}>{nation.songTitle}</span>
@@ -153,42 +173,14 @@ export function NationListItem({ nation }: NationListItemProps) {
             )}
           </div>
 
-          <div className="space-y-1 mt-auto"> {/* Scores pushed to bottom */}
-            {/* User's Vote Section */}
-            <div className="text-xs">
-              {isLoadingUserVote ? (
-                <div className="flex items-center text-muted-foreground h-5"> {/* Fixed height for loading state */}
-                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Caricamento tuo voto...
-                </div>
-              ) : user && userAverageScore ? (
-                <p className="flex items-center text-accent font-semibold h-5">
-                  <Star className="w-3 h-3 mr-1.5" />
-                  Il Tuo Voto: {userAverageScore}
-                </p>
-              ) : user ? (
-                  <p className="text-muted-foreground h-5">Non hai votato</p>
-              ) : <div className="h-5"></div> /* Placeholder for alignment when user not logged in */}
-            </div>
-
-            {/* Global Vote Section */}
-            <div className="text-xs">
-              {isLoadingGlobalVote ? (
-                <div className="flex items-center text-muted-foreground h-5"> {/* Fixed height */}
-                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Caricamento voto globale...
-                </div>
-              ) : globalAverageScore !== null ? (
-                <p className="flex items-center text-primary font-semibold h-5">
-                  <Users className="w-3 h-3 mr-1.5" />
-                  Globale: {globalAverageScore.toFixed(2)} <span className="text-muted-foreground font-normal ml-1">({globalVoteCount} voti)</span>
-                </p>
-              ) : (
-                <p className="text-muted-foreground h-5">Nessun voto globale</p>
-              )}
-            </div>
+          {/* Placeholder for alignment if scores were here - kept for structure but content moved */}
+          <div className="space-y-1 mt-auto">
+             <div className="h-5"></div> {/* Placeholder for user vote alignment */}
+             <div className="h-5"></div> {/* Placeholder for global vote alignment */}
           </div>
 
         </CardContent>
-        <CardFooter className="p-4 pt-2"> {/* Reduced top padding for footer */}
+        <CardFooter className="p-4 pt-2">
           <Button variant="outline" size="sm" className="w-full group-hover:bg-accent group-hover:text-accent-foreground">
             Vedi Dettagli <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
           </Button>
