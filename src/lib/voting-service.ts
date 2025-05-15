@@ -1,43 +1,49 @@
 
 "use client";
 import type { Vote } from "@/types";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
-const VOTES_STORAGE_KEY = "treppoVotes";
+// This key can be removed or repurposed if localStorage backup is no longer needed.
+// const VOTES_STORAGE_KEY = "treppoVotes";
 
-export const getVotes = (): Vote[] => {
-  if (typeof window === "undefined") return [];
+// Fetches a user's vote for a specific nation from Firestore
+export const getUserVoteForNationFromDB = async (nationId: string, userId: string): Promise<Vote | null> => {
+  if (!userId || !nationId) return null;
   try {
-    const storedVotes = localStorage.getItem(VOTES_STORAGE_KEY);
-    return storedVotes ? JSON.parse(storedVotes) : [];
+    const voteDocRef = doc(db, "votes", `${userId}_${nationId}`);
+    const voteSnap = await getDoc(voteDocRef);
+    if (voteSnap.exists()) {
+      // The document data might include serverTimestamp, but we only care about the Vote structure for the app
+      const voteData = voteSnap.data();
+      return {
+        userId: voteData.userId,
+        nationId: voteData.nationId,
+        scores: voteData.scores,
+        timestamp: voteData.timestamp, // Use the original client timestamp
+      } as Vote;
+    }
+    return null;
   } catch (error) {
-    console.error("Error reading votes from localStorage:", error);
-    return [];
+    console.error("Error fetching user vote from Firestore:", error);
+    return null;
   }
 };
 
-export const saveVote = (newVote: Vote): Vote[] => {
-  if (typeof window === "undefined") return [];
-  const votes = getVotes();
-  // Remove previous vote by the same user for the same nation
-  const updatedVotes = votes.filter(
-    vote => !(vote.userId === newVote.userId && vote.nationId === newVote.nationId) // userId is now Firebase uid
-  );
-  updatedVotes.push(newVote);
-  try {
-    localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(updatedVotes));
-  } catch (error) {
-    console.error("Error saving vote to localStorage:", error);
-  }
-  return updatedVotes;
+
+// --- Potentially keep localStorage functions for specific offline/quick-access scenarios if needed,
+// --- but ensure they are not the source of truth for voting.
+// --- For this refactor, we are focusing on Firestore as the source of truth.
+
+export const getVotesForNationFromLocalStorage = (nationId: string): Vote[] => {
+  // This function would read from localStorage if you still needed it for some reason.
+  // For now, it's not directly used by the Firestore-backed voting form.
+  console.warn("getVotesForNationFromLocalStorage is called. Ensure this is intended if Firestore is primary.");
+  return []; 
 };
 
-export const getVotesForNation = (nationId: string): Vote[] => {
-  const votes = getVotes();
-  return votes.filter(vote => vote.nationId === nationId);
-};
-
-// userId parameter is now Firebase uid
-export const getUserVoteForNation = (nationId: string, userId: string): Vote | undefined => {
-  const votes = getVotes();
-  return votes.find(vote => vote.nationId === nationId && vote.userId === userId);
+export const getUserVoteForNationFromLocalStorage = (nationId: string, userId: string): Vote | undefined => {
+  // This function would read from localStorage if you still needed it for some reason.
+  console.warn("getUserVoteForNationFromLocalStorage is called. Ensure this is intended if Firestore is primary.");
+  return undefined;
 };

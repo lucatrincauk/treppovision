@@ -3,10 +3,8 @@
 
 import type { Vote } from "@/types";
 import { revalidatePath } from "next/cache";
-
-// This is a server action. In a real app, this would interact with a database.
-// For this scaffold, we'll return data that the client can use to update localStorage.
-// This is a bit of a hybrid approach for demonstration; ideally, server actions fully manage server state.
+import { db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 interface VoteSubmission {
   nationId: string;
@@ -32,15 +30,26 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
   }
   
   const newVote: Vote = {
-    ...submission,
-    timestamp: Date.now(),
+    userId: submission.userId,
+    nationId: submission.nationId,
+    scores: submission.scores,
+    timestamp: Date.now(), // Using client-side timestamp for consistency before Firestore's serverTimestamp is set
   };
 
-  // In a real app, save 'newVote' to your database here.
-  // For this example, we're indicating success and the client will handle localStorage.
-  // We can revalidate paths if the data displayed on other pages changes.
-  revalidatePath(`/nations/${submission.nationId}`);
-  // revalidatePath("/charts");
+  try {
+    const voteDocRef = doc(db, "votes", `${submission.userId}_${submission.nationId}`);
+    // We add serverTimestamp for reliable ordering/last updated, but keep client timestamp for immediate feedback if needed
+    const dataToSave = { ...newVote, serverTimestamp: serverTimestamp() };
+    await setDoc(voteDocRef, dataToSave);
 
-  return { success: true, message: "Voto inviato con successo!", vote: newVote };
+    revalidatePath(`/nations/${submission.nationId}`);
+    // revalidatePath("/charts"); // If you had a charts page
+
+    return { success: true, message: "Voto inviato con successo!", vote: newVote };
+  } catch (error) {
+    console.error("Error saving vote to Firestore:", error);
+    const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore durante il salvataggio del voto.";
+    return { success: false, message: errorMessage, vote: undefined };
+  }
 }
+

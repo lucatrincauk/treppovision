@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { submitVoteAction } from "@/lib/actions/vote-actions";
 import { useToast } from "@/hooks/use-toast";
-import { saveVote, getUserVoteForNation } from "@/lib/voting-service";
-import type { Nation } from "@/types";
-import { Loader2, Send, Star } from "lucide-react";
+import { getUserVoteForNationFromDB } from "@/lib/voting-service"; // Updated import
+import type { Nation, Vote } from "@/types";
+import { Loader2, Send, Star, Info } from "lucide-react";
 
 interface VotingFormProps {
   nation: Nation;
@@ -21,34 +21,58 @@ export function VotingForm({ nation }: VotingFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isLoadingVote, setIsLoadingVote] = useState(true);
 
   const [songScore, setSongScore] = useState(5);
   const [performanceScore, setPerformanceScore] = useState(5);
   const [outfitScore, setOutfitScore] = useState(5);
   const [hasVoted, setHasVoted] = useState(false);
+  const [averageScore, setAverageScore] = useState<number | null>(null);
 
   useEffect(() => {
-    if (user) {
-      const existingVote = getUserVoteForNation(nation.id, user.uid); // Changed to user.uid
-      if (existingVote) {
-        setSongScore(existingVote.scores.song);
-        setPerformanceScore(existingVote.scores.performance);
-        setOutfitScore(existingVote.scores.outfit);
-        setHasVoted(true);
+    const fetchUserVote = async () => {
+      if (user) {
+        setIsLoadingVote(true);
+        const existingVote = await getUserVoteForNationFromDB(nation.id, user.uid);
+        if (existingVote) {
+          setSongScore(existingVote.scores.song);
+          setPerformanceScore(existingVote.scores.performance);
+          setOutfitScore(existingVote.scores.outfit);
+          setHasVoted(true);
+          calculateAverage(existingVote.scores.song, existingVote.scores.performance, existingVote.scores.outfit);
+        } else {
+          resetScoresAndAverage();
+        }
+        setIsLoadingVote(false);
       } else {
-        setSongScore(5);
-        setPerformanceScore(5);
-        setOutfitScore(5);
-        setHasVoted(false);
+        resetScoresAndAverage();
+        setIsLoadingVote(false);
       }
-    } else {
-      // Reset form if user logs out
-      setSongScore(5);
-      setPerformanceScore(5);
-      setOutfitScore(5);
-      setHasVoted(false);
-    }
+    };
+
+    fetchUserVote();
   }, [nation.id, user]);
+
+  const resetScoresAndAverage = () => {
+    setSongScore(5);
+    setPerformanceScore(5);
+    setOutfitScore(5);
+    setHasVoted(false);
+    setAverageScore(null);
+  };
+
+  const calculateAverage = (song: number, performance: number, outfit: number) => {
+    const avg = (song + performance + outfit) / 3;
+    setAverageScore(parseFloat(avg.toFixed(2)));
+  };
+
+  useEffect(() => {
+    // Recalculate average when scores change by user interaction
+    if (hasVoted || (!isLoadingVote && user) ) { // only recalculate if form is active
+        calculateAverage(songScore, performanceScore, outfitScore);
+    }
+  }, [songScore, performanceScore, outfitScore, hasVoted, isLoadingVote, user]);
+
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -60,7 +84,7 @@ export function VotingForm({ nation }: VotingFormProps) {
     startTransition(async () => {
       const result = await submitVoteAction({
         nationId: nation.id,
-        userId: user.uid, // Changed to user.uid
+        userId: user.uid,
         scores: {
           song: songScore,
           performance: performanceScore,
@@ -69,8 +93,8 @@ export function VotingForm({ nation }: VotingFormProps) {
       });
 
       if (result.success && result.vote) {
-        saveVote(result.vote); // Client-side save to localStorage
-        setHasVoted(true);
+        setHasVoted(true); // Mark as voted
+        // Scores are already updated locally via sliders, average will re-calculate
         toast({ title: "Voto Inviato!", description: `I tuoi punteggi per ${nation.name} sono stati registrati.` });
       } else {
         toast({ title: "Errore", description: result.message, variant: "destructive" });
@@ -90,15 +114,38 @@ export function VotingForm({ nation }: VotingFormProps) {
       </Card>
     );
   }
+  
+  if (isLoadingVote) {
+    return (
+        <Card className="shadow-lg border-primary/30">
+            <CardHeader>
+                <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Il Tuo Voto per {nation.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="text-muted-foreground">Caricamento voto...</p>
+            </CardContent>
+        </Card>
+    );
+  }
 
   return (
     <Card className="shadow-lg border-primary/30">
       <CardHeader>
         <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Il Tuo Voto per {nation.name}</CardTitle>
         {hasVoted && <CardDescription>Hai già votato per {nation.name}. Puoi aggiornare i tuoi punteggi.</CardDescription>}
+        {!hasVoted && <CardDescription>Esprimi i tuoi punteggi da 1 a 10 per ogni categoria.</CardDescription>}
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
+          {averageScore !== null && (
+            <div className="p-3 mb-4 text-center bg-muted/50 rounded-md border border-border">
+              <p className="text-sm font-medium text-foreground">
+                Il tuo voto medio per {nation.name}: 
+                <span className="text-lg font-bold text-accent ml-1">{averageScore} / 10</span>
+              </p>
+            </div>
+          )}
           <div>
             <Label htmlFor="songScore" className="text-lg">Canzone: <span className="font-bold text-accent">{songScore}</span>/10</Label>
             <Slider
