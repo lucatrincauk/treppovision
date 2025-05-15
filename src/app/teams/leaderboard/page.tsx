@@ -5,7 +5,7 @@ import type { Team, Nation } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Flag } from "lucide-react"; // Added BadgeCheck, Flag
 import Image from "next/image";
 import Link from "next/link";
 
@@ -21,11 +21,11 @@ const getPointsForRank = (rank?: number): number => {
     case 5: return 10;
   }
   if (rank >= 6 && rank <= 14) {
-    return 10 - (rank - 5);
+    return 10 - (rank - 5); // 6th=9, 7th=8, ..., 14th=1
   }
   if (rank === 15) return 0;
   if (rank >= 16 && rank <= 25) {
-    return 0 - (rank - 15);
+    return 0 - (rank - 15); // 16th=-1, 17th=-2, ..., 25th=-10
   }
   if (rank === 26) return 25;
 
@@ -38,18 +38,13 @@ interface NationScoreDetail {
   countryCode: string;
   actualRank?: number;
   points: number;
+  type: 'founder' | 'day1' | 'day2';
 }
 
 interface TeamWithScore extends Team {
   score: number;
   rank?: number;
-  nationScoreDetails: {
-    founder1: NationScoreDetail | null;
-    founder2: NationScoreDetail | null;
-    founder3: NationScoreDetail | null;
-    day1: NationScoreDetail | null;
-    day2: NationScoreDetail | null;
-  };
+  nationScoreDetails: NationScoreDetail[];
 }
 
 export default async function TeamsLeaderboardPage() {
@@ -60,15 +55,9 @@ export default async function TeamsLeaderboardPage() {
 
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
-    const nationDetails: TeamWithScore['nationScoreDetails'] = {
-      founder1: null,
-      founder2: null,
-      founder3: null,
-      day1: null,
-      day2: null,
-    };
+    const nationDetails: NationScoreDetail[] = [];
 
-    const processNation = (nationId?: string): NationScoreDetail | null => {
+    const processNation = (nationId?: string, type: NationScoreDetail['type'] = 'founder'): NationScoreDetail | null => {
       if (!nationId) return null;
       const nation = nationsMap.get(nationId);
       if (nation) {
@@ -79,17 +68,22 @@ export default async function TeamsLeaderboardPage() {
           name: nation.name,
           countryCode: nation.countryCode,
           actualRank: nation.ranking,
-          points
+          points,
+          type
         };
       }
       return null;
     };
 
-    nationDetails.founder1 = processNation(team.founderChoice1NationId);
-    nationDetails.founder2 = processNation(team.founderChoice2NationId);
-    nationDetails.founder3 = processNation(team.founderChoice3NationId);
-    nationDetails.day1 = processNation(team.day1NationId);
-    nationDetails.day2 = processNation(team.day2NationId);
+    (team.founderChoices || []).forEach(nationId => {
+      const detail = processNation(nationId, 'founder');
+      if (detail) nationDetails.push(detail);
+    });
+    const day1Detail = processNation(team.day1NationId, 'day1');
+    if (day1Detail) nationDetails.push(day1Detail);
+    const day2Detail = processNation(team.day2NationId, 'day2');
+    if (day2Detail) nationDetails.push(day2Detail);
+
 
     return { ...team, score, nationScoreDetails: nationDetails };
   });
@@ -109,20 +103,21 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  const NationDetailDisplay = ({ detail, type }: { detail: NationScoreDetail | null, type?: string }) => {
-    if (!detail) return <div className="text-xs text-muted-foreground/80">{type ? `${type}: ` : ''}Nazione non trovata</div>;
+  const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail }) => {
+    const Icon = detail.type === 'founder' ? BadgeCheck : Flag;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
         <Image
           src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
           alt={detail.name}
-          width={20}
-          height={13}
-          className="rounded-sm border border-border/30 object-contain"
+          width={15} // smaller flag
+          height={10}
+          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
           data-ai-hint={`${detail.name} flag`}
         />
         <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Classifica: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
-          <span className="font-medium">{detail.name}</span>
+          <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
           <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
         </Link>
       </div>
@@ -167,11 +162,9 @@ export default async function TeamsLeaderboardPage() {
                     <TableCell className="align-top">
                         <div className="font-medium truncate mb-1">{team.name}</div>
                         <div className="space-y-0.5 text-xs text-muted-foreground">
-                            <NationDetailDisplay detail={team.nationScoreDetails.founder1} type="F1"/>
-                            <NationDetailDisplay detail={team.nationScoreDetails.founder2} type="F2"/>
-                            <NationDetailDisplay detail={team.nationScoreDetails.founder3} type="F3"/>
-                            <NationDetailDisplay detail={team.nationScoreDetails.day1} type="S1"/>
-                            <NationDetailDisplay detail={team.nationScoreDetails.day2} type="S2"/>
+                            {team.nationScoreDetails.map(detail => (
+                                <NationDetailDisplay key={detail.id + detail.type} detail={detail} />
+                            ))}
                         </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell truncate align-top" title={team.creatorDisplayName}>

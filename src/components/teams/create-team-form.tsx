@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Nation, TeamFormData, Team } from "@/types";
@@ -30,32 +33,25 @@ import { getNations } from "@/lib/nation-service";
 import { getTeamsByUserId } from "@/lib/team-service";
 import { createTeamAction, updateTeamAction } from "@/lib/actions/team-actions";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Users, Info, Edit, Lock } from "lucide-react";
+import { Loader2, Save, Users, Info, Edit, Lock, ListChecks } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
-  founderChoice1NationId: z.string().min(1, "Devi selezionare la prima nazione per la prima squadra."),
-  founderChoice2NationId: z.string().min(1, "Devi selezionare la seconda nazione per la prima squadra."),
-  founderChoice3NationId: z.string().min(1, "Devi selezionare la terza nazione per la prima squadra."),
+  founderChoices: z.array(z.string())
+    .length(3, "Devi selezionare esattamente 3 nazioni per la prima squadra.")
+    .refine(items => new Set(items).size === items.length, {
+      message: "Le tre nazioni fondatrici scelte per la prima squadra devono essere diverse.",
+    }),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
   worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
-}).refine(
-  (data) => {
-    const founderSelections = [data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId];
-    const uniqueSelections = new Set(founderSelections);
-    return uniqueSelections.size === founderSelections.length;
-  },
-  {
-    message: "Le tre nazioni fondatrici scelte per la prima squadra devono essere diverse.",
-    path: ["founderChoice1NationId"], // You can also set it to one of the other fields or a general error
-  }
-);
+});
 
 type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
 
@@ -75,6 +71,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [userHasTeam, setUserHasTeam] = React.useState<boolean | null>(null);
   const [isLoadingUserTeamCheck, setIsLoadingUserTeamCheck] = React.useState(true);
+  const [founderPopoverOpen, setFounderPopoverOpen] = React.useState(false);
+
 
   React.useEffect(() => {
     async function fetchInitialData() {
@@ -130,9 +128,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     defaultValues: initialData
       ? {
           name: initialData.name,
-          founderChoice1NationId: initialData.founderChoice1NationId || "",
-          founderChoice2NationId: initialData.founderChoice2NationId || "",
-          founderChoice3NationId: initialData.founderChoice3NationId || "",
+          founderChoices: initialData.founderChoices || [],
           day1NationId: initialData.day1NationId,
           day2NationId: initialData.day2NationId,
           bestSongNationId: initialData.bestSongNationId || "",
@@ -142,9 +138,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         }
       : {
           name: "",
-          founderChoice1NationId: "",
-          founderChoice2NationId: "",
-          founderChoice3NationId: "",
+          founderChoices: [],
           day1NationId: "",
           day2NationId: "",
           bestSongNationId: "",
@@ -158,9 +152,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     if (initialData) {
       form.reset({
         name: initialData.name,
-        founderChoice1NationId: initialData.founderChoice1NationId || "",
-        founderChoice2NationId: initialData.founderChoice2NationId || "",
-        founderChoice3NationId: initialData.founderChoice3NationId || "",
+        founderChoices: initialData.founderChoices || [],
         day1NationId: initialData.day1NationId,
         day2NationId: initialData.day2NationId,
         bestSongNationId: initialData.bestSongNationId || "",
@@ -284,14 +276,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
     )
   }
-   if ((founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) {
+   if ((founderNations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) {
      return (
         <Alert variant="destructive">
             <Users className="h-4 w-4" />
             <AlertTitle>Categorie Nazioni Incomplete</AlertTitle>
             <AlertDescription>
-                Per creare un team, devono essere disponibili nazioni per tutte e tre le categorie (Fondatrici, Prima Semifinale, Seconda Semifinale). Controlla i dati delle nazioni in Firestore.
-                 Oppure, se sono disponibili nazioni in generale ma non per queste categorie, le selezioni qui sotto potrebbero essere vuote.
+                Per creare un team, devono essere disponibili almeno 3 nazioni Fondatrici, e almeno una nazione per Prima Semifinale e Seconda Semifinale. Controlla i dati delle nazioni in Firestore.
             </AlertDescription>
         </Alert>
      )
@@ -320,78 +311,76 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
 
         <FormField
           control={form.control}
-          name="founderChoice1NationId"
+          name="founderChoices"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prima squadra - Scelta 1 (Nazioni Fondatrici)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {founderNations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Prima squadra (Nazioni Fondatrici) - Seleziona 3</FormLabel>
+              <Popover open={founderPopoverOpen} onOpenChange={setFounderPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between",
+                        !field.value?.length && "text-muted-foreground"
+                      )}
+                      disabled={isSubmitting || teamsLocked || founderNations.length < 3}
+                    >
+                      {field.value?.length > 0
+                        ? field.value
+                            .map(val => founderNations.find(n => n.id === val)?.name)
+                            .filter(Boolean)
+                            .join(", ")
+                        : (founderNations.length < 3 ? "Nazioni fondatrici insufficienti" : "Seleziona 3 nazioni")}
+                      <ListChecks className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <ScrollArea className="h-72">
+                    <div className="p-4 space-y-2">
+                      {founderNations.map((nation) => (
+                        <div key={nation.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`founder-${nation.id}`}
+                            checked={field.value?.includes(nation.id)}
+                            onCheckedChange={(checked) => {
+                              const currentValues = field.value || [];
+                              if (checked) {
+                                if (currentValues.length < 3) {
+                                  field.onChange([...currentValues, nation.id]);
+                                } else {
+                                  // Prevent checking more than 3, or handle via toast/message
+                                  toast({ title: "Limite Raggiunto", description: "Puoi selezionare solo 3 nazioni fondatrici.", variant: "default", duration: 2000 });
+                                  return false; // Prevent checkbox from visually updating if using this method
+                                }
+                              } else {
+                                field.onChange(currentValues.filter(id => id !== nation.id));
+                              }
+                            }}
+                            disabled={currentValues.length >=3 && !currentValues.includes(nation.id)}
+                          />
+                          <label
+                            htmlFor={`founder-${nation.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {nation.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Scegli esattamente 3 nazioni dalla categoria Fondatrici.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="founderChoice2NationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prima squadra - Scelta 2 (Nazioni Fondatrici)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {founderNations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="founderChoice3NationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prima squadra - Scelta 3 (Nazioni Fondatrici)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || founderNations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={founderNations.length === 0 ? "Nessuna nazione fondatrice disponibile" : "Seleziona nazione"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {founderNations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -551,7 +540,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || founderNations.length === 0 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
+            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || founderNations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}

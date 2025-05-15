@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import type { TeamFormData, Team } from "@/types";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, getDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import { getAdminSettingsAction } from "./admin-actions"; // Import admin settings
+import { getAdminSettingsAction } from "./admin-actions"; 
 
 const TEAMS_COLLECTION = "teams";
 
@@ -38,10 +38,10 @@ export async function createTeamAction(
   if (!data.name.trim()) {
     return { success: false, message: "Il nome del team è obbligatorio." };
   }
-  if (!data.founderChoice1NationId || !data.founderChoice2NationId || !data.founderChoice3NationId) {
-    return { success: false, message: "Devi selezionare tre nazioni fondatrici." };
+  if (!data.founderChoices || data.founderChoices.length !== 3) {
+    return { success: false, message: "Devi selezionare esattamente tre nazioni fondatrici." };
   }
-  if (new Set([data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId]).size !== 3) {
+  if (new Set(data.founderChoices).size !== 3) {
     return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
   }
   if (!data.day1NationId) {
@@ -70,9 +70,7 @@ export async function createTeamAction(
     const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any } = {
       userId,
       name: data.name,
-      founderChoice1NationId: data.founderChoice1NationId,
-      founderChoice2NationId: data.founderChoice2NationId,
-      founderChoice3NationId: data.founderChoice3NationId,
+      founderChoices: data.founderChoices,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,
@@ -132,10 +130,10 @@ export async function updateTeamAction(
     if (!data.name.trim()) {
       return { success: false, message: "Il nome del team è obbligatorio." };
     }
-    if (!data.founderChoice1NationId || !data.founderChoice2NationId || !data.founderChoice3NationId) {
-      return { success: false, message: "Devi selezionare tre nazioni fondatrici." };
+    if (!data.founderChoices || data.founderChoices.length !== 3) {
+      return { success: false, message: "Devi selezionare esattamente tre nazioni fondatrici." };
     }
-    if (new Set([data.founderChoice1NationId, data.founderChoice2NationId, data.founderChoice3NationId]).size !== 3) {
+    if (new Set(data.founderChoices).size !== 3) {
       return { success: false, message: "Le tre nazioni fondatrici devono essere diverse." };
     }
     if (!data.day1NationId) {
@@ -163,9 +161,7 @@ export async function updateTeamAction(
 
     const teamPayloadToUpdate = {
       name: data.name,
-      founderChoice1NationId: data.founderChoice1NationId,
-      founderChoice2NationId: data.founderChoice2NationId,
-      founderChoice3NationId: data.founderChoice3NationId,
+      founderChoices: data.founderChoices,
       day1NationId: data.day1NationId,
       day2NationId: data.day2NationId,
       creatorDisplayName: data.creatorDisplayName,

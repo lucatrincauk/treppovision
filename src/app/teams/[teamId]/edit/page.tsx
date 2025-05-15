@@ -12,7 +12,7 @@ import { Loader2, AlertTriangle, Users, Edit, Lock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getTeamsLockedStatus } from "@/lib/actions/team-actions"; // Import the check
+import { getTeamsLockedStatus } from "@/lib/actions/team-actions"; 
 
 export default function EditTeamPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -137,9 +137,7 @@ export default function EditTeamPage() {
 
   const initialFormData: TeamFormData = {
     name: team.name,
-    founderChoice1NationId: team.founderChoice1NationId || "",
-    founderChoice2NationId: team.founderChoice2NationId || "",
-    founderChoice3NationId: team.founderChoice3NationId || "",
+    founderChoices: team.founderChoices || [],
     day1NationId: team.day1NationId,
     day2NationId: team.day2NationId,
     creatorDisplayName: team.creatorDisplayName,
@@ -166,7 +164,7 @@ export default function EditTeamPage() {
             initialData={initialFormData}
             isEditMode={true}
             teamId={team.id}
-            teamsLocked={teamsLocked} // Pass locked status to form
+            teamsLocked={teamsLocked} 
           />
         </CardContent>
       </Card>

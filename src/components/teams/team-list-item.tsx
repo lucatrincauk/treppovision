@@ -71,10 +71,10 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
     fetchLockStatus();
   }, []);
 
-
-  const founderNation1 = getNationDetailsById(team.founderChoice1NationId, nations);
-  const founderNation2 = getNationDetailsById(team.founderChoice2NationId, nations);
-  const founderNation3 = getNationDetailsById(team.founderChoice3NationId, nations);
+  const founderNationsDetails = (team.founderChoices || [])
+    .map(id => getNationDetailsById(id, nations))
+    .filter(Boolean) as Nation[];
+    
   const day1Nation = getNationDetailsById(team.day1NationId, nations);
   const day2Nation = getNationDetailsById(team.day2NationId, nations);
 
@@ -117,9 +117,9 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
         <p className="text-lg font-semibold text-foreground mt-2 mb-1.5">Scelte Principali:</p>
-        <SelectedNationDisplay nation={founderNation1} IconComponent={BadgeCheck} />
-        <SelectedNationDisplay nation={founderNation2} IconComponent={BadgeCheck} />
-        <SelectedNationDisplay nation={founderNation3} IconComponent={BadgeCheck} />
+        {founderNationsDetails.map(nation => (
+          <SelectedNationDisplay key={nation.id} nation={nation} IconComponent={BadgeCheck} />
+        ))}
         <SelectedNationDisplay nation={day1Nation} IconComponent={Flag} />
         <SelectedNationDisplay nation={day2Nation} IconComponent={Flag} />
 
