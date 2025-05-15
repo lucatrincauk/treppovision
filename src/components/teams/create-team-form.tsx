@@ -344,22 +344,21 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                         <div key={nation.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={`founder-${nation.id}`}
-                            checked={field.value?.includes(nation.id)}
+                            checked={(field.value || []).includes(nation.id)}
                             onCheckedChange={(checked) => {
                               const currentValues = field.value || [];
                               if (checked) {
                                 if (currentValues.length < 3) {
                                   field.onChange([...currentValues, nation.id]);
                                 } else {
-                                  // Prevent checking more than 3, or handle via toast/message
                                   toast({ title: "Limite Raggiunto", description: "Puoi selezionare solo 3 nazioni fondatrici.", variant: "default", duration: 2000 });
-                                  return false; // Prevent checkbox from visually updating if using this method
+                                  return false; 
                                 }
                               } else {
                                 field.onChange(currentValues.filter(id => id !== nation.id));
                               }
                             }}
-                            disabled={currentValues.length >=3 && !currentValues.includes(nation.id)}
+                            disabled={ (field.value || []).length >= 3 && !(field.value || []).includes(nation.id) }
                           />
                           <label
                             htmlFor={`founder-${nation.id}`}
