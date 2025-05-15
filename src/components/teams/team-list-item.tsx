@@ -4,13 +4,14 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, ListChecks } from "lucide-react"; // Removed TrendingUp, Badge
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, ListChecks, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 
 interface SelectedNationDisplayProps {
@@ -25,8 +26,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   if (!nation) {
     return (
       <div className="flex items-center gap-1.5 py-1">
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent")} />
-        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
@@ -34,16 +35,16 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   }
 
   let nameForDisplay = nation.name;
-  if (!label && nation.ranking && nation.ranking > 0) {
+  if (!label && nation.ranking && nation.ranking > 0) { // Only show Eurovision rank for non-labeled items (Scelte Principali)
     nameForDisplay += ` (${nation.ranking}°)`
   }
   
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
-    <div className="flex items-start gap-1.5 py-1">
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0 mt-0.5", isCorrectPick ? "text-accent" : "text-accent")} />
-      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium mt-0.5">{label}</span>}
+    <div className="flex items-center gap-1.5 py-1"> {/* Changed from items-start to items-center */}
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} /> {/* Removed mt-0.5 */}
+      {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>} {/* Removed mt-0.5 */}
       
       <div className="flex-grow">
         <Link href={`/nations/${nation.id}`} className="group">
@@ -256,4 +257,3 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
-
