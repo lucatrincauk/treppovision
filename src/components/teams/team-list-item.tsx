@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, ListChecks, BadgeCheck } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,7 +24,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
   if (!nation) {
     return (
       <div className="flex items-center gap-1.5 py-1">
-        <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />
+        <IconComponent className="h-5 w-5 text-accent flex-shrink-0" />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
@@ -40,7 +40,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
   
   let displayName = nation.name;
   if (nation.ranking && nation.ranking > 0) {
-    displayName += ` (${nation.ranking}°)`
+    displayName += ` (${nation.ranking}°)`;
   }
 
 
@@ -61,7 +61,7 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
             <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
                 {displayName}
             </span>
-            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={titleText}>
+            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
             </span>
         </div>
@@ -193,7 +193,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
         {isOwner && (
           <>
             <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30 flex items-center">
-                 <ListChecks className="mr-2 h-5 w-5 text-accent" />
                  Voti TreppoScore
             </p>
             <SelectedNationDisplay 
