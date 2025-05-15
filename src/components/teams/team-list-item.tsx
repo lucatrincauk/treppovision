@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, ListChecks, TrendingUp } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +12,7 @@ import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { TrendingUp } from "lucide-react";
 
 
 interface SelectedNationDisplayProps {
@@ -20,12 +21,13 @@ interface SelectedNationDisplayProps {
   label?: string;
   isCorrectPick?: boolean;
   globalScoreForCategory?: number | null;
+  isEvenRow?: boolean; // New prop for zebra striping
 }
 
-const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, globalScoreForCategory }: SelectedNationDisplayProps) => {
+const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, globalScoreForCategory, isEvenRow }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
-      <div className="flex items-center gap-1.5 py-1">
+      <div className={cn("flex items-center gap-1.5 py-1 px-2", isEvenRow && "bg-card/60 rounded-md")}>
         <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400")} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
         <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -43,8 +45,8 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick, gl
   const titleText = `${nation.name}${(!label && nation.ranking && nation.ranking > 0) ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
 
   return (
-    <div className="flex items-center gap-1.5 py-1">
-      <IconComponent className={cn("h-5 w-5 flex-shrink-0 text-accent", isCorrectPick && "text-yellow-400")} />
+    <div className={cn("flex items-center gap-1.5 py-1 px-2", isEvenRow && "bg-card/60 rounded-md")}>
+      <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-yellow-400" : "text-accent")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       
       <div className="flex-grow">
@@ -178,7 +180,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
   const isOwner = user?.uid === team.userId;
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300")}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div>
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -230,6 +232,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
                 label="Miglior Canzone:" 
                 isCorrectPick={!!bestSongNationIdGlobal && bestSongNationDetails?.id === bestSongNationIdGlobal}
                 globalScoreForCategory={getGlobalScoreForCategory(bestSongNationDetails?.id, 'song')}
+                isEvenRow={false} // index 0
             />
             <SelectedNationDisplay 
                 nation={bestPerformanceNationDetails} 
@@ -237,6 +240,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
                 label="Miglior Performance:"
                 isCorrectPick={!!bestPerformanceNationIdGlobal && bestPerformanceNationDetails?.id === bestPerformanceNationIdGlobal}
                 globalScoreForCategory={getGlobalScoreForCategory(bestPerformanceNationDetails?.id, 'performance')}
+                isEvenRow={true} // index 1
             />
             <SelectedNationDisplay 
                 nation={bestOutfitNationDetails} 
@@ -244,6 +248,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
                 label="Miglior Outfit:"
                 isCorrectPick={!!bestOutfitNationIdGlobal && bestOutfitNationDetails?.id === bestOutfitNationIdGlobal}
                 globalScoreForCategory={getGlobalScoreForCategory(bestOutfitNationDetails?.id, 'outfit')}
+                isEvenRow={false} // index 2
             />
             <SelectedNationDisplay 
                 nation={worstSongNationDetails} 
@@ -251,6 +256,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
                 label="Peggior Canzone:"
                 isCorrectPick={!!worstSongNationIdGlobal && worstSongNationDetails?.id === worstSongNationIdGlobal}
                 globalScoreForCategory={getGlobalScoreForCategory(worstSongNationDetails?.id, 'song')}
+                isEvenRow={true} // index 3
             />
           </>
         )}
@@ -258,3 +264,5 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
+
+    
