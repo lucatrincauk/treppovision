@@ -43,7 +43,7 @@ const teamFormZodSchema = z.object({
   founderChoices: z.array(z.string())
     .length(3, "Devi selezionare esattamente 3 nazioni per la prima squadra.")
     .refine(items => new Set(items).size === items.length, {
-      message: "Le tre nazioni fondatrici scelte per la prima squadra devono essere diverse.",
+      message: "Le tre nazioni scelte per la prima squadra devono essere diverse.",
     }),
   day1NationId: z.string().min(1, "Devi selezionare una nazione per la seconda squadra."),
   day2NationId: z.string().min(1, "Devi selezionare una nazione per la terza squadra."),
@@ -81,16 +81,18 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         setIsLoadingUserTeamCheck(true);
       }
 
-      if (user) {
+      if (user || !authLoading) { // Fetch nations even if user is not logged in initially
         try {
           const fetchedNations = await getNations();
           setNations(fetchedNations);
 
-          if (!isEditMode) {
+          if (user && !isEditMode) {
             const userTeams = await getTeamsByUserId(user.uid);
             setUserHasTeam(userTeams.length > 0);
+          } else if (isEditMode && user) {
+            setUserHasTeam(true); // If editing, user must have a team
           } else {
-            setUserHasTeam(true);
+             if (!isEditMode) setUserHasTeam(false);
           }
         } catch (error) {
           console.error("Failed to fetch initial data for team form:", error);
@@ -106,16 +108,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
           if (!isEditMode) setIsLoadingUserTeamCheck(false);
         }
       } else {
-        try {
-            const fetchedNations = await getNations();
-            setNations(fetchedNations);
-        } catch (error) {
-            console.error("Failed to fetch nations:", error);
-            setNations([]);
-        }
-        if (!isEditMode) setUserHasTeam(false);
+        // Handles case where auth is still loading and no user yet
         setIsLoadingNations(false);
         if (!isEditMode) setIsLoadingUserTeamCheck(false);
+        if (!isEditMode) setUserHasTeam(false);
       }
     }
     if (!authLoading) {
@@ -261,7 +257,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     );
   }
 
-  const founderNations = nations.filter(n => n.category === 'founders');
+  const founderNations = nations.filter(n => n.category === 'founders'); // Still used for populating the trigger button text smartly
   const day1Nations = nations.filter(n => n.category === 'day1');
   const day2Nations = nations.filter(n => n.category === 'day2');
 
@@ -276,13 +272,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
     )
   }
-   if ((founderNations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) {
+   if ((day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) { // Only check day1/day2, as founder choice uses all nations now
      return (
         <Alert variant="destructive">
             <Users className="h-4 w-4" />
             <AlertTitle>Categorie Nazioni Incomplete</AlertTitle>
             <AlertDescription>
-                Per creare un team, devono essere disponibili almeno 3 nazioni Fondatrici, e almeno una nazione per Prima Semifinale e Seconda Semifinale. Controlla i dati delle nazioni in Firestore.
+                Per creare un team, devono essere disponibili almeno una nazione per Prima Semifinale e Seconda Semifinale. Controlla i dati delle nazioni in Firestore.
             </AlertDescription>
         </Alert>
      )
@@ -314,7 +310,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
           name="founderChoices"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prima squadra (Nazioni Fondatrici) - Seleziona 3</FormLabel>
+              <FormLabel>Prima squadra - Seleziona 3</FormLabel>
               <Popover open={founderPopoverOpen} onOpenChange={setFounderPopoverOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -325,14 +321,14 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                         "w-full justify-between",
                         !field.value?.length && "text-muted-foreground"
                       )}
-                      disabled={isSubmitting || teamsLocked || founderNations.length < 3}
+                      disabled={isSubmitting || teamsLocked || nations.length < 3}
                     >
                       {field.value?.length > 0
                         ? field.value
-                            .map(val => founderNations.find(n => n.id === val)?.name)
+                            .map(val => nations.find(n => n.id === val)?.name) // Use 'nations' here
                             .filter(Boolean)
                             .join(", ")
-                        : (founderNations.length < 3 ? "Nazioni fondatrici insufficienti" : "Seleziona 3 nazioni")}
+                        : (nations.length < 3 ? "Nazioni insufficienti" : "Seleziona 3 nazioni")}
                       <ListChecks className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
@@ -340,7 +336,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <ScrollArea className="h-72">
                     <div className="p-4 space-y-2">
-                      {founderNations.map((nation) => (
+                      {nations.map((nation) => ( // Iterate over 'nations' (all nations)
                         <div key={nation.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={`founder-${nation.id}`}
@@ -351,7 +347,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                                 if (currentValues.length < 3) {
                                   field.onChange([...currentValues, nation.id]);
                                 } else {
-                                  toast({ title: "Limite Raggiunto", description: "Puoi selezionare solo 3 nazioni fondatrici.", variant: "default", duration: 2000 });
+                                  toast({ title: "Limite Raggiunto", description: "Puoi selezionare solo 3 nazioni.", variant: "default", duration: 2000 });
                                   return false; 
                                 }
                               } else {
@@ -373,7 +369,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Scegli esattamente 3 nazioni dalla categoria Fondatrici.
+                Scegli esattamente 3 nazioni per la tua prima squadra.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -539,7 +535,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || founderNations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0 || nations.length === 0}
+            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || nations.length < 3 || day1Nations.length === 0 || day2Nations.length === 0}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}
@@ -549,3 +545,5 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     </Form>
   );
 }
+
+    
