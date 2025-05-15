@@ -1,31 +1,86 @@
 
+"use client";
+
+import * as React from "react";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalScores } from "@/lib/voting-service";
-import type { Nation, NationWithTreppoScore } from "@/types";
+import { getAllNationsGlobalScores, getAllUserVotes } from "@/lib/voting-service";
+import type { Nation, NationWithTreppoScore, Vote } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
-import { Users, BarChart3, Star } from "lucide-react";
+import { Users, BarChart3, Star, User, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
-export const dynamic = 'force-dynamic'; // Ensure fresh data on each request
+export default function TreppoScoreRankingPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const [nationsWithScores, setNationsWithScores] = React.useState<NationWithTreppoScore[]>([]);
+  const [isLoadingData, setIsLoadingData] = React.useState(true);
 
-export default async function TreppoScoreRankingPage() {
-  const allNations = await getNations();
-  const globalScoresMap = await getAllNationsGlobalScores();
+  React.useEffect(() => {
+    async function fetchData() {
+      setIsLoadingData(true);
+      try {
+        const [allNations, globalScoresMap, userVotesMap] = await Promise.all([
+          getNations(),
+          getAllNationsGlobalScores(),
+          user ? getAllUserVotes(user.uid) : Promise.resolve(new Map<string, Vote | null>())
+        ]);
 
-  const nationsWithScores: NationWithTreppoScore[] = allNations.map(nation => {
-    const scoreData = globalScoresMap.get(nation.id);
-    return {
-      ...nation,
-      globalTreppoScore: scoreData?.averageScore ?? null,
-      globalVoteCount: scoreData?.voteCount ?? 0,
-    };
-  }).filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0) // Only include nations with votes
-    .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
+        const processedNations: NationWithTreppoScore[] = allNations
+          .map(nation => {
+            const scoreData = globalScoresMap.get(nation.id);
+            const userVote = user ? userVotesMap.get(nation.id) : null;
+            const userAverageScore = userVote 
+              ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3 
+              : null;
 
+            return {
+              ...nation,
+              globalTreppoScore: scoreData?.averageScore ?? null,
+              globalVoteCount: scoreData?.voteCount ?? 0,
+              userAverageScore: userAverageScore,
+            };
+          })
+          .filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0)
+          .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
+        
+        setNationsWithScores(processedNations);
+      } catch (error) {
+        console.error("Error fetching data for TreppoScore ranking:", error);
+        setNationsWithScores([]);
+      } finally {
+        setIsLoadingData(false);
+      }
+    }
+
+    if (!authLoading) {
+      fetchData();
+    }
+  }, [user, authLoading]);
+
+  if (isLoadingData || authLoading) {
+    return (
+      <div className="space-y-8">
+        <NationsSubNavigation />
+        <header className="text-center sm:text-left space-y-2 mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <Users className="mr-3 h-10 w-10" />
+            Classifica TreppoScore
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Caricamento classifica...
+          </p>
+        </header>
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+  
   const top3Nations = nationsWithScores.slice(0, 3);
   const otherRankedNations = nationsWithScores.slice(3);
 
@@ -54,7 +109,7 @@ export default async function TreppoScoreRankingPage() {
             <NationList
               nations={top3Nations.map((nation, index) => ({
                 ...nation,
-                ranking: index + 1, // Assign 1st, 2nd, 3rd for styling
+                ranking: index + 1, 
               }))}
               title="Il Podio TreppoScore"
             />
@@ -70,10 +125,11 @@ export default async function TreppoScoreRankingPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px] text-center">Pos.</TableHead>
+                        <TableHead className="w-[60px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
-                        <TableHead className="text-right w-[150px]">TreppoScore</TableHead>
-                        <TableHead className="text-right w-[120px]">N. Voti</TableHead>
+                        <TableHead className="text-right w-[140px]">TreppoScore Globale</TableHead>
+                        <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
+                        {user && <TableHead className="text-right w-[120px]">Il Tuo Voto</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -106,7 +162,19 @@ export default async function TreppoScoreRankingPage() {
                               {nation.globalTreppoScore?.toFixed(2) ?? 'N/A'}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right text-muted-foreground">{nation.globalVoteCount}</TableCell>
+                          <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.globalVoteCount}</TableCell>
+                          {user && (
+                            <TableCell className="text-right">
+                              {nation.userAverageScore !== null && nation.userAverageScore !== undefined ? (
+                                <div className="flex items-center justify-end font-semibold text-primary">
+                                  <User className="w-3 h-3 mr-1 opacity-70" />
+                                  {nation.userAverageScore.toFixed(2)}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">N/A</span>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -120,3 +188,4 @@ export default async function TreppoScoreRankingPage() {
     </div>
   );
 }
+

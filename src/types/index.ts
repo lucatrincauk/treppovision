@@ -104,7 +104,7 @@ export interface AdminNationPayload {
 // Team Creation
 export interface TeamFormData {
   name: string;
-  founderChoices: string[]; // Array of nation IDs
+  founderChoices: string[]; // Array of 3 nation IDs
   creatorDisplayName: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
@@ -117,7 +117,7 @@ export interface Team {
   userId: string; // UID of the user who created the team
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; // Array of nation IDs
+  founderChoices: string[]; 
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -144,4 +144,6 @@ export interface NationGlobalScore {
 export interface NationWithTreppoScore extends Nation {
   globalTreppoScore: number | null;
   globalVoteCount: number;
+  userAverageScore?: number | null; // Added for user's specific vote on this page
 }
+

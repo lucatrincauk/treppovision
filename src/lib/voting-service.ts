@@ -93,6 +93,29 @@ export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlo
   }
 };
 
+// Fetches all votes for a specific user
+export const getAllUserVotes = async (userId: string): Promise<Map<string, Vote | null>> => {
+  const userVotesMap = new Map<string, Vote | null>();
+  if (!userId) return userVotesMap;
+
+  try {
+    const votesCollectionRef = collection(db, "votes");
+    const q = query(votesCollectionRef, where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach((docSnap) => {
+      const vote = docSnap.data() as Vote; // Assuming Vote type has nationId
+      if (vote && vote.nationId) {
+        userVotesMap.set(vote.nationId, vote);
+      }
+    });
+    return userVotesMap;
+  } catch (error) {
+    console.error(`Error fetching all votes for user ${userId}:`, error);
+    return userVotesMap; // Return empty map on error
+  }
+};
+
 
 // --- Potentially keep localStorage functions for specific offline/quick-access scenarios if needed,
 // --- but ensure they are not the source of truth for voting.
@@ -110,3 +133,4 @@ export const getUserVoteForNationFromLocalStorage_DEPRECATED = (nationId: string
   console.warn("getUserVoteForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
   return undefined;
 };
+
