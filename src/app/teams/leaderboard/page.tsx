@@ -236,41 +236,42 @@ export default async function TeamsLeaderboardPage() {
   const otherRankedTeams = teamsWithScores.slice(3);
 
 
-  const EurovisionMedalIcon = ({ rank }: { rank?: number }) => {
-    if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
-    if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
-    if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; 
-    return null;
+  const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => {
+      const MedalIcon = ({ rank }: { rank?: number }) => {
+        if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
+        if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
+        if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; 
+        return null;
+      };
+      return (
+        <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
+          <BadgeCheck className="w-4 h-4 text-accent flex-shrink-0" />
+          <Image
+            src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
+            alt={detail.name}
+            width={20} 
+            height={13}
+            className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+            data-ai-hint={`${detail.name} flag`}
+          />
+          <Link 
+            href={`/nations/${detail.id}`} 
+            className="text-xs hover:underline hover:text-primary truncate flex-grow flex items-center" 
+            title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+          >
+            <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
+            <MedalIcon rank={detail.actualRank} />
+            <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+          </Link>
+          <span className={cn(
+            "text-xs ml-auto pl-1", 
+            detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
+          )}>
+            {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
+          </span>
+        </div>
+      );
   };
-
-  const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
-    <div className="flex items-center gap-1.5 py-0.5"> 
-      <BadgeCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-      <Image
-        src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
-        alt={detail.name}
-        width={15} 
-        height={10}
-        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-        data-ai-hint={`${detail.name} flag`}
-      />
-      <Link 
-        href={`/nations/${detail.id}`} 
-        className="text-xs hover:underline hover:text-primary truncate flex-grow flex items-center" 
-        title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
-      >
-        <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-        <EurovisionMedalIcon rank={detail.actualRank} />
-        <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
-      </Link>
-      <span className={cn(
-        "text-xs ml-auto pl-1", 
-        detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
-      )}>
-        {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
-      </span>
-    </div>
-  );
 
   const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
     let IconComponent: React.ElementType;
@@ -288,25 +289,26 @@ export default async function TeamsLeaderboardPage() {
         if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />;
         return null;
     };
-    const iconColor = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
+    
+    const iconColor = detail.iconName === "Star" ? "text-secondary" : "text-accent";
 
     return (
-      <div className="flex items-center gap-1.5 py-0.5">
-        <IconComponent className={cn("w-3.5 h-3.5 flex-shrink-0", iconColor)} />
+      <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
+        <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColor)} />
         {detail.pickedNationCountryCode && detail.pickedNationName ? (
             <Image
             src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
             alt={detail.pickedNationName}
-            width={15}
-            height={10}
+            width={20}
+            height={13}
             className="rounded-sm border border-border/30 object-contain flex-shrink-0"
             data-ai-hint={`${detail.pickedNationName} flag`}
             />
         ) : (
-            <div className="w-[15px] h-[10px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
+            <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
         )}
         
-        <span className="text-xs text-muted-foreground min-w-[120px] flex-shrink-0">{detail.categoryName}:</span>
+        <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
               className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
               title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° ${detail.categoryName === "Peggior Canzone" ? "peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : "in cat.")})` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
@@ -319,12 +321,6 @@ export default async function TeamsLeaderboardPage() {
                 <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
                     (
                     {detail.actualCategoryRank}°
-                    {detail.pickedNationScoreInCategory !== null && detail.pickedNationScoreInCategory !== undefined && (
-                        <span className="ml-1 flex items-center">
-                            <TrendingUp className="w-3 h-3 mr-0.5 text-primary" />
-                            {detail.pickedNationScoreInCategory.toFixed(2)}
-                        </span>
-                    )}
                     {detail.categoryName === "Miglior Canzone" ? "" :
                      detail.categoryName === "Peggior Canzone" ? " peggiore" :
                      " in cat."}
@@ -455,3 +451,5 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
+    
