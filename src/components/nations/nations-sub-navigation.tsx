@@ -4,12 +4,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ListMusic, Award, Users } from "lucide-react"; 
+import { ListMusic, Award, TrendingUp } from "lucide-react"; 
 
 const subNavItems = [
   { href: "/nations", label: "Elenco Completo", icon: ListMusic },
   { href: "/nations/ranking", label: "Classifica Finale", icon: Award },
-  { href: "/nations/trepposcore-ranking", label: "Classifica TreppoScore", icon: Users },
+  { href: "/nations/trepposcore-ranking", label: "Classifica TreppoScore", icon: TrendingUp },
 ];
 
 export function NationsSubNavigation() {
