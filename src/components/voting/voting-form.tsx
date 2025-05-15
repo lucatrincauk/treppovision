@@ -18,11 +18,10 @@ interface VotingFormProps {
 }
 
 export function VotingForm({ nation }: VotingFormProps) {
-  const { user, isLoading: authIsLoading } = useAuth(); // Get auth loading state
+  const { user, isLoading: authIsLoading } = useAuth();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   
-  // isLoadingVote tracks the loading of the specific vote for this nation/user
   const [isLoadingVote, setIsLoadingVote] = useState(true); 
 
   const [songScore, setSongScore] = useState(5);
@@ -45,39 +44,55 @@ export function VotingForm({ nation }: VotingFormProps) {
   };
 
   useEffect(() => {
-    const fetchUserVote = async () => {
-      if (authIsLoading) {
-        // Auth state is not yet resolved, don't attempt to fetch vote.
-        // The component will show a loader based on authIsLoading.
-        return;
-      }
+    if (authIsLoading) {
+      // We are still waiting for auth state to resolve.
+      // The main return logic will show an auth loading indicator.
+      // Ensure isLoadingVote is true so we don't prematurely show the form.
+      setIsLoadingVote(true);
+      return;
+    }
 
-      if (user && user.uid) {
-        setIsLoadingVote(true); // Indicate vote fetching has started
+    if (!user || !user.uid) {
+      // Auth is resolved, but no user is logged in.
+      resetScoresAndAverage();
+      setIsLoadingVote(false); // No vote to load for a non-logged-in user.
+      return;
+    }
+
+    // At this point, auth is loaded, and we have a user with a UID.
+    // We are about to attempt fetching the vote.
+    setIsLoadingVote(true); // Set loading true before the async operation.
+
+    const fetchUserVote = async () => {
+      try {
         const existingVote = await getUserVoteForNationFromDB(nation.id, user.uid);
         if (existingVote) {
           setSongScore(existingVote.scores.song);
           setPerformanceScore(existingVote.scores.performance);
           setOutfitScore(existingVote.scores.outfit);
           setHasVoted(true);
-          // Average will be calculated by the other useEffect
         } else {
           resetScoresAndAverage();
         }
-        setIsLoadingVote(false);
-      } else {
-        // No user, or user.uid not available (even if !authIsLoading)
-        resetScoresAndAverage();
-        setIsLoadingVote(false); 
+      } catch (error) {
+        console.error("Error fetching user vote in VotingForm:", error);
+        toast({
+          title: "Errore Caricamento Voto",
+          description: "Impossibile caricare il tuo voto precedente. Riprova.",
+          variant: "destructive",
+        });
+        resetScoresAndAverage(); // Reset to default on error
+      } finally {
+        setIsLoadingVote(false); // Done attempting to load vote.
       }
     };
 
     fetchUserVote();
-  }, [nation.id, user, authIsLoading]); // Add authIsLoading as a dependency
+
+  }, [nation.id, user, authIsLoading, toast]); // Added toast to dependency array as it's used in error handling
 
   useEffect(() => {
-    // This effect calculates the average score whenever relevant inputs change
-    if (user) { // Only calculate if there's a user, and scores are set
+    if (user) { 
         calculateAverage(songScore, performanceScore, outfitScore);
     } else {
         setAverageScore(null); 
@@ -126,7 +141,7 @@ export function VotingForm({ nation }: VotingFormProps) {
     );
   }
 
-  if (!user) { // Auth is resolved, and no user
+  if (!user) { 
     return (
       <Card className="bg-card/80 backdrop-blur-sm">
         <CardHeader>
@@ -139,7 +154,6 @@ export function VotingForm({ nation }: VotingFormProps) {
     );
   }
   
-  // User is present, auth is loaded. Now check if we are loading the specific vote.
   if (isLoadingVote) {
     return (
         <Card className="shadow-lg border-primary/30">
