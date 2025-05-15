@@ -6,17 +6,19 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp, Lock as LockIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { TeamList } from "@/components/teams/team-list";
+import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 export const dynamic = 'force-dynamic'; 
 
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
-  // Updated scoring based on user request
   if (rank === 1) return 30;
   if (rank === 2) return 25;
   if (rank === 3) return 20;
@@ -46,7 +48,7 @@ interface CategoryPickDetail {
   pickedNationName?: string;
   pickedNationCountryCode?: string;
   actualCategoryRank?: number; 
-  pickedNationScoreInCategory?: number | null; // To store the actual score of the picked nation in that category
+  pickedNationScoreInCategory?: number | null; 
   pointsAwarded: number;
   iconName: string; 
 }
@@ -63,7 +65,7 @@ const getTopNationsForCategory = (
   nationsMap: Map<string, Nation>,
   categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
   sortOrder: 'desc' | 'asc' = 'desc'
-): Array<{ id: string; name: string; score: number | null }> => { // Returns full sorted list
+): Array<{ id: string; name: string; score: number | null }> => { 
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
       id: nationId,
@@ -101,6 +103,23 @@ const getCategoryPickPointsAndRank = (
 
 
 export default async function TeamsLeaderboardPage() {
+  const adminSettings = await getAdminSettingsAction();
+
+  if (adminSettings.leaderboardLocked) {
+    return (
+      <div className="space-y-8">
+        <TeamsSubNavigation />
+        <Alert variant="destructive" className="max-w-lg mx-auto">
+          <LockIcon className="h-4 w-4" />
+          <AlertTitle>Classifica Bloccata</AlertTitle>
+          <AlertDescription>
+            L'amministratore ha temporaneamente bloccato l'accesso alla classifica squadre.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   const allTeams = await getTeams();
   const allNations = await getNations();
   const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores();

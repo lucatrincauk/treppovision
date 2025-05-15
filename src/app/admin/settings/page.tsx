@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, BarChartBig } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminSettingsPage() {
@@ -19,7 +19,8 @@ export default function AdminSettingsPage() {
 
   const [settings, setSettings] = React.useState<AdminSettings | null>(null);
   const [isLoadingSettings, setIsLoadingSettings] = React.useState(true);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
+  const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
 
   React.useEffect(() => {
     async function fetchSettings() {
@@ -29,7 +30,6 @@ export default function AdminSettingsPage() {
         setSettings(currentSettings);
         setIsLoadingSettings(false);
       } else if (!authLoading && user && !user.isAdmin) {
-        // User is loaded and is not admin
         setIsLoadingSettings(false);
       }
     }
@@ -39,10 +39,10 @@ export default function AdminSettingsPage() {
   }, [user, authLoading]);
 
   const handleToggleTeamsLocked = async (locked: boolean) => {
-    setIsSubmitting(true);
+    setIsSubmittingTeams(true);
     const result = await updateAdminSettingsAction({ teamsLocked: locked });
     if (result.success) {
-      setSettings(prev => prev ? { ...prev, teamsLocked: locked } : { teamsLocked: locked });
+      setSettings(prev => prev ? { ...prev, teamsLocked: locked } : { teamsLocked: locked, leaderboardLocked: settings?.leaderboardLocked ?? false });
       toast({
         title: "Impostazioni Aggiornate",
         description: `Modifica squadre ${locked ? 'bloccata' : 'sbloccata'}.`,
@@ -54,7 +54,26 @@ export default function AdminSettingsPage() {
         variant: "destructive",
       });
     }
-    setIsSubmitting(false);
+    setIsSubmittingTeams(false);
+  };
+
+  const handleToggleLeaderboardLocked = async (locked: boolean) => {
+    setIsSubmittingLeaderboard(true);
+    const result = await updateAdminSettingsAction({ leaderboardLocked: locked });
+    if (result.success) {
+      setSettings(prev => prev ? { ...prev, leaderboardLocked: locked } : { leaderboardLocked: locked, teamsLocked: settings?.teamsLocked ?? false });
+      toast({
+        title: "Impostazioni Aggiornate",
+        description: `Classifica Squadre ${locked ? 'bloccata' : 'sbloccata'}.`,
+      });
+    } else {
+      toast({
+        title: "Errore Aggiornamento",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+    setIsSubmittingLeaderboard(false);
   };
 
   if (authLoading || isLoadingSettings) {
@@ -100,6 +119,7 @@ export default function AdminSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Teams Locked Toggle */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
                 <Label htmlFor="teams-locked-switch" className="text-base font-medium">
@@ -115,15 +135,43 @@ export default function AdminSettingsPage() {
                 id="teams-locked-switch"
                 checked={settings.teamsLocked}
                 onCheckedChange={handleToggleTeamsLocked}
-                disabled={isSubmitting}
+                disabled={isSubmittingTeams}
                 aria-label="Blocca modifica squadre"
               />
             </div>
           </div>
-           {isSubmitting && (
+           {isSubmittingTeams && (
             <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvataggio modifiche...
+                Salvataggio modifiche squadre...
+            </div>
+            )}
+
+          {/* Leaderboard Locked Toggle */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+                <Label htmlFor="leaderboard-locked-switch" className="text-base font-medium">
+                    Blocca Classifica Squadre
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Se attivo, la pagina "Classifica Squadre" non sarà accessibile.
+                </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              {settings.leaderboardLocked ? <Lock className="text-destructive" /> : <Unlock className="text-primary" />}
+              <Switch
+                id="leaderboard-locked-switch"
+                checked={settings.leaderboardLocked}
+                onCheckedChange={handleToggleLeaderboardLocked}
+                disabled={isSubmittingLeaderboard}
+                aria-label="Blocca classifica squadre"
+              />
+            </div>
+          </div>
+           {isSubmittingLeaderboard && (
+            <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvataggio modifiche classifica...
             </div>
             )}
         </CardContent>

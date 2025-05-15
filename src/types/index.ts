@@ -124,10 +124,16 @@ export interface Team {
   worstSongNationId: string;
   createdAt: number | null; // Milliseconds since epoch
   updatedAt?: number | null; // Milliseconds since epoch or undefined
+  score?: number; // Optional score, typically calculated at runtime
+  rank?: number; // Optional rank for leaderboard display
+  primaSquadraDetails?: Array<{ id: string; name: string; countryCode: string; actualRank?: number; points: number }>;
+  categoryPicksDetails?: Array<{ categoryName: string; pickedNationId?: string; pickedNationName?: string; pickedNationCountryCode?: string; actualCategoryRank?: number; pickedNationScoreInCategory?: number | null; pointsAwarded: number; iconName: string; }>;
 }
+
 
 export interface AdminSettings {
   teamsLocked: boolean;
+  leaderboardLocked: boolean;
 }
 
 export interface NationGlobalScore { // Kept for compatibility if used elsewhere, but new type below is more specific

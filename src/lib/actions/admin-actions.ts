@@ -74,6 +74,8 @@ export async function updateNationAction(
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
     revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
+    revalidatePath("/nations/ranking"); // Revalidate final ranking
+    revalidatePath("/nations/trepposcore-ranking"); // Revalidate trepposcore ranking
     return { success: true, message: "Nazione aggiornata con successo!", nationId: data.id };
   } catch (error) {
     console.error("Errore durante l'aggiornamento della nazione:", error);
@@ -97,6 +99,8 @@ export async function deleteNationAction(
         revalidatePath("/nations");
         revalidatePath(`/nations/${nationId}`);
         revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
+        revalidatePath("/nations/ranking");
+        revalidatePath("/nations/trepposcore-ranking");
         return { success: true, message: "Nazione eliminata con successo!" };
     } catch (error) {
         console.error("Errore durante l'eliminazione della nazione:", error);
@@ -111,19 +115,23 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
     const docSnap = await getDoc(settingsDocRef);
     if (docSnap.exists()) {
-      return docSnap.data() as AdminSettings;
+      const data = docSnap.data();
+      return {
+        teamsLocked: data.teamsLocked === undefined ? false : data.teamsLocked, // Default to false
+        leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked, // Default to false
+      };
     }
     // Return default settings if document doesn't exist
-    return { teamsLocked: false };
+    return { teamsLocked: false, leaderboardLocked: false };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
     // Return default settings on error
-    return { teamsLocked: false };
+    return { teamsLocked: false, leaderboardLocked: false };
   }
 }
 
 export async function updateAdminSettingsAction(
-  payload: { teamsLocked: boolean }
+  payload: Partial<AdminSettings> // Accept partial updates
 ): Promise<{ success: boolean; message: string }> {
   const isAdmin = await verifyAdminServerSide(); // Ensure this check is robust in production
   if (!isAdmin) {
@@ -133,10 +141,11 @@ export async function updateAdminSettingsAction(
   try {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
     await setDoc(settingsDocRef, payload, { merge: true });
-    revalidatePath("/admin/settings"); // Revalidate the admin settings page
-    revalidatePath("/teams"); // Revalidate teams pages as their editability might change
-    revalidatePath("/teams/[teamId]/edit", "layout"); // Revalidate edit team pages
-    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
+    revalidatePath("/admin/settings"); 
+    revalidatePath("/teams"); 
+    revalidatePath("/teams/[teamId]/edit", "layout"); 
+    revalidatePath("/teams/leaderboard"); 
+    revalidatePath("/components/teams/teams-sub-navigation"); // This won't directly revalidate a component, but revalidates pages that use it
 
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
@@ -146,3 +155,7 @@ export async function updateAdminSettingsAction(
   }
 }
 
+export async function getLeaderboardLockedStatus(): Promise<boolean> {
+    const settings = await getAdminSettingsAction();
+    return settings.leaderboardLocked;
+}
