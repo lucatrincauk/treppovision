@@ -207,10 +207,10 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  const MedalIcon = ({ rank }: { rank?: number }) => {
+  const EurovisionMedalIcon = ({ rank }: { rank?: number }) => {
     if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
     if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
-    if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; // Using amber-500 for bronze
+    if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; 
     return null;
   };
 
@@ -232,7 +232,7 @@ export default async function TeamsLeaderboardPage() {
         title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
       >
         <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-        <MedalIcon rank={detail.actualRank} />
+        <EurovisionMedalIcon rank={detail.actualRank} />
         <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
       </Link>
       <span className={cn(
@@ -246,6 +246,12 @@ export default async function TeamsLeaderboardPage() {
 
   const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
     const Icon = detail.icon;
+    const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
+        if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
+        if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
+        if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />;
+        return null;
+    };
     return (
       <div className="flex items-center gap-1.5 py-0.5">
         <Icon className={cn("w-3.5 h-3.5 flex-shrink-0 text-accent")} />
@@ -263,12 +269,16 @@ export default async function TeamsLeaderboardPage() {
         )}
         
         <span className="text-xs text-muted-foreground min-w-[120px] flex-shrink-0">{detail.categoryName}:</span>
-        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} className={cn("text-xs hover:underline hover:text-primary truncate flex-grow", !detail.pickedNationId && "pointer-events-none")}>
+        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
+              className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
+              title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° in cat.)` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
+        >
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
-          {detail.actualCategoryRank && detail.pointsAwarded > 0 && detail.categoryName !== "Peggior Canzone" && ( 
-            <span className="text-muted-foreground"> ({detail.actualCategoryRank}° in cat.)</span>
+          <CategoryMedalIcon rank={detail.actualCategoryRank} />
+          {detail.actualCategoryRank && ( 
+            <span className="text-muted-foreground ml-1">({detail.actualCategoryRank}° in cat.)</span>
           )}
         </Link>
          <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
@@ -369,5 +379,7 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
+    
 
     
