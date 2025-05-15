@@ -47,7 +47,7 @@ interface CategoryPickDetail {
   pickedNationId?: string;
   pickedNationName?: string;
   pickedNationCountryCode?: string;
-  actualCategoryRank?: number; // 1st, 2nd, 3rd in this category based on global votes
+  actualCategoryRank?: number; // Rank of the picked nation in this category based on global votes
   pointsAwarded: number;
   icon: React.ElementType;
 }
@@ -77,20 +77,25 @@ const getTopNationsForCategory = (
         return (b.score as number) - (a.score as number);
       }
       return (a.score as number) - (b.score as number);
-    })
-    .slice(0, 3);
+    });
+    // Removed .slice(0, 3) to return the full sorted list
 };
 
 const getCategoryPickPointsAndRank = (
   pickedNationId: string | undefined,
-  topNationsInCategory: Array<{ nationId: string }>
+  sortedNationsForCategory: Array<{ nationId: string }> // Full sorted list for the category
 ): { points: number; rank?: number } => {
   if (!pickedNationId) return { points: 0, rank: undefined };
-  const rankIndex = topNationsInCategory.findIndex(n => n.nationId === pickedNationId);
-  if (rankIndex === 0) return { points: 15, rank: 1 };
-  if (rankIndex === 1) return { points: 10, rank: 2 };
-  if (rankIndex === 2) return { points: 5, rank: 3 };
-  return { points: 0, rank: undefined };
+  
+  const rankIndex = sortedNationsForCategory.findIndex(n => n.nationId === pickedNationId);
+  const actualRank = rankIndex !== -1 ? rankIndex + 1 : undefined;
+
+  let points = 0;
+  if (actualRank === 1) points = 15;
+  else if (actualRank === 2) points = 10;
+  else if (actualRank === 3) points = 5;
+  
+  return { points, rank: actualRank };
 };
 
 
@@ -277,8 +282,11 @@ export default async function TeamsLeaderboardPage() {
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
           <CategoryMedalIcon rank={detail.actualCategoryRank} />
-          {detail.actualCategoryRank && ( 
+          {detail.actualCategoryRank && detail.categoryName !== "Peggior Canzone" && ( 
             <span className="text-muted-foreground ml-1">({detail.actualCategoryRank}° in cat.)</span>
+          )}
+           {detail.actualCategoryRank && detail.categoryName === "Peggior Canzone" && ( 
+            <span className="text-muted-foreground ml-1">({detail.actualCategoryRank}° peggiore)</span>
           )}
         </Link>
          <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
@@ -326,9 +334,11 @@ export default async function TeamsLeaderboardPage() {
                     <TableCell className="align-top">
                         <div className="font-medium truncate mb-1 text-base flex items-center">
                           <span>{team.name}</span>
-                          <span className="ml-2 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
-                            (<UserCircle className="w-3 h-3" />{team.creatorDisplayName})
-                          </span>
+                          {team.creatorDisplayName && (
+                            <span className="ml-2 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
+                                (<UserCircle className="w-3 h-3" />{team.creatorDisplayName})
+                            </span>
+                          )}
                         </div>
                         
                         <div className="mb-2">
@@ -379,6 +389,8 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+
+    
 
     
 
