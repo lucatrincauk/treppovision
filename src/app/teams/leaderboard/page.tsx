@@ -1,16 +1,16 @@
 
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service";
+import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; // Updated import
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { TeamList } from "@/components/teams/team-list"; // Import TeamList
+import { TeamList } from "@/components/teams/team-list";
 
 export const dynamic = 'force-dynamic'; 
 
@@ -22,16 +22,28 @@ const getPointsForRank = (rank?: number): number => {
     case 3: return 25;
     case 4: return 15;
     case 5: return 10;
+    case 6: return 9;
+    case 7: return 8;
+    case 8: return 7;
+    case 9: return 6;
+    case 10: return 5;
+    case 11: return 4;
+    case 12: return 3;
+    case 13: return 2;
+    case 14: return 1;
+    case 15: return 0;
+    case 16: return -1;
+    case 17: return -2;
+    case 18: return -3;
+    case 19: return -4;
+    case 20: return -5;
+    case 21: return -6;
+    case 22: return -7;
+    case 23: return -8;
+    case 24: return -9;
+    case 25: return -10;
+    case 26: return 25;
   }
-  if (rank >= 6 && rank <= 14) {
-    return 10 - (rank - 5); 
-  }
-  if (rank === 15) return 0;
-  if (rank >= 16 && rank <= 25) {
-    return 0 - (rank - 15); 
-  }
-  if (rank === 26) return 25;
-
   return 0; 
 };
 
@@ -51,7 +63,7 @@ interface CategoryPickDetail {
   actualCategoryRank?: number; 
   pickedNationScoreInCategory?: number | null;
   pointsAwarded: number;
-  icon: React.ElementType;
+  iconName: string; // Changed from icon: React.ElementType to iconName: string
 }
 
 interface TeamWithScore extends Team {
@@ -66,19 +78,21 @@ const getTopNationsForCategory = (
   nationsMap: Map<string, Nation>,
   categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
   sortOrder: 'desc' | 'asc' = 'desc'
-): Array<{ id: string; name: string; score: number | null }> => { // Changed to return id, name, score
+): Array<{ id: string; name: string; score: number | null }> => {
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
-      id: nationId, // Use id instead of nationId for clarity
+      id: nationId,
       name: nationsMap.get(nationId)?.name || 'Sconosciuto',
       score: scores[categoryKey]
     }))
     .filter(item => item.score !== null && (scoresMap.get(item.id)?.voteCount || 0) > 0) 
     .sort((a, b) => {
+      if (a.score === null) return 1; // push nulls to the end
+      if (b.score === null) return -1; // push nulls to the end
       if (sortOrder === 'desc') {
-        return (b.score as number) - (a.score as number);
+        return b.score - a.score;
       }
-      return (a.score as number) - (b.score as number);
+      return a.score - b.score;
     });
 };
 
@@ -90,7 +104,7 @@ const getCategoryPickPointsAndRank = (
   
   const rankIndex = sortedNationsForCategory.findIndex(n => n.id === pickedNationId);
   const actualRank = rankIndex !== -1 ? rankIndex + 1 : undefined;
-  const actualScore = actualRank ? sortedNationsForCategory[rankIndex].score : null;
+  const actualScore = actualRank && rankIndex < sortedNationsForCategory.length ? sortedNationsForCategory[rankIndex].score : null;
 
   let points = 0;
   if (actualRank === 1) points = 15;
@@ -154,7 +168,7 @@ export default async function TeamsLeaderboardPage() {
       actualCategoryRank: bestSongPick.rank,
       pickedNationScoreInCategory: bestSongPick.score,
       pointsAwarded: bestSongPick.points,
-      icon: Music2,
+      iconName: "Music2",
     });
 
     const bestPerformancePick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerformanceNations);
@@ -168,7 +182,7 @@ export default async function TeamsLeaderboardPage() {
       actualCategoryRank: bestPerformancePick.rank,
       pickedNationScoreInCategory: bestPerformancePick.score,
       pointsAwarded: bestPerformancePick.points,
-      icon: Star,
+      iconName: "Star",
     });
 
     const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
@@ -182,7 +196,7 @@ export default async function TeamsLeaderboardPage() {
       actualCategoryRank: bestOutfitPick.rank,
       pickedNationScoreInCategory: bestOutfitPick.score,
       pointsAwarded: bestOutfitPick.points,
-      icon: Shirt,
+      iconName: "Shirt",
     });
     
     const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, bottomSongNations);
@@ -196,7 +210,7 @@ export default async function TeamsLeaderboardPage() {
       actualCategoryRank: worstSongPick.rank, 
       pickedNationScoreInCategory: worstSongPick.score,
       pointsAwarded: worstSongPick.points,
-      icon: ThumbsDown,
+      iconName: "ThumbsDown",
     });
 
 
@@ -259,7 +273,15 @@ export default async function TeamsLeaderboardPage() {
   );
 
   const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
-    const Icon = detail.icon;
+    let IconComponent: React.ElementType;
+    switch (detail.iconName) {
+        case 'Music2': IconComponent = Music2; break;
+        case 'Star': IconComponent = Star; break;
+        case 'Shirt': IconComponent = Shirt; break;
+        case 'ThumbsDown': IconComponent = ThumbsDown; break;
+        default: IconComponent = Info; 
+    }
+
     const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
         if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
         if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
@@ -270,7 +292,7 @@ export default async function TeamsLeaderboardPage() {
 
     return (
       <div className="flex items-center gap-1.5 py-0.5">
-        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", iconColor)} />
+        <IconComponent className={cn("w-3.5 h-3.5 flex-shrink-0", iconColor)} />
         {detail.pickedNationCountryCode && detail.pickedNationName ? (
             <Image
             src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
@@ -296,7 +318,7 @@ export default async function TeamsLeaderboardPage() {
             {detail.actualCategoryRank && (
                 <span className="text-muted-foreground ml-0.5 text-xs">
                     ({detail.actualCategoryRank}°
-                    {detail.pickedNationScoreInCategory !== null && (
+                    {detail.pickedNationScoreInCategory !== null && detail.pickedNationScoreInCategory !== undefined && (
                         <span className="ml-1 flex items-center">
                             <TrendingUp className="w-3 h-3 mr-0.5 text-primary" />
                             {detail.pickedNationScoreInCategory.toFixed(2)}
@@ -431,4 +453,3 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-
