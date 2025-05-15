@@ -9,6 +9,8 @@ import { Trophy, UserCircle, BarChartBig, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic'; // Ensures fresh data on every request
+
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
   switch (rank) {
@@ -20,13 +22,13 @@ const getPointsForRank = (rank?: number): number => {
   }
   // Ranks 6th to 14th: Points decrease by 1 for each rank, starting from 9 for 6th to 1 for 14th.
   if (rank >= 6 && rank <= 14) {
-    return 10 - (rank - 5); // 6th: 10-1=9, 7th: 10-2=8, ..., 14th: 10-9=1
+    return 10 - (rank - 5); 
   }
   // 15th place: 0 points
   if (rank === 15) return 0;
   // Ranks 16th to 25th: Points decrease by 1 for each rank, starting from -1 for 16th to -10 for 25th.
   if (rank >= 16 && rank <= 25) {
-    return 0 - (rank - 15); // 16th: 0-1=-1, 17th: 0-2=-2, ..., 25th: 0-10=-10
+    return 0 - (rank - 15); 
   }
   // 26th place: 25 points
   if (rank === 26) return 25;

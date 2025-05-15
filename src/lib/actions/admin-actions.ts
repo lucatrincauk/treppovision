@@ -43,6 +43,7 @@ export async function addNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath("/admin/nations/new");
+    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
     return { success: true, message: "Nazione aggiunta con successo!", nationId: data.id };
   } catch (error) {
     console.error("Errore durante l'aggiunta della nazione:", error);
@@ -72,6 +73,7 @@ export async function updateNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
+    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
     return { success: true, message: "Nazione aggiornata con successo!", nationId: data.id };
   } catch (error) {
     console.error("Errore durante l'aggiornamento della nazione:", error);
@@ -93,7 +95,8 @@ export async function deleteNationAction(
         await deleteDoc(nationRef);
 
         revalidatePath("/nations");
-        revalidatePath(`/nations/${nationId}`); 
+        revalidatePath(`/nations/${nationId}`);
+        revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
         return { success: true, message: "Nazione eliminata con successo!" };
     } catch (error) {
         console.error("Errore durante l'eliminazione della nazione:", error);
@@ -133,6 +136,7 @@ export async function updateAdminSettingsAction(
     revalidatePath("/admin/settings"); // Revalidate the admin settings page
     revalidatePath("/teams"); // Revalidate teams pages as their editability might change
     revalidatePath("/teams/[teamId]/edit", "layout"); // Revalidate edit team pages
+    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
 
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
@@ -141,3 +145,4 @@ export async function updateAdminSettingsAction(
     return { success: false, message: `Errore del server: ${errorMessage}` };
   }
 }
+
