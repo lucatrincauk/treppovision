@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { submitVoteAction } from "@/lib/actions/vote-actions";
 import { useToast } from "@/hooks/use-toast";
-import { getUserVoteForNationFromDB } from "@/lib/voting-service"; // Updated import
+import { getUserVoteForNationFromDB } from "@/lib/voting-service";
 import type { Nation, Vote } from "@/types";
 import { Loader2, Send, Star, Info } from "lucide-react";
 
@@ -18,40 +18,18 @@ interface VotingFormProps {
 }
 
 export function VotingForm({ nation }: VotingFormProps) {
-  const { user } = useAuth();
+  const { user, isLoading: authIsLoading } = useAuth(); // Get auth loading state
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [isLoadingVote, setIsLoadingVote] = useState(true);
+  
+  // isLoadingVote tracks the loading of the specific vote for this nation/user
+  const [isLoadingVote, setIsLoadingVote] = useState(true); 
 
   const [songScore, setSongScore] = useState(5);
   const [performanceScore, setPerformanceScore] = useState(5);
   const [outfitScore, setOutfitScore] = useState(5);
   const [hasVoted, setHasVoted] = useState(false);
   const [averageScore, setAverageScore] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchUserVote = async () => {
-      if (user) {
-        setIsLoadingVote(true);
-        const existingVote = await getUserVoteForNationFromDB(nation.id, user.uid);
-        if (existingVote) {
-          setSongScore(existingVote.scores.song);
-          setPerformanceScore(existingVote.scores.performance);
-          setOutfitScore(existingVote.scores.outfit);
-          setHasVoted(true);
-          calculateAverage(existingVote.scores.song, existingVote.scores.performance, existingVote.scores.outfit);
-        } else {
-          resetScoresAndAverage();
-        }
-        setIsLoadingVote(false);
-      } else {
-        resetScoresAndAverage();
-        setIsLoadingVote(false);
-      }
-    };
-
-    fetchUserVote();
-  }, [nation.id, user]);
 
   const resetScoresAndAverage = () => {
     setSongScore(5);
@@ -67,11 +45,44 @@ export function VotingForm({ nation }: VotingFormProps) {
   };
 
   useEffect(() => {
-    // Recalculate average when scores change by user interaction
-    if (hasVoted || (!isLoadingVote && user) ) { // only recalculate if form is active
+    const fetchUserVote = async () => {
+      if (authIsLoading) {
+        // Auth state is not yet resolved, don't attempt to fetch vote.
+        // The component will show a loader based on authIsLoading.
+        return;
+      }
+
+      if (user && user.uid) {
+        setIsLoadingVote(true); // Indicate vote fetching has started
+        const existingVote = await getUserVoteForNationFromDB(nation.id, user.uid);
+        if (existingVote) {
+          setSongScore(existingVote.scores.song);
+          setPerformanceScore(existingVote.scores.performance);
+          setOutfitScore(existingVote.scores.outfit);
+          setHasVoted(true);
+          // Average will be calculated by the other useEffect
+        } else {
+          resetScoresAndAverage();
+        }
+        setIsLoadingVote(false);
+      } else {
+        // No user, or user.uid not available (even if !authIsLoading)
+        resetScoresAndAverage();
+        setIsLoadingVote(false); 
+      }
+    };
+
+    fetchUserVote();
+  }, [nation.id, user, authIsLoading]); // Add authIsLoading as a dependency
+
+  useEffect(() => {
+    // This effect calculates the average score whenever relevant inputs change
+    if (user) { // Only calculate if there's a user, and scores are set
         calculateAverage(songScore, performanceScore, outfitScore);
+    } else {
+        setAverageScore(null); 
     }
-  }, [songScore, performanceScore, outfitScore, hasVoted, isLoadingVote, user]);
+  }, [songScore, performanceScore, outfitScore, user]);
 
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -93,8 +104,7 @@ export function VotingForm({ nation }: VotingFormProps) {
       });
 
       if (result.success && result.vote) {
-        setHasVoted(true); // Mark as voted
-        // Scores are already updated locally via sliders, average will re-calculate
+        setHasVoted(true); 
         toast({ title: "Voto Inviato!", description: `I tuoi punteggi per ${nation.name} sono stati registrati.` });
       } else {
         toast({ title: "Errore", description: result.message, variant: "destructive" });
@@ -102,7 +112,21 @@ export function VotingForm({ nation }: VotingFormProps) {
     });
   };
 
-  if (!user) {
+  if (authIsLoading) {
+    return (
+        <Card className="shadow-lg border-primary/30">
+            <CardHeader>
+                <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Il Tuo Voto per {nation.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="text-muted-foreground">Caricamento autenticazione...</p>
+            </CardContent>
+        </Card>
+    );
+  }
+
+  if (!user) { // Auth is resolved, and no user
     return (
       <Card className="bg-card/80 backdrop-blur-sm">
         <CardHeader>
@@ -115,6 +139,7 @@ export function VotingForm({ nation }: VotingFormProps) {
     );
   }
   
+  // User is present, auth is loaded. Now check if we are loading the specific vote.
   if (isLoadingVote) {
     return (
         <Card className="shadow-lg border-primary/30">
