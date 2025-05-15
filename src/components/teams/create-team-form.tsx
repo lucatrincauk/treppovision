@@ -37,6 +37,7 @@ import { Loader2, Save, Users, Info, Edit, Lock, ListChecks } from "lucide-react
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import Image from "next/image"; // Added Image import
 
 const teamFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
@@ -257,7 +258,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     );
   }
 
-  const founderNations = nations.filter(n => n.category === 'founders'); // Still used for populating the trigger button text smartly
   const day1Nations = nations.filter(n => n.category === 'day1');
   const day2Nations = nations.filter(n => n.category === 'day2');
 
@@ -272,7 +272,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
     )
   }
-   if ((day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) { // Only check day1/day2, as founder choice uses all nations now
+   if ((day1Nations.length === 0 || day2Nations.length === 0) && !isLoadingNations) { 
      return (
         <Alert variant="destructive">
             <Users className="h-4 w-4" />
@@ -325,7 +325,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                     >
                       {field.value?.length > 0
                         ? field.value
-                            .map(val => nations.find(n => n.id === val)?.name) // Use 'nations' here
+                            .map(val => nations.find(n => n.id === val)?.name) 
                             .filter(Boolean)
                             .join(", ")
                         : (nations.length < 3 ? "Nazioni insufficienti" : "Seleziona 3 nazioni")}
@@ -335,32 +335,45 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <ScrollArea className="h-72">
-                    <div className="p-4 space-y-2">
-                      {nations.map((nation) => ( // Iterate over 'nations' (all nations)
-                        <div key={nation.id} className="flex items-center space-x-2">
+                    <div className="p-2 space-y-1">
+                      {nations.map((nation) => ( 
+                        <div key={nation.id} className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded-md">
                           <Checkbox
                             id={`founder-${nation.id}`}
                             checked={(field.value || []).includes(nation.id)}
                             onCheckedChange={(checked) => {
-                              const currentValues = field.value || [];
+                              const currentSelections = field.value || [];
                               if (checked) {
-                                if (currentValues.length < 3) {
-                                  field.onChange([...currentValues, nation.id]);
+                                if (currentSelections.length < 3) {
+                                  field.onChange([...currentSelections, nation.id]);
                                 } else {
                                   toast({ title: "Limite Raggiunto", description: "Puoi selezionare solo 3 nazioni.", variant: "default", duration: 2000 });
                                   return false; 
                                 }
                               } else {
-                                field.onChange(currentValues.filter(id => id !== nation.id));
+                                field.onChange(currentSelections.filter(id => id !== nation.id));
                               }
                             }}
                             disabled={ (field.value || []).length >= 3 && !(field.value || []).includes(nation.id) }
                           />
                           <label
                             htmlFor={`founder-${nation.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow flex items-center gap-2 cursor-pointer"
                           >
-                            {nation.name}
+                            <Image
+                              src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+                              alt={`Bandiera ${nation.name}`}
+                              width={20}
+                              height={13}
+                              className="rounded-sm border border-border/30 object-contain"
+                              data-ai-hint={`${nation.name} flag icon`}
+                            />
+                            <div className="flex flex-col">
+                                <span className="font-semibold">{nation.name}</span>
+                                <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={`${nation.artistName} - ${nation.songTitle}`}>
+                                    {nation.artistName} - {nation.songTitle}
+                                </span>
+                            </div>
                           </label>
                         </div>
                       ))}
@@ -545,5 +558,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     </Form>
   );
 }
+
+    
 
     
