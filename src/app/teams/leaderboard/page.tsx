@@ -6,7 +6,7 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsUp } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -62,7 +62,8 @@ interface TeamWithScore extends Team {
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
   nationsMap: Map<string, Nation>,
-  categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore'
+  categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
+  sortOrder: 'desc' | 'asc' = 'desc' // 'desc' for best, 'asc' for worst
 ): Array<{ nationId: string; nationName: string; score: number | null }> => {
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
@@ -71,7 +72,12 @@ const getTopNationsForCategory = (
       score: scores[categoryKey]
     }))
     .filter(item => item.score !== null && (scoresMap.get(item.nationId)?.voteCount || 0) > 0) // Ensure there are votes
-    .sort((a, b) => (b.score as number) - (a.score as number))
+    .sort((a, b) => {
+      if (sortOrder === 'desc') {
+        return (b.score as number) - (a.score as number);
+      }
+      return (a.score as number) - (b.score as number);
+    })
     .slice(0, 3);
 };
 
@@ -95,9 +101,10 @@ export default async function TeamsLeaderboardPage() {
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
-  const topSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore');
-  const topPerformanceNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averagePerformanceScore');
-  const topOutfitNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageOutfitScore');
+  const topSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+  const bottomSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); // For worst song
+  const topPerformanceNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+  const topOutfitNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
 
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
@@ -160,16 +167,17 @@ export default async function TeamsLeaderboardPage() {
       icon: Shirt,
     });
     
-    // Peggior Canzone - no points awarded
+    const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, bottomSongNations);
+    score += worstSongPick.points;
     const worstSongNation = team.worstSongNationId ? nationsMap.get(team.worstSongNationId) : undefined;
      categoryPicksDetails.push({
-      categoryName: "Peggior Canzone", // Still list it for completeness, though it awards 0 points
+      categoryName: "Peggior Canzone",
       pickedNationId: team.worstSongNationId,
       pickedNationName: worstSongNation?.name,
       pickedNationCountryCode: worstSongNation?.countryCode,
-      actualCategoryRank: undefined, 
-      pointsAwarded: 0,
-      icon: ThumbsUp, // Icon choice can be discussed, ThumbsDown might be confusing
+      actualCategoryRank: worstSongPick.rank, 
+      pointsAwarded: worstSongPick.points,
+      icon: ThumbsDown,
     });
 
 
@@ -227,20 +235,18 @@ export default async function TeamsLeaderboardPage() {
             <div className="w-[15px] h-[10px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
         )}
         
-        <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
+        <span className="text-xs text-muted-foreground min-w-[120px] flex-shrink-0">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} className={cn("text-xs hover:underline hover:text-primary truncate", !detail.pickedNationId && "pointer-events-none")}>
           <span className="font-medium">
             {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
-          {detail.actualCategoryRank && detail.pointsAwarded > 0 && ( // Show rank only if points were awarded
+          {detail.actualCategoryRank && detail.pointsAwarded > 0 && ( 
             <span className="text-muted-foreground"> ({detail.actualCategoryRank}° in cat.)</span>
           )}
         </Link>
-        {detail.categoryName !== "Peggior Canzone" && ( // Do not show points for "Peggior Canzone"
-             <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-                {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
-            </span>
-        )}
+         <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+            {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+        </span>
       </div>
     );
   };
@@ -327,8 +333,8 @@ export default async function TeamsLeaderboardPage() {
                         Nazioni senza ranking valido ottengono 0 punti.
                     </li>
                     <li>
-                        <strong>Pronostici Voti TreppoScore</strong>: Punti per aver indovinato le nazioni più votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit.
-                        Per ogni categoria: 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt. La "Peggior Canzone" non assegna punti.
+                        <strong>Pronostici Voti TreppoScore</strong>: Punti per aver indovinato le nazioni più o meno votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
+                        Per ogni categoria (Migliore/Peggiore): 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
                     </li>
                 </ul>
               </div>
@@ -339,3 +345,4 @@ export default async function TeamsLeaderboardPage() {
   );
 }
 
+    
