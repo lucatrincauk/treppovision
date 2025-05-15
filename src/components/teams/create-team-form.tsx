@@ -274,6 +274,26 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
    }
 
 
+  const renderNationSelectItem = (nation: Nation, type: 'song' | 'artist' | 'outfit') => (
+    <div className="flex items-center space-x-2">
+      <Image
+        src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+        alt={`Bandiera ${nation.name}`}
+        width={20}
+        height={13}
+        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+        data-ai-hint={`${nation.name} flag icon`}
+      />
+      <div className="flex flex-col">
+        <span className="font-semibold">{nation.name}</span>
+        <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={`${nation.artistName} - ${nation.songTitle}`}>
+          {type === 'song' ? `${nation.artistName} - ${nation.songTitle}` : type === 'artist' ? nation.artistName : ''}
+        </span>
+      </div>
+    </div>
+  );
+
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -392,8 +412,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </FormControl>
                 <SelectContent>
                   {nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name} - {nation.songTitle}
+                    <SelectItem key={`${nation.id}-bestSong`} value={nation.id}>
+                       {renderNationSelectItem(nation, 'song')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -418,8 +438,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </FormControl>
                 <SelectContent>
                   {nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name} - {nation.artistName}
+                    <SelectItem key={`${nation.id}-bestPerf`} value={nation.id}>
+                      {renderNationSelectItem(nation, 'artist')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -444,8 +464,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </FormControl>
                 <SelectContent>
                   {nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name}
+                    <SelectItem key={`${nation.id}-bestOutfit`} value={nation.id}>
+                      {renderNationSelectItem(nation, 'outfit')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -470,8 +490,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </FormControl>
                 <SelectContent>
                   {nations.map((nation) => (
-                    <SelectItem key={nation.id} value={nation.id}>
-                      {nation.name} - {nation.songTitle}
+                    <SelectItem key={`${nation.id}-worstSong`} value={nation.id}>
+                       {renderNationSelectItem(nation, 'song')}
                     </SelectItem>
                   ))}
                 </SelectContent>
