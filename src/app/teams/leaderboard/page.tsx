@@ -17,32 +17,32 @@ export const dynamic = 'force-dynamic';
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
   switch (rank) {
-    case 1: return 50;
-    case 2: return 35;
-    case 3: return 25;
-    case 4: return 15;
-    case 5: return 10;
-    case 6: return 9;
-    case 7: return 8;
-    case 8: return 7;
-    case 9: return 6;
-    case 10: return 5;
-    case 11: return 4;
-    case 12: return 3;
-    case 13: return 2;
-    case 14: return 1;
-    case 15: return 0;
-    case 16: return -1;
-    case 17: return -2;
-    case 18: return -3;
-    case 19: return -4;
-    case 20: return -5;
-    case 21: return -6;
-    case 22: return -7;
-    case 23: return -8;
-    case 24: return -9;
+    case 1: return 30;
+    case 2: return 25;
+    case 3: return 20;
+    case 4: return 18;
+    case 5: return 16;
+    case 6: return 14;
+    case 7:
+    case 8:
+    case 9:
+    case 10: return 12;
+    case 11:
+    case 12: return 10;
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24: return -5;
     case 25: return -10;
-    case 26: return 25;
+    case 26: return -15;
   }
   return 0; 
 };
@@ -290,14 +290,15 @@ export default async function TeamsLeaderboardPage() {
         return null;
     };
     
-    const iconColor = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
-    const titleText = `${detail.pickedNationName || 'N/D'} - ${detail.categoryName} (Global Rank: ${detail.actualCategoryRank || 'N/A'}, Points: ${detail.pointsAwarded})`;
+    const iconColorClass = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
+    const rankText = detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${detail.categoryName === "Peggior Canzone" ? " peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : " in cat.")})` : "";
+    const titleText = `${detail.pickedNationName || 'N/D'} ${rankText} - Punti: ${detail.pointsAwarded}`;
+
 
     return (
       <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
-        <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColor)} />
-        
-        <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
+        <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
+        <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}:</span>
         <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} 
               className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center gap-1", !detail.pickedNationId && "pointer-events-none")}
               title={titleText}
@@ -315,16 +316,12 @@ export default async function TeamsLeaderboardPage() {
             <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
           )}
           <span className="font-medium">
-            {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
+            {detail.pickedNationName ? (detail.pickedNationName.substring(0, 12) + (detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
           </span>
           <CategoryMedalIcon rank={detail.actualCategoryRank} />
           {detail.actualCategoryRank && (
-            <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-              ({detail.actualCategoryRank}°
-              {detail.categoryName === "Miglior Canzone" ? "" :
-               detail.categoryName === "Peggior Canzone" ? " peggiore" :
-               " in cat."}
-              )
+             <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                {rankText}
             </span>
           )}
         </Link>
@@ -436,7 +433,7 @@ export default async function TeamsLeaderboardPage() {
                 <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
                     <li>
                         <strong>Pronostici TreppoVision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
-                        Sistema: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
+                        Sistema: 1°: +30pt, 2°: +25pt, 3°: +20pt, 4°: +18pt, 5°: +16pt, 6°: +14pt, 7°-10°: +12pt, 11°-12°: +10pt, 13°-24°: -5pt, 25°: -10pt, 26°: -15pt.
                         Nazioni senza ranking valido ottengono 0 punti.
                     </li>
                     <li>
@@ -452,3 +449,5 @@ export default async function TeamsLeaderboardPage() {
   );
 }
   
+
+    
