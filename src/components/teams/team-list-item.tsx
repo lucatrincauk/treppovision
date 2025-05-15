@@ -4,7 +4,7 @@
 import type { Team, Nation } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock } from "lucide-react";
+import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -120,7 +120,7 @@ export function TeamListItem({ team, nations }: TeamListItemProps) {
 
         {isOwner && (
           <>
-            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">Voti Treppovision:</p>
+            <p className="text-lg font-semibold text-secondary mt-3 mb-1.5 pt-2 border-t border-border/30">Voti TreppoScore:</p>
             <SelectedNationDisplay nation={bestSongNation} IconComponent={Music2} label="Miglior Canzone:" />
             <SelectedNationDisplay nation={bestPerformanceNation} IconComponent={Star} label="Miglior Performance:" />
             <SelectedNationDisplay nation={bestOutfitNation} IconComponent={Shirt} label="Miglior Outfit:" />
