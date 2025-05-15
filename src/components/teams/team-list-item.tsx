@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListChecks, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -74,38 +74,34 @@ const CategoryPickDisplayDetailPodium = ({ detail }: { detail: { categoryName: s
   return (
     <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
       <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColor)} />
-      {detail.pickedNationCountryCode && detail.pickedNationName ? (
-        <Image
-          src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-          alt={detail.pickedNationName}
-          width={20}
-          height={13}
-          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-          data-ai-hint={`${detail.pickedNationName} flag`}
-        />
-      ) : (
-        <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
-      )}
-      <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
+       <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}:</span>
       <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'}
-        className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center", !detail.pickedNationId && "pointer-events-none")}
+        className={cn("text-xs hover:underline hover:text-primary truncate flex-grow flex items-center gap-1", !detail.pickedNationId && "pointer-events-none")}
         title={detail.pickedNationName ? `${detail.pickedNationName}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}° ${detail.categoryName === "Peggior Canzone" ? "peggiore" : (detail.categoryName === "Miglior Canzone" ? "" : "in cat.")})` : ''} - Punti: ${detail.pointsAwarded}` : `Punti: ${detail.pointsAwarded}`}
       >
+         {detail.pickedNationCountryCode && detail.pickedNationName ? (
+          <Image
+            src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+            alt={detail.pickedNationName}
+            width={20}
+            height={13}
+            className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+            data-ai-hint={`${detail.pickedNationName} flag`}
+          />
+        ) : (
+          <div className="w-[20px] h-[13px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
+        )}
         <span className="font-medium">
           {detail.pickedNationName ? (detail.pickedNationName.substring(0, 12) + (detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
         </span>
         <CategoryMedalIcon rank={detail.actualCategoryRank} />
-        {detail.actualCategoryRank && (detail.categoryName !== "Peggior Canzone") && (
-          <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-            (
-            {detail.actualCategoryRank}°
-             {detail.categoryName === "Miglior Canzone" ? "" : " in cat."}
-            )
-          </span>
-        )}
-         {detail.actualCategoryRank && detail.categoryName === "Peggior Canzone" && (
+        {detail.actualCategoryRank && (
              <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                ({detail.actualCategoryRank}° peggiore)
+                ({detail.actualCategoryRank}°
+                {detail.categoryName === "Miglior Canzone" ? "" :
+                 detail.categoryName === "Peggior Canzone" ? " peggiore" :
+                 " in cat."}
+                )
             </span>
         )}
       </Link>
@@ -123,9 +119,8 @@ interface SelectedNationDisplayProps {
   label?: string;
   isEvenRow?: boolean;
   isOwnTeamCard?: boolean;
-  categoryRank?: number; // Rank within its category (1st, 2nd, 3rd best song etc.)
-  isCorrectPick?: boolean; // True if the pick matches the global top for that category
-  globalScoreForCategory?: number | null;
+  categoryRank?: number; 
+  isCorrectPick?: boolean; 
 }
 
 const SelectedNationDisplay = React.memo(({
@@ -133,26 +128,19 @@ const SelectedNationDisplay = React.memo(({
   IconComponent,
   label,
   isEvenRow,
-  isOwnTeamCard,
   categoryRank,
   isCorrectPick,
-  globalScoreForCategory
 }: SelectedNationDisplayProps) => {
   if (!nation) {
     return (
       <div className={cn(
-        "flex px-2 py-1.5",
-        label ? "flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5" : "items-center gap-1.5",
+        "flex px-2 py-1.5 items-center gap-1.5",
         isEvenRow && label && "bg-muted/50 rounded-md"
       )}>
-        <div className={cn("flex items-center gap-1.5", label && "w-full sm:w-auto")}>
-            <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
-            {label && <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-        </div>
-        <div className={cn("flex-grow flex items-center gap-1.5", label && "w-full sm:w-auto pl-0 sm:pl-0")}> {/* Adjusted padding */}
-            <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">Nazione non selezionata</p>
-        </div>
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+        {label && <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
+        <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        <p className="text-sm text-muted-foreground">Nazione non selezionata</p>
       </div>
     );
   }
@@ -165,7 +153,7 @@ const SelectedNationDisplay = React.memo(({
   };
 
   let rankText = "";
-  let showEurovisionRank = !label; 
+  const showEurovisionRank = !label;
 
   if (label) { // For "Voti TreppoScore" items
     if (categoryRank && categoryRank > 0) {
@@ -174,36 +162,32 @@ const SelectedNationDisplay = React.memo(({
   } else if (showEurovisionRank && nation.ranking && nation.ranking > 0) { // For "Scelte Principali"
     rankText = `(${nation.ranking}°)`;
   }
-
-  const nationNameDisplay = `${nation.name} ${rankText}`;
-  const titleText = `${nation.name} ${rankText} - ${nation.artistName} - ${nation.songTitle}`;
+  
   const iconColor = isCorrectPick ? "text-accent" : "text-accent";
 
   const mainContainerClasses = cn(
-    "flex px-2 py-1", // Reduced py
-    label ? "flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5" : "items-center gap-1.5",
+    "flex px-2 py-1 items-center gap-1.5",
     isEvenRow && (label || !label) && "bg-muted/50 rounded-md"
   );
 
   const labelAndIconContainerClasses = cn(
     "flex items-center gap-1.5",
-    label && "w-full sm:w-auto"
+    label && "w-full sm:w-auto" 
   );
 
   const nationInfoContainerOuterClasses = cn(
     "flex-grow flex items-center gap-2",
-    label && "w-full sm:w-auto pl-0 sm:pl-0" // Ensure alignment when stacked
+    label && "w-full sm:w-auto pl-0 sm:pl-0" 
   );
   
   const nationInfoContainerInnerClasses = cn(
     "flex flex-col text-left",
-    label && "flex-grow"
+    label && "flex-grow" 
   );
-
 
   return (
     <div className={mainContainerClasses}>
-      <div className={labelAndIconContainerClasses}>
+      <div className={cn(labelAndIconContainerClasses, label && "flex-col sm:flex-row items-start sm:items-center")}>
         <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
         {label && <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       </div>
@@ -221,11 +205,11 @@ const SelectedNationDisplay = React.memo(({
             />
             <div className={nationInfoContainerInnerClasses}>
               <div className="flex items-center">
-                <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
+                <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={`${nation.name} ${rankText} - ${nation.artistName} - ${nation.songTitle}`}>
                   {nation.name}
                 </span>
-                {label && categoryRank && <MedalIcon rank={categoryRank} />}
-                {!label && showEurovisionRank && <MedalIcon rank={nation.ranking} />}
+                {(label && categoryRank) ? <MedalIcon rank={categoryRank} /> : null}
+                {(!label && nation.ranking) ? <MedalIcon rank={nation.ranking} /> : null}
                 {rankText && (
                   <span className="text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5">
                     {rankText}
@@ -250,7 +234,7 @@ interface TeamListItemProps {
     score?: number;
     primaSquadraDetails?: Array<{ id: string; name: string; countryCode: string; actualRank?: number; points: number }>;
     categoryPicksDetails?: Array<{ categoryName: string; pickedNationId?: string; pickedNationName?: string; pickedNationCountryCode?: string; actualCategoryRank?: number; pickedNationScoreInCategory?: number | null; pointsAwarded: number; iconName: string; }>;
-    rank?: number; // Added for podium styling
+    rank?: number; 
   };
   nations: Nation[];
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
@@ -358,11 +342,11 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
       )}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div className="flex-grow">
-          <CardTitle className="text-xl text-primary flex items-center gap-2">
+           <CardTitle className="text-xl text-primary flex items-center gap-2">
             <Users className="h-5 w-5 text-accent" />
             {team.name}
           </CardTitle>
-           {team.creatorDisplayName && !isOwnTeamCard && (
+          {team.creatorDisplayName && !isOwnTeamCard && (
              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={team.creatorDisplayName}>
                 <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
              </div>
@@ -472,3 +456,4 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
     </Card>
   );
 }
+
