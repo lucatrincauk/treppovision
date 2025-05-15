@@ -3,8 +3,8 @@
 
 import * as React from "react";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalScores, getAllUserVotes } from "@/lib/voting-service";
-import type { Nation, NationWithTreppoScore, Vote } from "@/types";
+import { listenToAllVotesForAllNations, getAllUserVotes } from "@/lib/voting-service";
+import type { Nation, NationWithTreppoScore, Vote, NationGlobalScore } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
 import { Users, BarChart3, Star, User, Loader2, TrendingUp } from "lucide-react";
@@ -17,50 +17,130 @@ import { useAuth } from "@/hooks/use-auth";
 
 export default function TreppoScoreRankingPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const [allNations, setAllNations] = React.useState<Nation[]>([]);
+  const [globalScoresMap, setGlobalScoresMap] = React.useState<Map<string, NationGlobalScore>>(new Map());
+  const [userVotesMap, setUserVotesMap] = React.useState<Map<string, Vote | null>>(new Map());
+  
   const [nationsWithScores, setNationsWithScores] = React.useState<NationWithTreppoScore[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState(true);
+  const [isLoadingNationsData, setIsLoadingNationsData] = React.useState(true);
+  const [isLoadingUserVotes, setIsLoadingUserVotes] = React.useState(false);
 
+
+  // Fetch initial nations data
   React.useEffect(() => {
-    async function fetchData() {
-      setIsLoadingData(true);
+    async function fetchInitialNations() {
+      setIsLoadingNationsData(true);
       try {
-        const [allNations, globalScoresMap, userVotesMap] = await Promise.all([
-          getNations(),
-          getAllNationsGlobalScores(),
-          user ? getAllUserVotes(user.uid) : Promise.resolve(new Map<string, Vote | null>())
-        ]);
-
-        const processedNations: NationWithTreppoScore[] = allNations
-          .map(nation => {
-            const scoreData = globalScoresMap.get(nation.id);
-            const userVote = user ? userVotesMap.get(nation.id) : null;
-            const userAverageScore = userVote
-              ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3
-              : null;
-
-            return {
-              ...nation,
-              globalTreppoScore: scoreData?.averageScore ?? null,
-              globalVoteCount: scoreData?.voteCount ?? 0,
-              userAverageScore: userAverageScore,
-            };
-          })
-          .filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0)
-          .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
-
-        setNationsWithScores(processedNations);
+        const nationsData = await getNations();
+        setAllNations(nationsData);
       } catch (error) {
-        console.error("Error fetching data for TreppoScore ranking:", error);
-        setNationsWithScores([]);
+        console.error("Error fetching nations data:", error);
+        setAllNations([]);
       } finally {
-        setIsLoadingData(false);
+        setIsLoadingNationsData(false);
       }
     }
+    fetchInitialNations();
+  }, []);
 
-    if (!authLoading) {
-      fetchData();
+  // Fetch user-specific votes
+  React.useEffect(() => {
+    if (authLoading) {
+      setIsLoadingUserVotes(true);
+      return;
     }
+    if (!user) {
+      setUserVotesMap(new Map());
+      setIsLoadingUserVotes(false);
+      return;
+    }
+
+    async function fetchUserVotes() {
+      setIsLoadingUserVotes(true);
+      try {
+        const votes = await getAllUserVotes(user.uid);
+        setUserVotesMap(votes);
+      } catch (error) {
+        console.error("Error fetching user votes:", error);
+        setUserVotesMap(new Map());
+      } finally {
+        setIsLoadingUserVotes(false);
+      }
+    }
+    fetchUserVotes();
   }, [user, authLoading]);
+
+
+  // Listen to global scores in real-time
+  React.useEffect(() => {
+    // Initial overall loading state
+    setIsLoadingData(true); 
+    
+    const unsubscribe = listenToAllVotesForAllNations((scores) => {
+      setGlobalScoresMap(scores);
+      // Set loading to false after first data received from listener,
+      // or if nations/user votes are still loading, wait for them.
+      if (!isLoadingNationsData && !isLoadingUserVotes) {
+          setIsLoadingData(false);
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup listener on component unmount
+  }, [isLoadingNationsData, isLoadingUserVotes]); // Re-run if these initial loads complete after listener setup
+
+  // Process and sort nations when data changes
+  React.useEffect(() => {
+    if (allNations.length > 0 && globalScoresMap.size > 0) {
+      const processedNations: NationWithTreppoScore[] = allNations
+        .map(nation => {
+          const scoreData = globalScoresMap.get(nation.id);
+          const userVote = user ? userVotesMap.get(nation.id) : null;
+          const userAverageScore = userVote
+            ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3
+            : null;
+
+          return {
+            ...nation,
+            globalTreppoScore: scoreData?.averageScore ?? null,
+            globalVoteCount: scoreData?.voteCount ?? 0,
+            userAverageScore: userAverageScore,
+          };
+        })
+        .filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0)
+        .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
+      
+      setNationsWithScores(processedNations);
+    } else if (allNations.length > 0) {
+        // Handle case where nations are loaded but no scores yet (e.g. no votes)
+        const processedNationsWithNoScores: NationWithTreppoScore[] = allNations.map(nation => ({
+            ...nation,
+            globalTreppoScore: null,
+            globalVoteCount: 0,
+            userAverageScore: user ? (userVotesMap.get(nation.id) ? ((userVotesMap.get(nation.id)!.scores.song + userVotesMap.get(nation.id)!.scores.performance + userVotesMap.get(nation.id)!.scores.outfit) / 3) : null) : null,
+        }));
+        setNationsWithScores(processedNationsWithNoScores);
+    } else {
+      setNationsWithScores([]);
+    }
+  }, [allNations, globalScoresMap, userVotesMap, user]);
+
+  // Consolidate overall loading state
+  React.useEffect(() => {
+    if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size > 0) {
+      setIsLoadingData(false);
+    } else if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size === 0 && allNations.length > 0) {
+      // Nations loaded, user votes loaded (or not applicable), but still no global scores received (listener might be empty at first)
+      // We can consider loading finished if we expect no votes might be present.
+      setIsLoadingData(false);
+    } else if (!isLoadingNationsData && !isLoadingUserVotes && allNations.length === 0){
+        // No nations, so nothing to rank.
+        setIsLoadingData(false);
+    } else {
+        setIsLoadingData(true);
+    }
+  }, [isLoadingNationsData, isLoadingUserVotes, globalScoresMap, allNations]);
+
 
   if (isLoadingData || authLoading) {
     return (
@@ -101,8 +181,8 @@ export default function TreppoScoreRankingPage() {
       {nationsWithScores.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
           <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-lg">Nessun voto ancora registrato.</p>
-          <p>Quando gli utenti voteranno, questa classifica si popolerà.</p>
+          <p className="text-lg">{allNations.length === 0 ? "Nessuna nazione trovata." : "Nessun voto ancora registrato."}</p>
+          <p>{allNations.length > 0 && "Quando gli utenti voteranno, questa classifica si popolerà."}</p>
         </div>
       ) : (
         <>
@@ -110,8 +190,8 @@ export default function TreppoScoreRankingPage() {
             <NationList
               nations={top3Nations.map((nation, index) => ({
                 ...nation,
-                ranking: index + 1, // Assign display ranking for border styling
-                // userAverageScore is already on nation from processedNations
+                ranking: index + 1, 
+                userAverageScore: nation.userAverageScore 
               }))}
               title="Il Podio TreppoScore"
             />

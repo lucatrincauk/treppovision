@@ -15,7 +15,7 @@ export const getUserVoteForNationFromDB = async (nationId: string, userId: strin
         userId: voteData.userId,
         nationId: voteData.nationId,
         scores: voteData.scores,
-        timestamp: voteData.timestamp, 
+        timestamp: voteData.timestamp,
       } as Vote;
     }
     return null;
@@ -43,7 +43,7 @@ export const listenToAllVotesForNation = (
     }
 
     querySnapshot.forEach((docSnap) => {
-      const vote = docSnap.data() as Vote; 
+      const vote = docSnap.data() as Vote;
       const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
       totalIndividualAverageSum += individualAverage;
     });
@@ -52,16 +52,16 @@ export const listenToAllVotesForNation = (
     callback(globalAverage, voteCount);
   }, (error) => {
     console.error("Error listening to all votes for nation:", error);
-    callback(null, 0); 
+    callback(null, 0);
   });
 
-  return unsubscribe; 
+  return unsubscribe;
 };
 
-// Fetches all votes and calculates global scores for all nations
+// Fetches all votes and calculates global scores for all nations (one-time fetch)
 export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlobalScore>> => {
   const nationScoresMap = new Map<string, { totalAverageSum: number; voteCount: number }>();
-  
+
   try {
     const votesCollectionRef = collection(db, "votes");
     const querySnapshot = await getDocs(votesCollectionRef);
@@ -70,7 +70,7 @@ export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlo
       const vote = docSnap.data() as Vote;
       if (vote && vote.scores && vote.nationId) {
         const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
-        
+
         const currentNationData = nationScoresMap.get(vote.nationId) || { totalAverageSum: 0, voteCount: 0 };
         currentNationData.totalAverageSum += individualAverage;
         currentNationData.voteCount += 1;
@@ -92,6 +92,43 @@ export const getAllNationsGlobalScores = async (): Promise<Map<string, NationGlo
     return new Map(); // Return empty map on error
   }
 };
+
+// Listens to all votes for ALL nations and provides aggregated data in real-time
+export const listenToAllVotesForAllNations = (
+  callback: (scores: Map<string, NationGlobalScore>) => void
+): Unsubscribe => {
+  const votesCollectionRef = collection(db, "votes");
+
+  const unsubscribe = onSnapshot(votesCollectionRef, (querySnapshot) => {
+    const nationScoresMap = new Map<string, { totalAverageSum: number; voteCount: number }>();
+
+    querySnapshot.forEach((docSnap) => {
+      const vote = docSnap.data() as Vote;
+      if (vote && vote.scores && vote.nationId) {
+        const individualAverage = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
+        const currentNationData = nationScoresMap.get(vote.nationId) || { totalAverageSum: 0, voteCount: 0 };
+        currentNationData.totalAverageSum += individualAverage;
+        currentNationData.voteCount += 1;
+        nationScoresMap.set(vote.nationId, currentNationData);
+      }
+    });
+
+    const result = new Map<string, NationGlobalScore>();
+    nationScoresMap.forEach((data, nationId) => {
+      result.set(nationId, {
+        averageScore: data.voteCount > 0 ? data.totalAverageSum / data.voteCount : null,
+        voteCount: data.voteCount,
+      });
+    });
+    callback(result);
+  }, (error) => {
+    console.error("Error listening to all votes for all nations:", error);
+    callback(new Map()); // Return empty map on error
+  });
+
+  return unsubscribe;
+};
+
 
 // Fetches all votes for a specific user
 export const getAllUserVotes = async (userId: string): Promise<Map<string, Vote | null>> => {
@@ -125,7 +162,7 @@ export const getVotesForNationFromLocalStorage_DEPRECATED = (nationId: string): 
   // This function would read from localStorage if you still needed it for some reason.
   // For now, it's not directly used by the Firestore-backed voting form.
   console.warn("getVotesForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
-  return []; 
+  return [];
 };
 
 export const getUserVoteForNationFromLocalStorage_DEPRECATED = (nationId: string, userId: string): Vote | undefined => {
