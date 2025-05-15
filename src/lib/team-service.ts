@@ -1,9 +1,24 @@
 
 import { db } from "@/lib/firebase";
 import type { Team } from "@/types";
-import { collection, getDocs, query, orderBy, where, doc, getDoc, onSnapshot, type Unsubscribe } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, doc, getDoc, onSnapshot, type Unsubscribe, Timestamp } from "firebase/firestore";
 
 const TEAMS_COLLECTION = "teams";
+
+// Helper function to convert Firestore Timestamp to milliseconds or return null/undefined
+const serializeTimestamp = (timestamp: any): number | null => {
+  if (timestamp instanceof Timestamp) {
+    return timestamp.toMillis();
+  }
+  if (timestamp && typeof timestamp.toMillis === 'function') { // Handle cases where it's an object with toMillis
+    return timestamp.toMillis();
+  }
+  if (typeof timestamp === 'number') { // Already serialized
+    return timestamp;
+  }
+  return null;
+};
+
 
 export async function getTeams(): Promise<Team[]> {
   try {
@@ -11,12 +26,24 @@ export async function getTeams(): Promise<Team[]> {
     // Order by creation time, newest first
     const q = query(teamsCollection, orderBy("createdAt", "desc"));
     const teamSnapshot = await getDocs(q);
-    
-    const teamsList = teamSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Team));
-    
+
+    const teamsList = teamSnapshot.docs.map(docSnap => { // Renamed doc to docSnap
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        userId: data.userId,
+        creatorDisplayName: data.creatorDisplayName,
+        name: data.name,
+        founderChoices: data.founderChoices || [],
+        bestSongNationId: data.bestSongNationId || "",
+        bestPerformanceNationId: data.bestPerformanceNationId || "",
+        bestOutfitNationId: data.bestOutfitNationId || "",
+        worstSongNationId: data.worstSongNationId || "",
+        createdAt: serializeTimestamp(data.createdAt),
+        updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
+      } as Team;
+    });
+
     return teamsList;
   } catch (error) {
     console.error("Error fetching teams:", error);
@@ -30,12 +57,24 @@ export async function getTeamsByUserId(userId: string): Promise<Team[]> {
     const teamsCollection = collection(db, TEAMS_COLLECTION);
     const q = query(teamsCollection, where("userId", "==", userId), orderBy("createdAt", "desc"));
     const teamSnapshot = await getDocs(q);
-    
-    const teamsList = teamSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Team));
-    
+
+    const teamsList = teamSnapshot.docs.map(docSnap => { // Renamed doc to docSnap
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        userId: data.userId,
+        creatorDisplayName: data.creatorDisplayName,
+        name: data.name,
+        founderChoices: data.founderChoices || [],
+        bestSongNationId: data.bestSongNationId || "",
+        bestPerformanceNationId: data.bestPerformanceNationId || "",
+        bestOutfitNationId: data.bestOutfitNationId || "",
+        worstSongNationId: data.worstSongNationId || "",
+        createdAt: serializeTimestamp(data.createdAt),
+        updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
+      } as Team;
+    });
+
     return teamsList;
   } catch (error) {
     console.error(`Error fetching teams for userId ${userId}:`, error);
@@ -49,7 +88,20 @@ export async function getTeamById(teamId: string): Promise<Team | undefined> {
     const teamDocRef = doc(db, TEAMS_COLLECTION, teamId);
     const teamSnap = await getDoc(teamDocRef);
     if (teamSnap.exists()) {
-      return { id: teamSnap.id, ...teamSnap.data() } as Team;
+      const data = teamSnap.data();
+      return {
+        id: teamSnap.id,
+        userId: data.userId,
+        creatorDisplayName: data.creatorDisplayName,
+        name: data.name,
+        founderChoices: data.founderChoices || [],
+        bestSongNationId: data.bestSongNationId || "",
+        bestPerformanceNationId: data.bestPerformanceNationId || "",
+        bestOutfitNationId: data.bestOutfitNationId || "",
+        worstSongNationId: data.worstSongNationId || "",
+        createdAt: serializeTimestamp(data.createdAt),
+        updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
+      } as Team;
     } else {
       console.warn(`Team with ID ${teamId} not found.`);
       return undefined;
@@ -69,10 +121,22 @@ export const listenToTeams = (
 
   const unsubscribe = onSnapshot(q,
     (querySnapshot) => {
-      const teamsList = querySnapshot.docs.map(docSnap => ({ // Renamed doc to docSnap to avoid conflict
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as Team));
+      const teamsList = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          userId: data.userId,
+          creatorDisplayName: data.creatorDisplayName,
+          name: data.name,
+          founderChoices: data.founderChoices || [],
+          bestSongNationId: data.bestSongNationId || "",
+          bestPerformanceNationId: data.bestPerformanceNationId || "",
+          bestOutfitNationId: data.bestOutfitNationId || "",
+          worstSongNationId: data.worstSongNationId || "",
+          createdAt: serializeTimestamp(data.createdAt),
+          updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
+        } as Team;
+      });
       callback(teamsList);
     },
     (error) => {

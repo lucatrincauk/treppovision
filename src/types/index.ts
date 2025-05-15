@@ -80,7 +80,7 @@ export interface AuthContextType {
   loginWithEmail: (data: LoginFormData) => Promise<boolean>;
   signupWithEmail: (data: SignupFormData) => Promise<boolean>;
   sendLoginLink: (email: string) => Promise<boolean>;
-  sendPasswordReset: (email: string) => Promise<boolean>; 
+  sendPasswordReset: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   completeEmailLinkSignIn: () => Promise<void>;
@@ -117,19 +117,13 @@ export interface Team {
   userId: string; // UID of the user who created the team
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; 
+  founderChoices: string[];
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
   worstSongNationId: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  } | number | null; 
-  updatedAt?: { 
-    seconds: number;
-    nanoseconds: number;
-  } | number | null;
+  createdAt: number | null; // Milliseconds since epoch
+  updatedAt?: number | null; // Milliseconds since epoch or undefined
 }
 
 export interface AdminSettings {
@@ -155,4 +149,3 @@ export interface NationWithTreppoScore extends Nation {
   globalVoteCount: number;
   userAverageScore?: number | null; // User's specific vote for this nation
 }
-
