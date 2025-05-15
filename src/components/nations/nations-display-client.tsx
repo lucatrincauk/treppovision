@@ -16,11 +16,19 @@ interface NationsDisplayClientProps {
   listTitle: string;
 }
 
+const HIDE_VOTED_NATIONS_KEY = "treppoVision_hideVotedNations";
+
 export function NationsDisplayClient({ initialNations, listTitle }: NationsDisplayClientProps) {
   const { user, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNations, setFilteredNations] = useState<Nation[]>(initialNations);
-  const [hideVotedNations, setHideVotedNations] = useState(false);
+  const [hideVotedNations, setHideVotedNations] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedPreference = localStorage.getItem(HIDE_VOTED_NATIONS_KEY);
+      return savedPreference === 'true';
+    }
+    return false;
+  });
   const [userVotesMap, setUserVotesMap] = useState<Map<string, Vote | null>>(new Map());
   const [isLoadingUserVotes, setIsLoadingUserVotes] = useState(false);
 
@@ -49,7 +57,13 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
         });
     } else {
       setUserVotesMap(new Map()); // Clear votes if user logs out
-      setHideVotedNations(false); // Reset toggle if user logs out
+      if (typeof window !== 'undefined') {
+        // If user logs out, reset the toggle to false and clear local storage if desired
+        // Or keep it as is, and it will just not apply if they're not logged in.
+        // For now, let's reset it:
+        // setHideVotedNations(false);
+        // localStorage.setItem(HIDE_VOTED_NATIONS_KEY, 'false');
+      }
       setIsLoadingUserVotes(false);
     }
   }, [user, authLoading]);
@@ -75,6 +89,17 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
 
     setFilteredNations(results);
   }, [searchTerm, initialNations, hideVotedNations, user, userVotesMap, isLoadingUserVotes]);
+
+  // Effect to save the toggle preference to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(HIDE_VOTED_NATIONS_KEY, String(hideVotedNations));
+    }
+  }, [hideVotedNations]);
+
+  const handleToggleHideVotedNations = (checked: boolean) => {
+    setHideVotedNations(checked);
+  };
 
   return (
     <div className="space-y-6">
@@ -102,7 +127,7 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
                 <Switch
                   id="hide-voted-switch"
                   checked={hideVotedNations}
-                  onCheckedChange={setHideVotedNations}
+                  onCheckedChange={handleToggleHideVotedNations}
                   aria-label="Nascondi nazioni già votate"
                 />
                 <Label htmlFor="hide-voted-switch" className="cursor-pointer flex items-center">
@@ -120,9 +145,9 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
           Nessuna nazione trovata per "{searchTerm}".
         </p>
       )}
-       {initialNations.length > 0 && filteredNations.length === 0 && hideVotedNations && !searchTerm && (
+       {initialNations.length > 0 && filteredNations.length === 0 && hideVotedNations && !searchTerm && user && (
         <p className="text-center text-muted-foreground py-10">
-          Hai votato per tutte le nazioni attualmente visibili.
+          Hai votato per tutte le nazioni attualmente visibili o non ci sono nazioni che soddisfano i criteri.
         </p>
       )}
       
