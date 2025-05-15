@@ -4,12 +4,12 @@
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Flag, BadgeCheck, HelpCircle, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, ListChecks } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, ListChecks, BadgeCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import React, { useEffect, useState } from "react"; // Import useEffect and useState
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 
@@ -26,19 +26,21 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
       <div className="flex items-center gap-2 py-1">
         <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0" />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-        {!label && <IconComponent className="h-5 w-5 text-muted-foreground/70 flex-shrink-0 invisible" />}
-        <HelpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment */}
+        <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         <p className="text-sm text-muted-foreground">Nazione Sconosciuta</p>
       </div>
     );
   }
 
-  const titleText = `${nation.name} - ${nation.songTitle}`;
+  const titleText = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''} - ${nation.songTitle} by ${nation.artistName}`;
+  const displayName = `${nation.name}${nation.ranking && nation.ranking > 0 ? ` (${nation.ranking}°)` : ''}`;
 
   return (
     <div className="flex items-center gap-2 py-1">
       <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-muted-foreground/80")} />
       {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
+      {!label && <div className="h-5 w-5 flex-shrink-0 invisible" />} {/* Placeholder for alignment if no label */}
       <Link href={`/nations/${nation.id}`} className="flex items-center gap-2 group">
         <Image
           src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -48,9 +50,14 @@ const SelectedNationDisplay = ({ nation, IconComponent, label, isCorrectPick }: 
           className="rounded-sm border border-border/50 object-contain flex-shrink-0"
           data-ai-hint={`${nation.name} flag`}
         />
-        <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
-          {nation.name} <span className="text-xs text-muted-foreground hidden sm:inline">({nation.songTitle})</span>
-        </span>
+        <div className="flex flex-col">
+            <span className="text-sm text-foreground/90 truncate group-hover:underline group-hover:text-primary" title={titleText}>
+                {displayName}
+            </span>
+            <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80" title={titleText}>
+                {nation.artistName} - {nation.songTitle}
+            </span>
+        </div>
       </Link>
     </div>
   );
@@ -211,3 +218,5 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap }
     </Card>
   );
 }
+
+    
