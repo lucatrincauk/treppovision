@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { getUserVoteForNationFromDB } from '@/lib/voting-service';
 import type { Vote } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Edit3, Star } from 'lucide-react'; // Added Star icon
+import { Loader2, Edit3, Star } from 'lucide-react';
 
 interface UserVoteBadgeProps {
   nationId: string;
@@ -19,18 +19,18 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
 
   useEffect(() => {
     if (authLoading) {
-      setUserVote(undefined); 
+      setUserVote(undefined);
       return;
     }
 
     if (!user) {
-      setUserVote(null); 
+      setUserVote(null);
       setAverageScore(null);
       return;
     }
 
     let isMounted = true;
-    setUserVote(undefined); 
+    setUserVote(undefined);
 
     getUserVoteForNationFromDB(nationId, user.uid)
       .then((vote) => {
@@ -47,7 +47,7 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
       .catch(error => {
         console.error("Error fetching user vote for badge:", error);
         if (isMounted) {
-          setUserVote(null); 
+          setUserVote(null);
           setAverageScore(null);
         }
       });
@@ -68,9 +68,9 @@ export function UserVoteBadge({ nationId }: UserVoteBadgeProps) {
 
   if (userVote && averageScore) {
     return (
-      <Badge variant="outline" className="text-sm py-1 px-3">
-        <Star className="w-3 h-3 mr-1.5 text-accent" /> 
-        TreppoScore: {averageScore}
+      <Badge className="text-sm py-1 px-3 border-transparent bg-accent text-accent-foreground hover:bg-accent/90">
+        <Star className="w-3 h-3 mr-1.5 text-accent-foreground" /> {/* Icon color matches text on accent background */}
+        Il tuo TreppoScore: {averageScore}
       </Badge>
     );
   }
