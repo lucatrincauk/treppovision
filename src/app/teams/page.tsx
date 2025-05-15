@@ -9,7 +9,7 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, Music2, Star, Shirt, UserCircle, ThumbsDown } from "lucide-react";
+import { PlusCircle, Users, Loader2, Edit, Search, Music2, Star, Shirt, UserCircle, ThumbsDown, ThumbsUp } from "lucide-react"; // Added ThumbsUp
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,11 +19,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// Scoring logic removed as scores are no longer displayed on this page.
-
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
-  const [allFetchedTeams, setAllFetchedTeams] = useState<Team[]>([]); // No more TeamWithScore
+  const [allFetchedTeams, setAllFetchedTeams] = useState<Team[]>([]);
   const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [otherTeams, setOtherTeams] = useState<Team[]>([]);
   const [filteredOtherTeams, setFilteredOtherTeams] = useState<Team[]>([]);
@@ -36,16 +34,14 @@ export default function TeamsPage() {
   const [nationGlobalCategorizedScoresMap, setNationGlobalCategorizedScoresMap] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
   const [isLoadingGlobalScores, setIsLoadingGlobalScores] = useState(true);
 
-  // Top nations for categories (for "correct pick" indication)
   const [topSongNationId, setTopSongNationId] = useState<string | null>(null);
   const [worstSongNationId, setWorstSongNationId] = useState<string | null>(null);
   const [topPerfNationId, setTopPerfNationId] = useState<string | null>(null);
   const [topOutfitNationId, setTopOutfitNationId] = useState<string | null>(null);
 
-  // Helper for category top picks
   const getTopNationsForCategory = (
     scoresMap: Map<string, NationGlobalCategorizedScores>,
-    currentNationsMap: Map<string, Nation>, // Changed to currentNationsMap
+    currentNationsMap: Map<string, Nation>, 
     categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
     sortOrder: 'desc' | 'asc' = 'desc',
     count: number = 1 
@@ -69,7 +65,6 @@ export default function TeamsPage() {
       .slice(0, count);
   };
 
-  // Fetch static nations data once
   useEffect(() => {
     async function fetchNationsData() {
       try {
@@ -86,7 +81,6 @@ export default function TeamsPage() {
     fetchNationsData();
   }, []);
 
-  // Listen to real-time team updates
   useEffect(() => {
     if (authIsLoading) {
       setIsLoadingData(true);
@@ -110,7 +104,6 @@ export default function TeamsPage() {
     };
   }, [authIsLoading, user]); 
 
-  // Listen to real-time global categorized scores
   useEffect(() => {
     setIsLoadingGlobalScores(true);
     const unsubscribeGlobalScores = listenToAllVotesForAllNationsCategorized((scores) => {
@@ -126,9 +119,7 @@ export default function TeamsPage() {
     return () => unsubscribeGlobalScores();
   }, [nationsMap]);
 
-  // Process teams when all data is available
   useEffect(() => {
-    // Scores are no longer calculated here. We just filter teams.
     if (isLoadingData || isLoadingGlobalScores || nations.length === 0) {
       if (!isLoadingData && !isLoadingGlobalScores && nations.length > 0 && allFetchedTeams.length === 0) {
         setUserTeams([]);
@@ -138,15 +129,17 @@ export default function TeamsPage() {
       return;
     }
 
+    const processedTeams = allFetchedTeams.map(team => ({ ...team })); // No score calculation here
+
     if (user) {
-      const userSpecificTeams = allFetchedTeams.filter(team => team.userId === user.uid);
+      const userSpecificTeams = processedTeams.filter(team => team.userId === user.uid);
       setUserTeams(userSpecificTeams);
       setShowCreateTeamButton(userSpecificTeams.length === 0);
-      setOtherTeams(allFetchedTeams.filter(team => team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name))); // Sort by name if score is removed
+      setOtherTeams(processedTeams.filter(team => team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
     } else {
       setUserTeams([]);
       setShowCreateTeamButton(false); 
-      setOtherTeams(allFetchedTeams.sort((a, b) => a.name.localeCompare(b.name))); // Sort by name if score is removed
+      setOtherTeams(processedTeams.sort((a, b) => a.name.localeCompare(b.name)));
     }
 
   }, [allFetchedTeams, nations, nationsMap, nationGlobalCategorizedScoresMap, user, isLoadingData, isLoadingGlobalScores]);
@@ -299,7 +292,6 @@ export default function TeamsPage() {
         </Alert>
       )}
       
-      {/* User's Team Section */}
       {user && userTeams.length > 0 && nations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
           <div className="flex items-center gap-3 mb-6">
@@ -321,7 +313,6 @@ export default function TeamsPage() {
         </section>
       )}
 
-      {/* Other Teams Section */}
       <section className="pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           <h2 className="text-3xl font-semibold tracking-tight text-primary flex-grow">
@@ -378,7 +369,6 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Squadra</TableHead>
-                    {/* Punti column removed */}
                     <TableHead className="hidden lg:table-cell">Pronostici Treppovision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
@@ -396,7 +386,6 @@ export default function TeamsPage() {
                           {team.creatorDisplayName}
                         </div>
                       </TableCell>
-                      {/* Score Cell removed */}
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
@@ -437,3 +426,6 @@ export default function TeamsPage() {
     </div>
   );
 }
+
+
+    
