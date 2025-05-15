@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
@@ -17,31 +16,36 @@ interface SelectedNationDisplayProps {
   IconComponent: React.ElementType;
   label?: string;
   isEvenRow?: boolean;
-  isOwnTeamCard?: boolean; // To control specific UI elements for the owner
-  categoryRank?: number; // Rank within the specific category (e.g., 1st best song)
-  isCorrectPick?: boolean; // If the user's pick matched the global #1 for that category
-  showEurovisionRank?: boolean; // New prop to control display of Eurovision rank
-  globalScoreForCategory?: number | null; // New prop to pass the actual score in category
+  isOwnTeamCard?: boolean;
+  categoryRank?: number; 
+  isCorrectPick?: boolean;
+  showEurovisionRank?: boolean;
 }
 
-const SelectedNationDisplay = ({ 
-  nation, 
-  IconComponent, 
-  label, 
-  isEvenRow, 
-  categoryRank, 
+const SelectedNationDisplay = ({
+  nation,
+  IconComponent,
+  label,
+  isEvenRow,
+  categoryRank,
   isCorrectPick,
-  showEurovisionRank = true, // Default to true
-  globalScoreForCategory
+  showEurovisionRank = true,
 }: SelectedNationDisplayProps) => {
   if (!nation) {
-    // Simplified rendering for when a nation is not picked or data is missing
     return (
-      <div className={cn("flex items-center gap-1.5 px-2 py-1", isEvenRow && "bg-muted/50 rounded-md")}>
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
-        {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
-        <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-        <p className="text-sm text-muted-foreground">Nazione non selezionata</p>
+      <div className={cn(
+        "flex items-center gap-1.5 px-2 py-1.5",
+        label ? "flex-col sm:flex-row sm:items-center" : "items-center",
+        isEvenRow && label && "bg-muted/50 rounded-md"
+      )}>
+        <div className={cn("flex items-center gap-1.5", label && "w-full sm:w-auto")}>
+            <IconComponent className={cn("h-5 w-5 flex-shrink-0", isCorrectPick ? "text-accent" : "text-accent")} />
+            {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
+        </div>
+        <div className={cn("flex-grow flex items-center gap-1.5", label && "w-full sm:w-auto")}>
+            <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">Nazione non selezionata</p>
+        </div>
       </div>
     );
   }
@@ -52,7 +56,7 @@ const SelectedNationDisplay = ({
     if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-0.5" />;
     return null;
   };
-  
+
   const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
     if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-0.5" />;
     if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-0.5" />;
@@ -60,39 +64,45 @@ const SelectedNationDisplay = ({
     return null;
   };
 
-
+  let nameForDisplay = nation.name;
   let rankText = "";
+  let categoryRankText = "";
   let titleText = `${nation.name} - ${nation.artistName} - ${nation.songTitle}`;
 
   if (label) { // For "Voti TreppoScore" items
     if (categoryRank && categoryRank > 0) {
       let categorySuffix = "in cat.";
       if (label === "Peggior Canzone:") categorySuffix = "peggiore";
-      else if (label === "Miglior Canzone:") categorySuffix = ""; // No suffix for best song
-      rankText = `(${categoryRank}°${categorySuffix ? ' ' + categorySuffix : ''})`;
+      else if (label === "Miglior Canzone:") categorySuffix = "";
+      categoryRankText = `(${categoryRank}°${categorySuffix ? ' ' + categorySuffix : ''})`;
     }
-    titleText = `${nation.name}${rankText} - ${nation.artistName} - ${nation.songTitle}`;
+    titleText = `${nation.name}${categoryRankText} - ${nation.artistName} - ${nation.songTitle}`;
   } else if (showEurovisionRank && nation.ranking && nation.ranking > 0) { // For "Scelte Principali"
     rankText = `(${nation.ranking}°)`;
     titleText = `${nation.name}${rankText} - ${nation.artistName} - ${nation.songTitle}`;
   }
-  
+
   const iconColor = isCorrectPick ? "text-accent" : "text-accent";
 
   const mainContainerClasses = cn(
-    "flex gap-1.5 px-2 py-1",
-    label ? "flex-col sm:flex-row sm:items-center" : "items-center",
-    isEvenRow && "bg-muted/50 rounded-md"
+    "flex gap-1.5 px-2 py-1.5", 
+    label ? "flex-col sm:flex-row sm:items-center" : "items-center", 
+    isEvenRow && label && "bg-muted/50 rounded-md"
   );
 
   const labelAndIconContainerClasses = cn(
     "flex items-center gap-1.5",
+    label && "w-full sm:w-auto" 
+  );
+
+  const nationInfoContainerClasses = cn(
+    "flex-grow flex items-center gap-2",
     label && "w-full sm:w-auto"
   );
-  
-  const nationInfoContainerClasses = cn(
-    "flex-grow flex items-center gap-2", // Added gap-2 here for flag and text
-    label && "w-full sm:w-auto"
+
+  const nationTextContainerClasses = cn(
+    "flex flex-col text-left",
+    label && "flex-grow"
   );
 
   return (
@@ -101,10 +111,10 @@ const SelectedNationDisplay = ({
         <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
         {label && <span className="text-xs text-foreground/90 mr-1 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       </div>
-      
+
       <div className={nationInfoContainerClasses}>
-         <Link href={`/nations/${nation.id}`} className="group flex-grow">
-          <div className="flex items-center gap-2"> {/* Container for flag + text details */}
+        <Link href={`/nations/${nation.id}`} className="group flex-grow">
+          <div className="flex items-center gap-2">
             <Image
               src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
               alt={`Bandiera ${nation.name}`}
@@ -113,27 +123,29 @@ const SelectedNationDisplay = ({
               className="rounded-sm border border-border/50 object-contain flex-shrink-0"
               data-ai-hint={`${nation.name} flag`}
             />
-            <div className="flex flex-col text-left"> 
+            <div className={nationTextContainerClasses}>
               <div className="flex items-center">
                 <span className="text-sm text-foreground/90 group-hover:underline group-hover:text-primary truncate" title={titleText}>
-                  {nation.name}
+                  {nameForDisplay}
                 </span>
-                {label && categoryRank && <CategoryMedalIcon rank={categoryRank} />}
                 {!label && showEurovisionRank && <EurovisionMedalIcon rank={nation.ranking} />}
-                {rankText && (
+                {label && categoryRank && <CategoryMedalIcon rank={categoryRank} />}
+                
+                {(!label && showEurovisionRank && rankText) && (
                   <span className="text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5">
                     {rankText}
+                  </span>
+                )}
+                {(label && categoryRankText) && (
+                   <span className="text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5">
+                    {categoryRankText}
                   </span>
                 )}
               </div>
               <span className="text-xs text-muted-foreground truncate group-hover:text-primary/80 sm:inline" title={`${nation.artistName} - ${nation.songTitle}`}>
                 {nation.artistName} - {nation.songTitle}
               </span>
-               {label && globalScoreForCategory !== null && globalScoreForCategory !== undefined && (
-                <span className="text-xs text-primary font-medium">
-                  Punteggio Globale: {globalScoreForCategory.toFixed(2)}
-                </span>
-              )}
+              {/* "Punteggio Globale" text display is removed from here */}
             </div>
           </div>
         </Link>
@@ -143,7 +155,7 @@ const SelectedNationDisplay = ({
 };
 
 
-// Specific display components for Leaderboard card details
+// Helper components from leaderboard, adapted for TeamListItem
 const PrimaSquadraNationDisplayDetail = ({ detail }: { detail: { id: string; name: string; countryCode: string; actualRank?: number; points: number } }) => {
   const EurovisionMedalIcon = ({ rank }: { rank?: number }) => {
     if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
@@ -189,7 +201,7 @@ const CategoryPickDisplayDetail = ({ detail }: { detail: { categoryName: string;
     case 'Star': IconComponent = Star; break;
     case 'Shirt': IconComponent = Shirt; break;
     case 'ThumbsDown': IconComponent = ThumbsDown; break;
-    default: IconComponent = Info;
+    default: IconComponent = ListChecks; // Fallback icon
   }
 
   const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
@@ -198,8 +210,8 @@ const CategoryPickDisplayDetail = ({ detail }: { detail: { categoryName: string;
     if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />;
     return null;
   };
+  
   const iconColor = detail.categoryName === "Miglior Performance" ? "text-secondary" : "text-accent";
-
 
   return (
     <div className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md">
@@ -235,9 +247,9 @@ const CategoryPickDisplayDetail = ({ detail }: { detail: { categoryName: string;
                 {detail.pickedNationScoreInCategory.toFixed(2)}
               </span>
             )}
-            {detail.categoryName === "Miglior Canzone" ? "" :
+             {detail.categoryName === "Miglior Canzone" ? "" : 
               detail.categoryName === "Peggior Canzone" ? " peggiore" :
-                " in cat."}
+             " in cat."}
             )
           </span>
         )}
@@ -260,9 +272,10 @@ interface TeamListItemProps {
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
   isOwnTeamCard?: boolean;
   disableEdit?: boolean;
+  isEvenRow?: boolean; 
 }
 
-export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isOwnTeamCard = false, disableEdit = false }: TeamListItemProps) {
+export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, isOwnTeamCard = false, disableEdit = false, isEvenRow = false }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
 
@@ -290,7 +303,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
           .map(([nationId, scores]) => ({
             id: nationId,
             name: nationsMap.get(nationId)?.name || 'Sconosciuto',
-            score: scores[categoryKey]
+            score: scores[categoryKey] 
           }))
           .filter(item => item.score !== null && (nationGlobalCategorizedScoresMap.get(item.id)?.voteCount || 0) > 0)
           .sort((a, b) => order === 'desc' ? (b.score as number) - (a.score as number) : (a.score as number) - (b.score as number));
@@ -333,17 +346,20 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
   const worstSongNationDetails = getNationDetailsById(team.worstSongNationId, nations);
 
   const isOwner = user?.uid === team.userId;
+  const isLeaderboardPodiumCard = !!(team.primaSquadraDetails && team.categoryPicksDetails);
+
 
   const bestSongPickRank = sortedCategoryNations ? getCategoryRank(team.bestSongNationId, sortedCategoryNations.bestSong) : undefined;
   const worstSongPickRank = sortedCategoryNations ? getCategoryRank(team.worstSongNationId, sortedCategoryNations.worstSong) : undefined;
   const bestPerfPickRank = sortedCategoryNations ? getCategoryRank(team.bestPerformanceNationId, sortedCategoryNations.bestPerf) : undefined;
   const bestOutfitPickRank = sortedCategoryNations ? getCategoryRank(team.bestOutfitNationId, sortedCategoryNations.bestOutfit) : undefined;
 
-  const isLeaderboardPodiumCard = !!(team.primaSquadraDetails && team.categoryPicksDetails);
-
 
   return (
-    <Card className={cn("flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300")}>
+    <Card className={cn(
+        "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300",
+        isEvenRow && "bg-muted/50" 
+      )}>
       <CardHeader className="pb-3 pt-4 flex flex-row justify-between items-start">
         <div className="flex-grow"> 
           <CardTitle className="text-xl text-primary flex items-center gap-2">
@@ -358,7 +374,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
         </div>
         <div className={cn(
             "ml-2 flex-shrink-0",
-            isOwnTeamCard ? "flex flex-row-reverse items-center gap-2" : "flex flex-col items-end gap-1" 
+            (isOwnTeamCard && !disableEdit) ? "flex flex-row-reverse items-center gap-2" : "flex flex-col items-end gap-1" 
         )}>
           {typeof team.score === 'number' && (
             <div className="text-lg font-bold text-primary whitespace-nowrap">
@@ -369,7 +385,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
             <Button asChild variant="outline" size="sm">
               <Link href={`/teams/${team.id}/edit`}>
                 <Edit className="h-3 w-3 mr-1.5" />
-                {isOwnTeamCard ? "Modifica Squadra" : "Modifica"}
+                Modifica
               </Link>
             </Button>
           )}
@@ -415,7 +431,7 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
             </p>
             {isLeaderboardPodiumCard && team.categoryPicksDetails ? (
               <>
-                {team.categoryPicksDetails.map((detail, index) => (
+                {team.categoryPicksDetails.map((detail) => (
                   <CategoryPickDisplayDetail key={`${team.id}-${detail.categoryName}-detail`} detail={detail} />
                 ))}
               </>
@@ -429,7 +445,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                     categoryRank={bestSongPickRank}
                     isCorrectPick={bestSongPickRank === 1}
                     showEurovisionRank={false}
-                    globalScoreForCategory={bestSongNationDetails && sortedCategoryNations?.bestSong.find(n => n.id === bestSongNationDetails.id)?.score}
                 />
                 <SelectedNationDisplay 
                     nation={bestPerformanceNationDetails} 
@@ -439,7 +454,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                     categoryRank={bestPerfPickRank}
                     isCorrectPick={bestPerfPickRank === 1}
                     showEurovisionRank={false}
-                    globalScoreForCategory={bestPerformanceNationDetails && sortedCategoryNations?.bestPerf.find(n => n.id === bestPerformanceNationDetails.id)?.score}
                 />
                 <SelectedNationDisplay 
                     nation={bestOutfitNationDetails} 
@@ -449,7 +463,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                     categoryRank={bestOutfitPickRank}
                     isCorrectPick={bestOutfitPickRank === 1}
                     showEurovisionRank={false}
-                    globalScoreForCategory={bestOutfitNationDetails && sortedCategoryNations?.bestOutfit.find(n => n.id === bestOutfitNationDetails.id)?.score}
                 />
                 <SelectedNationDisplay 
                     nation={worstSongNationDetails} 
@@ -459,7 +472,6 @@ export function TeamListItem({ team, nations, nationGlobalCategorizedScoresMap, 
                     categoryRank={worstSongPickRank}
                     isCorrectPick={worstSongPickRank === 1}
                     showEurovisionRank={false}
-                    globalScoreForCategory={worstSongNationDetails && sortedCategoryNations?.worstSong.find(n => n.id === worstSongNationDetails.id)?.score}
                 />
               </>
             )}
