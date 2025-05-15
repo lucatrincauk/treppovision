@@ -10,6 +10,7 @@ import { NationsSubNavigation } from "@/components/nations/nations-sub-navigatio
 import { Users, BarChart3, Star, User, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge"; // Import Badge
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -127,7 +128,6 @@ export default function TreppoScoreRankingPage() {
                       <TableRow>
                         <TableHead className="w-[60px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
-                        {user && <TableHead className="text-right w-[120px]">Il Tuo Voto</TableHead>}
                         <TableHead className="text-right w-[140px]">TreppoScore Globale</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
                       </TableRow>
@@ -137,37 +137,36 @@ export default function TreppoScoreRankingPage() {
                         <TableRow key={nation.id}>
                           <TableCell className="font-medium text-center">{index + 4}</TableCell>
                           <TableCell>
-                            <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group">
-                              <Image
-                                src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
-                                alt={`Bandiera ${nation.name}`}
-                                width={30}
-                                height={20}
-                                className="rounded-sm border border-border/50 object-contain"
-                                data-ai-hint={`${nation.name} flag`}
-                              />
-                              <div>
-                                <span className="group-hover:underline group-hover:text-primary font-medium truncate">
-                                  {nation.name}
-                                </span>
-                                <p className="text-xs text-muted-foreground truncate hidden sm:block" title={`${nation.artistName} - ${nation.songTitle}`}>
-                                  {nation.artistName} - {nation.songTitle}
-                                </p>
-                              </div>
-                            </Link>
-                          </TableCell>
-                          {user && (
-                            <TableCell className="text-right">
-                              {nation.userAverageScore !== null && nation.userAverageScore !== undefined ? (
-                                <div className="flex items-center justify-end font-semibold text-primary">
-                                  <User className="w-3 h-3 mr-1 opacity-70" />
-                                  {nation.userAverageScore.toFixed(2)}
+                            <div className="flex flex-col">
+                              <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group mb-1">
+                                <Image
+                                  src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
+                                  alt={`Bandiera ${nation.name}`}
+                                  width={30}
+                                  height={20}
+                                  className="rounded-sm border border-border/50 object-contain"
+                                  data-ai-hint={`${nation.name} flag`}
+                                />
+                                <div>
+                                  <span className="group-hover:underline group-hover:text-primary font-medium truncate">
+                                    {nation.name}
+                                  </span>
+                                  <p className="text-xs text-muted-foreground truncate hidden sm:block" title={`${nation.artistName} - ${nation.songTitle}`}>
+                                    {nation.artistName} - {nation.songTitle}
+                                  </p>
                                 </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">N/A</span>
+                              </Link>
+                              {user && nation.userAverageScore !== null && nation.userAverageScore !== undefined && (
+                                <Badge variant="outline" className="mt-1 text-xs py-0.5 px-1.5 self-start">
+                                  <User className="w-3 h-3 mr-1" />
+                                  Tuo Voto: {nation.userAverageScore.toFixed(2)}
+                                </Badge>
                               )}
-                            </TableCell>
-                          )}
+                              {user && (nation.userAverageScore === null || nation.userAverageScore === undefined) && (
+                                 <Badge variant="secondary" className="mt-1 text-xs py-0.5 px-1.5 self-start">Tuo Voto: N/D</Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-right font-semibold text-accent">
                             <div className="flex items-center justify-end">
                               <Star className="w-4 h-4 mr-1 text-yellow-400"/>
@@ -188,4 +187,3 @@ export default function TreppoScoreRankingPage() {
     </div>
   );
 }
-
