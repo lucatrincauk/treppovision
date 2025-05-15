@@ -1,4 +1,7 @@
 
+"use client"; // Required because we are adding useState
+
+import { useState, useEffect } from "react"; // Import useState and useEffect
 import { getNationById, getNations } from "@/lib/nation-service";
 import { YouTubeEmbed } from "@/components/nations/youtube-embed";
 import { VotingForm } from "@/components/voting/voting-form";
@@ -13,7 +16,8 @@ import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
 import { NationDetailImage } from "@/components/nations/nation-detail-image";
 import { UserVoteBadge } from "@/components/nations/user-vote-badge";
-import { AllUsersAverageVoteBadge } from "@/components/nations/all-users-average-vote-badge"; // New Import
+import { AllUsersAverageVoteBadge } from "@/components/nations/all-users-average-vote-badge";
+import type { Nation } from "@/types";
 
 interface NationPageProps {
   params: {
@@ -21,18 +25,50 @@ interface NationPageProps {
   };
 }
 
+// generateStaticParams remains a server-side function and needs to fetch data directly
+// We can't call getNations() directly if it's modified to be client-side only
+// For now, assuming getNations() can still be called from server-side context for build.
+// If not, this part might need adjustment or be removed if purely dynamic.
+/*
 export async function generateStaticParams() {
-  const nations = await getNations();
+  const nations = await getNations(); // This would need to be a server-compatible fetch
   return nations.map((nation) => ({
     id: nation.id,
   }));
 }
+*/
 
-export default async function NationPage({ params }: NationPageProps) {
-  const nation = await getNationById(params.id);
 
-  if (!nation) {
-    notFound();
+export default function NationPage({ params }: NationPageProps) {
+  const [nation, setNation] = useState<Nation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [voteUpdateTrigger, setVoteUpdateTrigger] = useState<number>(Date.now());
+
+  useEffect(() => {
+    async function fetchNation() {
+      setIsLoading(true);
+      const nationData = await getNationById(params.id);
+      if (nationData) {
+        setNation(nationData);
+      } else {
+        notFound(); // Trigger notFound if nationData is undefined
+      }
+      setIsLoading(false);
+    }
+    fetchNation();
+  }, [params.id]);
+
+  const handleVoteSuccess = () => {
+    setVoteUpdateTrigger(Date.now()); // Update the trigger to force UserVoteBadge refresh
+  };
+
+  if (isLoading || !nation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <ListMusic className="w-24 h-24 text-primary animate-pulse mb-6" />
+        <p className="text-xl text-muted-foreground">Caricamento dettagli nazione...</p>
+      </div>
+    );
   }
   
   const isPlaceholderVideo = nation.youtubeVideoId === 'dQw4w9WgXcQ';
@@ -103,8 +139,8 @@ export default async function NationPage({ params }: NationPageProps) {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 items-center">
-            <UserVoteBadge nationId={nation.id} />
-            <AllUsersAverageVoteBadge nationId={nation.id} /> {/* New Badge */}
+            <UserVoteBadge nationId={nation.id} refreshTrigger={voteUpdateTrigger} />
+            <AllUsersAverageVoteBadge nationId={nation.id} />
             <Badge variant="outline" className="text-sm py-1 px-3">
               <ListOrdered className="w-3 h-3 mr-1.5" />
               Ordine Esibizione: {nation.performingOrder}
@@ -120,7 +156,7 @@ export default async function NationPage({ params }: NationPageProps) {
                 )}
               >
                 <Award className="w-3 h-3 mr-1.5" />
-                Posizione: {nation.ranking}
+                Posizione: {nation.ranking}°
                 {nation.ranking === 1 && " (Vincitore!)"}
               </Badge>
             )}
@@ -174,29 +210,33 @@ export default async function NationPage({ params }: NationPageProps) {
         </div>
 
         <div id="voting-form" className="md:col-span-1">
-          <VotingForm nation={nation} />
+          <VotingForm nation={nation} onVoteSuccess={handleVoteSuccess} />
         </div>
       </div>
     </div>
   );
 }
 
+
+// generateMetadata remains a server-side function
+// It cannot use the 'nation' state from the client component directly.
+// It needs to fetch its own data.
 export async function generateMetadata({ params }: NationPageProps) {
-  const nation = await getNationById(params.id);
-  if (!nation) {
+  const nationData = await getNationById(params.id); // Fetch data for metadata
+  if (!nationData) {
     return { title: "Nazione Non Trovata" };
   }
-  let description = `Scopri la partecipazione di ${nation.name} a TreppoVision: "${nation.songTitle}" di ${nation.artistName}.`;
-  if (nation.songDescription) {
-    description += ` ${nation.songDescription.substring(0, 100)}...`;
+  let description = `Scopri la partecipazione di ${nationData.name} a TreppoVision: "${nationData.songTitle}" di ${nationData.artistName}.`;
+  if (nationData.songDescription) {
+    description += ` ${nationData.songDescription.substring(0, 100)}...`;
   }
-  if (nation.ranking && nation.ranking > 0) {
-    description += ` Posizione: ${nation.ranking}.`;
+  if (nationData.ranking && nationData.ranking > 0) {
+    description += ` Posizione: ${nationData.ranking}°.`;
   }
-  description += ` Ordine Esibizione: ${nation.performingOrder}. Esprimi il tuo voto!`;
+  description += ` Ordine Esibizione: ${nationData.performingOrder}. Esprimi il tuo voto!`;
   
   return {
-    title: `${nation.name} - ${nation.songTitle} | TreppoVision`,
+    title: `${nationData.name} - ${nationData.songTitle} | TreppoVision`,
     description: description,
   };
 }

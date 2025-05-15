@@ -15,9 +15,10 @@ import { Loader2, Send, Star, Info } from "lucide-react";
 
 interface VotingFormProps {
   nation: Nation;
+  onVoteSuccess: () => void; // Callback prop
 }
 
-export function VotingForm({ nation }: VotingFormProps) {
+export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
   const { user, isLoading: authIsLoading } = useAuth();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -45,24 +46,17 @@ export function VotingForm({ nation }: VotingFormProps) {
 
   useEffect(() => {
     if (authIsLoading) {
-      // We are still waiting for auth state to resolve.
-      // The main return logic will show an auth loading indicator.
-      // Ensure isLoadingVote is true so we don't prematurely show the form.
       setIsLoadingVote(true);
       return;
     }
 
     if (!user || !user.uid) {
-      // Auth is resolved, but no user is logged in.
       resetScoresAndAverage();
-      setIsLoadingVote(false); // No vote to load for a non-logged-in user.
+      setIsLoadingVote(false);
       return;
     }
 
-    // At this point, auth is loaded, and we have a user with a UID.
-    // We are about to attempt fetching the vote.
-    setIsLoadingVote(true); // Set loading true before the async operation.
-
+    setIsLoadingVote(true); 
     const fetchUserVote = async () => {
       try {
         const existingVote = await getUserVoteForNationFromDB(nation.id, user.uid);
@@ -81,15 +75,15 @@ export function VotingForm({ nation }: VotingFormProps) {
           description: "Impossibile caricare il tuo voto precedente. Riprova.",
           variant: "destructive",
         });
-        resetScoresAndAverage(); // Reset to default on error
+        resetScoresAndAverage();
       } finally {
-        setIsLoadingVote(false); // Done attempting to load vote.
+        setIsLoadingVote(false);
       }
     };
 
     fetchUserVote();
 
-  }, [nation.id, user, authIsLoading, toast]); // Added toast to dependency array as it's used in error handling
+  }, [nation.id, user, authIsLoading, toast]);
 
   useEffect(() => {
     if (user) { 
@@ -121,6 +115,7 @@ export function VotingForm({ nation }: VotingFormProps) {
       if (result.success && result.vote) {
         setHasVoted(true); 
         toast({ title: "Voto Inviato!", description: `I tuoi punteggi per ${nation.name} sono stati registrati.` });
+        onVoteSuccess(); // Call the callback on successful vote
       } else {
         toast({ title: "Errore", description: result.message, variant: "destructive" });
       }
