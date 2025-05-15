@@ -1,13 +1,15 @@
 
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import type { Team, Nation } from "@/types";
+import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service";
+import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Flag } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic'; 
 
@@ -38,49 +40,140 @@ interface NationScoreDetail {
   countryCode: string;
   actualRank?: number;
   points: number;
-  type: 'founder'; // Only founder type remains
+}
+
+interface CategoryPickDetail {
+  categoryName: string;
+  pickedNationId?: string;
+  pickedNationName?: string;
+  pickedNationCountryCode?: string;
+  actualCategoryRank?: number; // 1st, 2nd, 3rd in this category based on global votes
+  pointsAwarded: number;
+  icon: React.ElementType;
 }
 
 interface TeamWithScore extends Team {
   score: number;
   rank?: number;
-  nationScoreDetails: NationScoreDetail[];
+  primaSquadraDetails: NationScoreDetail[];
+  categoryPicksDetails: CategoryPickDetail[];
 }
+
+const getTopNationsForCategory = (
+  scoresMap: Map<string, NationGlobalCategorizedScores>,
+  nationsMap: Map<string, Nation>,
+  categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore'
+): Array<{ nationId: string; nationName: string; score: number | null }> => {
+  return Array.from(scoresMap.entries())
+    .map(([nationId, scores]) => ({
+      nationId,
+      nationName: nationsMap.get(nationId)?.name || 'Sconosciuto',
+      score: scores[categoryKey]
+    }))
+    .filter(item => item.score !== null && (scoresMap.get(item.nationId)?.voteCount || 0) > 0) // Ensure there are votes
+    .sort((a, b) => (b.score as number) - (a.score as number))
+    .slice(0, 3);
+};
+
+const getCategoryPickPointsAndRank = (
+  pickedNationId: string | undefined,
+  topNationsInCategory: Array<{ nationId: string }>
+): { points: number; rank?: number } => {
+  if (!pickedNationId) return { points: 0, rank: undefined };
+  const rankIndex = topNationsInCategory.findIndex(n => n.nationId === pickedNationId);
+  if (rankIndex === 0) return { points: 15, rank: 1 };
+  if (rankIndex === 1) return { points: 10, rank: 2 };
+  if (rankIndex === 2) return { points: 5, rank: 3 };
+  return { points: 0, rank: undefined };
+};
+
 
 export default async function TeamsLeaderboardPage() {
   const allTeams = await getTeams();
   const allNations = await getNations();
+  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores();
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
+  const topSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore');
+  const topPerformanceNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averagePerformanceScore');
+  const topOutfitNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageOutfitScore');
+
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
-    const nationDetails: NationScoreDetail[] = [];
+    const primaSquadraDetails: NationScoreDetail[] = [];
+    const categoryPicksDetails: CategoryPickDetail[] = [];
 
-    const processNation = (nationId?: string): NationScoreDetail | null => {
-      if (!nationId) return null;
+    // Calculate points from Prima Squadra (Eurovision Ranks)
+    (team.founderChoices || []).forEach(nationId => {
       const nation = nationsMap.get(nationId);
       if (nation) {
         const points = getPointsForRank(nation.ranking);
         score += points;
-        return {
+        primaSquadraDetails.push({
           id: nation.id,
           name: nation.name,
           countryCode: nation.countryCode,
           actualRank: nation.ranking,
           points,
-          type: 'founder'
-        };
+        });
       }
-      return null;
-    };
-
-    (team.founderChoices || []).forEach(nationId => {
-      const detail = processNation(nationId);
-      if (detail) nationDetails.push(detail);
     });
 
-    return { ...team, score, nationScoreDetails: nationDetails };
+    // Calculate points from Category Picks (User Votes)
+    const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
+    score += bestSongPick.points;
+    const bestSongNation = team.bestSongNationId ? nationsMap.get(team.bestSongNationId) : undefined;
+    categoryPicksDetails.push({
+      categoryName: "Miglior Canzone",
+      pickedNationId: team.bestSongNationId,
+      pickedNationName: bestSongNation?.name,
+      pickedNationCountryCode: bestSongNation?.countryCode,
+      actualCategoryRank: bestSongPick.rank,
+      pointsAwarded: bestSongPick.points,
+      icon: Music2,
+    });
+
+    const bestPerformancePick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerformanceNations);
+    score += bestPerformancePick.points;
+    const bestPerformanceNation = team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId) : undefined;
+    categoryPicksDetails.push({
+      categoryName: "Miglior Performance",
+      pickedNationId: team.bestPerformanceNationId,
+      pickedNationName: bestPerformanceNation?.name,
+      pickedNationCountryCode: bestPerformanceNation?.countryCode,
+      actualCategoryRank: bestPerformancePick.rank,
+      pointsAwarded: bestPerformancePick.points,
+      icon: Star,
+    });
+
+    const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
+    score += bestOutfitPick.points;
+    const bestOutfitNation = team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId) : undefined;
+    categoryPicksDetails.push({
+      categoryName: "Miglior Outfit",
+      pickedNationId: team.bestOutfitNationId,
+      pickedNationName: bestOutfitNation?.name,
+      pickedNationCountryCode: bestOutfitNation?.countryCode,
+      actualCategoryRank: bestOutfitPick.rank,
+      pointsAwarded: bestOutfitPick.points,
+      icon: Shirt,
+    });
+    
+    // Peggior Canzone - no points awarded
+    const worstSongNation = team.worstSongNationId ? nationsMap.get(team.worstSongNationId) : undefined;
+     categoryPicksDetails.push({
+      categoryName: "Peggior Canzone", // Still list it for completeness, though it awards 0 points
+      pickedNationId: team.worstSongNationId,
+      pickedNationName: worstSongNation?.name,
+      pickedNationCountryCode: worstSongNation?.countryCode,
+      actualCategoryRank: undefined, 
+      pointsAwarded: 0,
+      icon: ThumbsUp, // Icon choice can be discussed, ThumbsDown might be confusing
+    });
+
+
+    return { ...team, score, primaSquadraDetails, categoryPicksDetails };
   });
 
   teamsWithScores.sort((a, b) => {
@@ -98,26 +191,60 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  const NationDetailDisplay = ({ detail }: { detail: NationScoreDetail }) => {
-    const Icon = BadgeCheck; // All are now 'founder' type
+  const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
+    <div className="flex items-center gap-1.5 py-0.5">
+      <BadgeCheck className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
+      <Image
+        src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
+        alt={detail.name}
+        width={15} 
+        height={10}
+        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+        data-ai-hint={`${detail.name} flag`}
+      />
+      <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
+        <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
+        <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
+      </Link>
+    </div>
+  );
+
+  const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
+    const Icon = detail.icon;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
-        <Icon className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
-        <Image
-          src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
-          alt={detail.name}
-          width={15} 
-          height={10}
-          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-          data-ai-hint={`${detail.name} flag`}
-        />
-        <Link href={`/nations/${detail.id}`} className="text-xs hover:underline hover:text-primary truncate" title={`${detail.name} (Classifica: ${detail.actualRank ?? 'N/D'}) - ${detail.points}pt`}>
-          <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-          <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>: {detail.points}pt
+        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", detail.pointsAwarded > 0 ? "text-accent" : "text-muted-foreground/80")} />
+        {detail.pickedNationCountryCode && detail.pickedNationName ? (
+            <Image
+            src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+            alt={detail.pickedNationName}
+            width={15}
+            height={10}
+            className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+            data-ai-hint={`${detail.pickedNationName} flag`}
+            />
+        ) : (
+            <div className="w-[15px] h-[10px] bg-muted rounded-sm border border-border/30 flex-shrink-0"></div>
+        )}
+        
+        <span className="text-xs text-muted-foreground min-w-[100px] flex-shrink-0">{detail.categoryName}:</span>
+        <Link href={detail.pickedNationId ? `/nations/${detail.pickedNationId}` : '#'} className={cn("text-xs hover:underline hover:text-primary truncate", !detail.pickedNationId && "pointer-events-none")}>
+          <span className="font-medium">
+            {detail.pickedNationName ? (detail.pickedNationName.substring(0,12)+(detail.pickedNationName.length > 12 ? '...' : '')) : "N/D"}
+          </span>
+          {detail.actualCategoryRank && detail.pointsAwarded > 0 && ( // Show rank only if points were awarded
+            <span className="text-muted-foreground"> ({detail.actualCategoryRank}° in cat.)</span>
+          )}
         </Link>
+        {detail.categoryName !== "Peggior Canzone" && ( // Do not show points for "Peggior Canzone"
+             <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+                {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+            </span>
+        )}
       </div>
     );
   };
+
 
   return (
     <div className="space-y-8">
@@ -128,7 +255,7 @@ export default async function TeamsLeaderboardPage() {
           Classifica Squadre
         </h1>
         <p className="text-xl text-muted-foreground">
-          Punteggi delle squadre basati sulla classifica delle nazioni scelte.
+          Punteggi basati sulla classifica finale e sui pronostici degli utenti.
         </p>
       </header>
 
@@ -136,7 +263,7 @@ export default async function TeamsLeaderboardPage() {
         <div className="text-center text-muted-foreground py-10">
           <Trophy className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="text-lg">Nessuna squadra trovata o nessun punteggio calcolabile.</p>
-          <p>Assicurati che le squadre siano state create e che le nazioni abbiano un ranking.</p>
+          <p>Assicurati che le squadre siano state create e che le nazioni abbiano un ranking e voti utente.</p>
         </div>
       ) : (
         <Card>
@@ -145,7 +272,7 @@ export default async function TeamsLeaderboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px] text-center">Pos.</TableHead>
-                  <TableHead>Squadra</TableHead>
+                  <TableHead>Squadra e Dettagli</TableHead>
                   <TableHead className="hidden md:table-cell">Creatore</TableHead>
                   <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
@@ -155,10 +282,18 @@ export default async function TeamsLeaderboardPage() {
                   <TableRow key={team.id}>
                     <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
                     <TableCell className="align-top">
-                        <div className="font-medium truncate mb-1">{team.name}</div>
-                        <div className="space-y-0.5 text-xs text-muted-foreground">
-                            {team.nationScoreDetails.map(detail => (
-                                <NationDetailDisplay key={detail.id + detail.type} detail={detail} />
+                        <div className="font-medium truncate mb-1 text-base">{team.name}</div>
+                        
+                        <div className="mb-2">
+                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">Prima Squadra (Classifica Finale):</p>
+                            {team.primaSquadraDetails.map(detail => (
+                                <PrimaSquadraNationDisplay key={`${detail.id}-prima`} detail={detail} />
+                            ))}
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Voti TreppoScore:</p>
+                            {team.categoryPicksDetails.map(detail => (
+                                <CategoryPickDisplay key={`${team.id}-${detail.categoryName}`} detail={detail} />
                             ))}
                         </div>
                     </TableCell>
@@ -183,11 +318,19 @@ export default async function TeamsLeaderboardPage() {
               <div>
                 <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ogni squadra sceglie 3 nazioni per la "Prima Squadra".
-                  Il punteggio totale della squadra è la somma dei punti ottenuti da ciascuna di queste 3 nazioni in base alla loro classifica finale nell'Eurovision.
-                  Il sistema di punti per classifica è: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
-                  Le nazioni senza ranking o con ranking 0 non contribuiscono (0 punti).
+                  Il punteggio totale di una squadra è composto da due parti:
                 </p>
+                <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
+                    <li>
+                        <strong>Prima Squadra (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
+                        Sistema: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
+                        Nazioni senza ranking valido ottengono 0 punti.
+                    </li>
+                    <li>
+                        <strong>Pronostici Voti TreppoScore</strong>: Punti per aver indovinato le nazioni più votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit.
+                        Per ogni categoria: 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt. La "Peggior Canzone" non assegna punti.
+                    </li>
+                </ul>
               </div>
             </div>
           </CardContent>
@@ -195,3 +338,4 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+

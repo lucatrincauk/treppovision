@@ -140,6 +140,60 @@ export const getAllUserVotes = async (userId: string): Promise<Map<string, Vote 
   }
 };
 
+// Fetches all votes and calculates global categorized scores ONCE (for server-side use)
+export const getAllNationsGlobalCategorizedScores = async (): Promise<Map<string, NationGlobalCategorizedScores>> => {
+  const nationAggregates = new Map<string, {
+    totalSong: number;
+    totalPerformance: number;
+    totalOutfit: number;
+    voteCount: number;
+  }>();
+
+  try {
+    const votesCollectionRef = collection(db, "votes");
+    const querySnapshot = await getDocs(votesCollectionRef);
+
+    querySnapshot.forEach((docSnap) => {
+      const vote = docSnap.data() as Vote;
+      if (vote && vote.scores && vote.nationId) {
+        const currentAgg = nationAggregates.get(vote.nationId) || {
+          totalSong: 0,
+          totalPerformance: 0,
+          totalOutfit: 0,
+          voteCount: 0,
+        };
+        currentAgg.totalSong += vote.scores.song;
+        currentAgg.totalPerformance += vote.scores.performance;
+        currentAgg.totalOutfit += vote.scores.outfit;
+        currentAgg.voteCount += 1;
+        nationAggregates.set(vote.nationId, currentAgg);
+      }
+    });
+
+    const result = new Map<string, NationGlobalCategorizedScores>();
+    nationAggregates.forEach((data, nationId) => {
+      const voteCount = data.voteCount;
+      const avgSong = voteCount > 0 ? data.totalSong / voteCount : null;
+      const avgPerf = voteCount > 0 ? data.totalPerformance / voteCount : null;
+      const avgOutfit = voteCount > 0 ? data.totalOutfit / voteCount : null;
+      const overallAvg = (avgSong !== null && avgPerf !== null && avgOutfit !== null)
+                         ? (avgSong + avgPerf + avgOutfit) / 3
+                         : null;
+      result.set(nationId, {
+        averageSongScore: avgSong,
+        averagePerformanceScore: avgPerf,
+        averageOutfitScore: avgOutfit,
+        overallAverageScore: overallAvg,
+        voteCount: voteCount,
+      });
+    });
+    return result;
+  } catch (error) {
+    console.error("Error fetching all votes for global categorized scores (server-side):", error);
+    return new Map(); // Return empty map on error
+  }
+};
+
 
 export const getVotesForNationFromLocalStorage_DEPRECATED = (nationId: string): Vote[] => {
   console.warn("getVotesForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
@@ -150,3 +204,4 @@ export const getUserVoteForNationFromLocalStorage_DEPRECATED = (nationId: string
   console.warn("getUserVoteForNationFromLocalStorage_DEPRECATED is called. Ensure this is intended if Firestore is primary.");
   return undefined;
 };
+
