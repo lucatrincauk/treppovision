@@ -6,7 +6,7 @@ import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -127,6 +127,14 @@ export default async function TeamsLeaderboardPage() {
       }
     });
 
+    // Sort primaSquadraDetails by actualRank (lower ranks first), undefined ranks last
+    primaSquadraDetails.sort((a, b) => {
+      const rankA = a.actualRank ?? Infinity;
+      const rankB = b.actualRank ?? Infinity;
+      return rankA - rankB;
+    });
+
+
     // Calculate points from Category Picks (User Votes)
     const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
     score += bestSongPick.points;
@@ -199,6 +207,14 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
+  const MedalIcon = ({ rank }: { rank?: number }) => {
+    if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
+    if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
+    if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; // Using amber-500 for bronze
+    return null;
+  };
+
+
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
     <div className="flex items-center gap-1.5 py-0.5"> 
       <BadgeCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" />
@@ -212,11 +228,12 @@ export default async function TeamsLeaderboardPage() {
       />
       <Link 
         href={`/nations/${detail.id}`} 
-        className="text-xs hover:underline hover:text-primary truncate flex-grow" 
+        className="text-xs hover:underline hover:text-primary truncate flex-grow flex items-center" 
         title={`${detail.name} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
       >
         <span className="font-medium">{detail.name.substring(0,15)+(detail.name.length > 15 ? '...' : '')}</span>
-        <span className="text-muted-foreground"> ({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+        <MedalIcon rank={detail.actualRank} />
+        <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
       </Link>
       <span className={cn(
         "text-xs ml-auto pl-1", 
@@ -353,3 +370,4 @@ export default async function TeamsLeaderboardPage() {
   );
 }
 
+    
