@@ -31,7 +31,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Nation, TeamFormData, Team } from "@/types";
 import { getNations } from "@/lib/nation-service";
 import { getTeamsByUserId } from "@/lib/team-service";
-import { createTeamAction, updateTeamAction } from "@/lib/actions/team-actions";
+import { createTeamAction, updateTeamAction, getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Users, Info, Edit, Lock, ListChecks } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -61,7 +61,7 @@ interface CreateTeamFormProps {
   teamsLocked?: boolean | null;
 }
 
-export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsLocked }: CreateTeamFormProps) {
+export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsLocked: propTeamsLocked }: CreateTeamFormProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -71,6 +71,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   const [userHasTeam, setUserHasTeam] = React.useState<boolean | null>(null);
   const [isLoadingUserTeamCheck, setIsLoadingUserTeamCheck] = React.useState(true);
   const [founderPopoverOpen, setFounderPopoverOpen] = React.useState(false);
+  const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(propTeamsLocked);
 
 
   React.useEffect(() => {
@@ -79,6 +80,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       if (!isEditMode) {
         setIsLoadingUserTeamCheck(true);
       }
+      if (teamsLocked === null && propTeamsLocked === null) { // Only fetch if not passed as prop
+        const lockStatus = await getTeamsLockedStatus();
+        setTeamsLocked(lockStatus);
+      }
+
 
       if (user || !authLoading) {
         try {
@@ -115,7 +121,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     if (!authLoading) {
         fetchInitialData();
     }
-  }, [toast, user, authLoading, isEditMode]);
+  }, [toast, user, authLoading, isEditMode, propTeamsLocked]);
 
   const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormZodSchema),
@@ -273,9 +279,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
      )
    }
 
-
   const renderNationSelectItem = (nation: Nation, type: 'song' | 'artist' | 'outfit') => (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 py-1 w-full">
       <Image
         src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}
@@ -284,10 +289,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         className="rounded-sm border border-border/30 object-contain flex-shrink-0"
         data-ai-hint={`${nation.name} flag icon`}
       />
-      <div className="flex flex-col">
+      <div className="flex flex-col text-left">
         <span className="font-semibold">{nation.name}</span>
-        <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={`${nation.artistName} - ${nation.songTitle}`}>
-          {type === 'song' ? `${nation.artistName} - ${nation.songTitle}` : type === 'artist' ? nation.artistName : ''}
+        <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={type === 'song' ? `${nation.artistName} - ${nation.songTitle}` : type === 'artist' ? `${nation.artistName} - ${nation.songTitle}` : `${nation.artistName} - ${nation.songTitle}` }>
+          {/* For all types, display both artist and song for consistency in dropdown item height and info */}
+          {`${nation.artistName} - ${nation.songTitle}`}
         </span>
       </div>
     </div>
@@ -391,7 +397,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Scegli esattamente 3 nazioni per la tua squadra.
+                Scegli esattamente 3 nazioni per la tua prima squadra.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -407,7 +413,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
+                      {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'song') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -433,7 +441,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
+                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'artist') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -459,7 +469,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
+                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'outfit') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -485,7 +497,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"} />
+                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
+                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'song') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -517,3 +531,4 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   );
 }
 
+    
