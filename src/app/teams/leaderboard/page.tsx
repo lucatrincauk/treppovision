@@ -76,6 +76,7 @@ const getTopNationsForCategory = (
     }))
     .filter(item => item.score !== null && (scoresMap.get(item.id)?.voteCount || 0) > 0) 
     .sort((a, b) => {
+      if (a.score === null && b.score === null) return 0;
       if (a.score === null) return 1; 
       if (b.score === null) return -1; 
       if (sortOrder === 'desc') {
@@ -93,7 +94,7 @@ const getCategoryPickPointsAndRank = (
   
   const rankIndex = sortedNationsForCategory.findIndex(n => n.id === pickedNationId);
   const actualRank = rankIndex !== -1 ? rankIndex + 1 : undefined;
-  const actualScore = actualRank && rankIndex < sortedNationsForCategory.length ? sortedNationsForCategory[rankIndex].score : null;
+  const actualScore = actualRank !== undefined && rankIndex < sortedNationsForCategory.length ? sortedNationsForCategory[rankIndex].score : null;
 
   let points = 0;
   if (actualRank === 1) points = 15;
@@ -266,14 +267,14 @@ export default async function TeamsLeaderboardPage() {
             <Link 
               href={`/nations/${detail.id}`} 
               className="text-xs hover:underline hover:text-primary flex items-center" 
-              title={`${detail.name} - ${detail.artistName} - ${detail.songTitle} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+              title={`${detail.name}${detail.artistName ? ` - ${detail.artistName}` : ''}${detail.songTitle ? ` - ${detail.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
             >
               <span className="font-medium">{detail.name}</span>
               <MedalIcon rank={detail.actualRank} />
               <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
             </Link>
              {detail.artistName && detail.songTitle && (
-                <p className="text-[11px] text-muted-foreground truncate" title={`${detail.artistName} - ${detail.songTitle}`}>
+                <p className="text-[10px] text-muted-foreground truncate" title={`${detail.artistName} - ${detail.songTitle}`}>
                     {detail.artistName} - {detail.songTitle}
                 </p>
             )}
@@ -301,70 +302,74 @@ export default async function TeamsLeaderboardPage() {
     const CategoryMedalIcon = ({ rank }: { rank?: number }) => {
         if (!rank || rank < 1 || rank > 3) return null;
         const colorClass = rank === 1 ? "text-yellow-400" : rank === 2 ? "text-slate-400" : "text-amber-500";
-        return <Award className={cn("w-3.5 h-3.5 flex-shrink-0 ml-0.5", colorClass)} />;
+        return <Award className={cn("w-3.5 h-3.5 flex-shrink-0 ml-1", colorClass)} />;
     };
     
     const iconColorClass = "text-accent";
     
+    let rankText = "";
     let rankSuffix = "";
     if (detail.actualCategoryRank && detail.actualCategoryRank > 0) {
         if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
         else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
         else rankSuffix = " in cat.";
+        rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
     }
-
-    const rankText = detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${rankSuffix})` : "";
+    
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'} - ${pickedNationFullDetails?.artistName || ''} - ${pickedNationFullDetails?.songTitle || ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
+    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
 
 
     return (
-      <div className={cn(
-        "px-2 py-1.5"
-      )}>
-         <div className="flex items-center gap-1.5">
+      <div className={cn("px-2 py-1.5 flex flex-col gap-0.5")}>
+        {/* Line 1: Icon, Category Name, and Points Awarded */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
-            <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}:</span>
+            <span className="text-xs text-foreground/90 font-medium">{detail.categoryName}</span>
+          </div>
+          <span className={cn("text-xs", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+            {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+          </span>
         </div>
-        <div className={cn(
-            "mt-1 sm:mt-0",
-            "sm:ml-[calc(1rem+0.375rem)]" 
-        )}>
-            <div className="flex items-center gap-1.5">
-                {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
-                <Link href={`/nations/${detail.pickedNationId}`}
-                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex items-center gap-1")}
-                        title={titleText}
-                >
-                    <Image
-                    src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
-                    alt={detail.pickedNationName}
-                    width={20}
-                    height={13}
-                    className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-                    data-ai-hint={`${detail.pickedNationName} flag`}
-                    />
-                    <span className="font-medium">
-                    {detail.pickedNationName}
-                    </span>
-                    <CategoryMedalIcon rank={detail.actualCategoryRank} />
-                    {rankText && (
-                        <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                        {rankText}
-                    </span>
-                    )}
-                </Link>
-                ) : (
-                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <UserCircle className="h-4 w-4 flex-shrink-0" />
-                        <span>Nessuna selezione</span>
-                    </div>
+
+        {/* Line 2: Indented Nation Details (if picked) */}
+        {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
+          <div className={cn("pl-[calc(1rem+theme(spacing.1_5))]")}> {/* Indent based on icon size (1rem) + gap (0.375rem) */}
+            <Link href={`/nations/${detail.pickedNationId}`}
+                  className={cn("text-xs hover:underline hover:text-primary flex flex-col items-start")}
+                  title={titleText}
+            >
+              <div className="flex items-center gap-1"> {/* Flag, Name, Medal, Rank */}
+                <Image
+                  src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
+                  alt={detail.pickedNationName || ""}
+                  width={20}
+                  height={13}
+                  className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                  data-ai-hint={`${detail.pickedNationName} flag`}
+                />
+                <span className="font-medium">{detail.pickedNationName}</span>
+                <CategoryMedalIcon rank={detail.actualCategoryRank} />
+                {rankText && (
+                  <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                    {rankText}
+                  </span>
                 )}
-                <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-                    {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+              </div>
+              {pickedNationFullDetails && ( /* Artist - Song */
+                <span className="text-[10px] text-muted-foreground truncate max-w-[180px] block" title={`${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}`}>
+                  {pickedNationFullDetails.artistName} - {pickedNationFullDetails.songTitle}
                 </span>
-            </div>
-        </div>
+              )}
+            </Link>
+          </div>
+        ) : ( /* No selection picked */
+          <div className={cn("pl-[calc(1rem+theme(spacing.1_5))] flex items-center gap-1.5 text-xs text-muted-foreground")}>
+            <UserCircle className="h-4 w-4 flex-shrink-0" />
+            <span>Nessuna selezione</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -427,12 +432,12 @@ export default async function TeamsLeaderboardPage() {
                           <TableCell className="align-top pt-4">
                               <div className="font-medium text-base mb-1">
                                 {team.name}
-                              </div>
-                               {team.creatorDisplayName && (
+                                 {team.creatorDisplayName && (
                                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 mb-2" title={team.creatorDisplayName}>
                                         <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
+                              </div>
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoVision:</p>
