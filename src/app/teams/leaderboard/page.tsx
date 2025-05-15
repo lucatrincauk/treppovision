@@ -321,7 +321,7 @@ export default async function TeamsLeaderboardPage() {
                 <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
                     (
                     {detail.actualCategoryRank}°
-                    {detail.categoryName === "Miglior Canzone" ? "" :
+                     {detail.categoryName === "Miglior Canzone" ? "" :
                      detail.categoryName === "Peggior Canzone" ? " peggiore" :
                      " in cat."}
                     )
@@ -391,14 +391,14 @@ export default async function TeamsLeaderboardPage() {
                         <TableRow key={team.id}>
                           <TableCell className="font-medium text-center align-top">{team.rank}</TableCell>
                           <TableCell className="align-top">
-                              <div className="font-medium text-base flex items-center mb-1">
-                                <span>{team.name}</span>
-                                {team.creatorDisplayName && (
-                                  <span className="ml-2 text-xs text-muted-foreground flex items-center gap-1" title={team.creatorDisplayName}>
-                                      (<UserCircle className="w-3 h-3" />{team.creatorDisplayName})
-                                  </span>
-                                )}
+                              <div className="font-medium text-base mb-0.5">
+                                {team.name}
                               </div>
+                              {team.creatorDisplayName && (
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" title={team.creatorDisplayName}>
+                                    <UserCircle className="w-3 h-3" />{team.creatorDisplayName}
+                                </div>
+                              )}
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Treppovision:</p>
