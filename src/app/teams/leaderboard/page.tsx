@@ -201,7 +201,7 @@ export default async function TeamsLeaderboardPage() {
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => (
     <div className="flex items-center gap-1.5 py-0.5"> {/* Consistent item styling */}
-      <BadgeCheck className="w-3.5 h-3.5 text-muted-foreground/80 flex-shrink-0" />
+      <BadgeCheck className="w-3.5 h-3.5 text-accent flex-shrink-0" />
       <Image
         src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
         alt={detail.name}
@@ -231,7 +231,7 @@ export default async function TeamsLeaderboardPage() {
     const Icon = detail.icon;
     return (
       <div className="flex items-center gap-1.5 py-0.5">
-        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", detail.pointsAwarded > 0 ? "text-accent" : "text-muted-foreground/80")} />
+        <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", detail.pointsAwarded > 0 ? "text-accent" : "text-accent")} />
         {detail.pickedNationCountryCode && detail.pickedNationName ? (
             <Image
             src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
