@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getUserVoteForNationFromDB, listenToAllVotesForNation } from "@/lib/voting-service";
 
 interface NationListItemProps {
-  nation: Nation & { userAverageScore?: number | null }; // Ensure userAverageScore can be passed
+  nation: Nation & { userAverageScore?: number | null }; // userAverageScore can be pre-calculated by parent
 }
 
 export function NationListItem({ nation }: NationListItemProps) {
@@ -25,14 +25,16 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
 
-  // User's specific average score is now expected to be passed via nation.userAverageScore
-  // The isLoadingUserVote state is removed as this component no longer fetches individual user votes here.
-  // It relies on the parent component (like TreppoScoreRankingPage) to provide userAverageScore.
+  // State for user's specific average score if not passed in props
+  const [fetchedUserAverageScore, setFetchedUserAverageScore] = useState<number | null>(null);
+  const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
 
   const [globalAverageScore, setGlobalAverageScore] = useState<number | null>(null);
   const [globalVoteCount, setGlobalVoteCount] = useState<number>(0);
   const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
 
+  // Determine the user's average score to use: either from props or fetched
+  const userAverageScore = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
 
   useEffect(() => {
     setImageUrl(localThumbnailUrl);
@@ -45,6 +47,45 @@ export function NationListItem({ nation }: NationListItemProps) {
       setImageAlt(`Bandiera ${nation.name}`);
     }
   };
+
+  // Fetch user's vote if not passed in props and user is logged in
+  useEffect(() => {
+    if (nation.userAverageScore !== undefined) { // Score is pre-calculated and passed
+      setIsLoadingUserVote(false);
+      return;
+    }
+
+    if (authLoading) {
+      setIsLoadingUserVote(true);
+      return;
+    }
+    if (!user) {
+      setFetchedUserAverageScore(null);
+      setIsLoadingUserVote(false);
+      return;
+    }
+
+    setIsLoadingUserVote(true);
+    let isMounted = true;
+    getUserVoteForNationFromDB(nation.id, user.uid)
+      .then((vote) => {
+        if (isMounted) {
+          if (vote) {
+            const avg = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
+            setFetchedUserAverageScore(parseFloat(avg.toFixed(2)));
+          } else {
+            setFetchedUserAverageScore(null);
+          }
+        }
+      })
+      .catch(error => console.error("Error fetching user vote for list item:", error))
+      .finally(() => {
+        if (isMounted) setIsLoadingUserVote(false);
+      });
+    
+    return () => { isMounted = false; };
+  }, [nation.id, nation.userAverageScore, user, authLoading]);
+
 
   // Listen to global votes
   useEffect(() => {
@@ -66,6 +107,8 @@ export function NationListItem({ nation }: NationListItemProps) {
     "border-border group-hover:border-primary/50";
 
   const isTopRankedForScoreDisplay = nation.ranking && [1, 2, 3].includes(nation.ranking);
+  const displayUserScoreInContent = user && isTopRankedForScoreDisplay && userAverageScore !== null;
+  const displayUserScoreOnThumbnail = user && !authLoading && userAverageScore !== null && !displayUserScoreInContent;
 
   return (
     <Link href={`/nations/${nation.id}`} className="group block h-full">
@@ -98,11 +141,30 @@ export function NationListItem({ nation }: NationListItemProps) {
               <span>{nation.name}</span>
             </CardTitle>
 
-            {/* Global Vote Score on Thumbnail */}
             <div className="absolute bottom-2 right-2 flex flex-col items-end">
-              {/* User's Vote is REMOVED from thumbnail */}
+              {/* User's Vote on Thumbnail (if NOT contextually top 3 for TreppoScore and score exists) */}
+              {(isLoadingUserVote && !nation.userAverageScore && user && !authLoading) && (
+                 <div className={cn(
+                    "flex items-center justify-start bg-accent/70 text-accent-foreground/70 rounded-sm animate-pulse min-w-[70px] mb-[2px]",
+                     "px-1.5 py-0.5"
+                 )}>
+                    <Star className={cn("mr-1 text-accent-foreground/70", "w-3 h-3")} />
+                    <span className={cn("w-6 bg-accent-foreground/30 rounded", "h-3")}></span>
+                 </div>
+              )}
+              {displayUserScoreOnThumbnail && userAverageScore !== null && (
+                <div className={cn(
+                  "flex items-center justify-start bg-accent text-accent-foreground rounded-sm min-w-[70px] mb-[2px]",
+                  "px-1.5 py-0.5" 
+                )}>
+                  <Star className={cn("mr-1 text-accent-foreground", "w-3 h-3")} />
+                  <span className={cn("font-semibold", "text-xs")}>
+                    {userAverageScore.toFixed(2)}
+                  </span>
+                </div>
+              )}
 
-              {/* Global Vote */}
+              {/* Global Vote on Thumbnail */}
               {isLoadingGlobalVote ? (
                  <div className={cn(
                     "flex items-center justify-start bg-secondary/70 text-secondary-foreground/70 rounded-sm animate-pulse min-w-[70px]",
@@ -144,16 +206,17 @@ export function NationListItem({ nation }: NationListItemProps) {
                 <span className="font-medium text-foreground">Posizione: {nation.ranking}°</span>
               </p>
             )}
-            {/* Display User's Average Score here if it's a top 3 ranked item and score exists */}
-            {user && nation.ranking && [1, 2, 3].includes(nation.ranking) && nation.userAverageScore !== null && nation.userAverageScore !== undefined && (
+            {/* Display User's Average Score in content if it's a top 3 ranked item context and score exists */}
+            {displayUserScoreInContent && userAverageScore !== null && (
               <p className="flex items-center text-muted-foreground mt-1">
                 <Star className="w-4 h-4 mr-2 text-accent flex-shrink-0" />
-                <span className="font-medium text-foreground">Tuo Voto: {nation.userAverageScore.toFixed(2)}</span>
+                <span className="font-medium text-foreground">Tuo Voto: {userAverageScore.toFixed(2)}</span>
               </p>
             )}
           </div>
           
           <div className="space-y-1 mt-auto">
+             {/* Placeholder for spacing if needed, or remove if card height is dynamic */}
              <div className="h-5"></div> 
              <div className="h-5"></div> 
           </div>
@@ -168,3 +231,5 @@ export function NationListItem({ nation }: NationListItemProps) {
     </Link>
   );
 }
+
+    
