@@ -278,7 +278,7 @@ export default async function TeamsLeaderboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px] text-center">Pos.</TableHead>
-                  <TableHead>Squadra e Dettagli</TableHead>
+                  <TableHead>Squadra</TableHead>
                   <TableHead className="hidden md:table-cell">Creatore</TableHead>
                   <TableHead className="text-right">Punteggio Totale</TableHead>
                 </TableRow>
@@ -291,7 +291,7 @@ export default async function TeamsLeaderboardPage() {
                         <div className="font-medium truncate mb-1 text-base">{team.name}</div>
                         
                         <div className="mb-2">
-                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">Prima Squadra (Classifica Finale):</p>
+                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici Treppovision:</p>
                             {team.primaSquadraDetails.map(detail => (
                                 <PrimaSquadraNationDisplay key={`${detail.id}-prima`} detail={detail} />
                             ))}
@@ -328,7 +328,7 @@ export default async function TeamsLeaderboardPage() {
                 </p>
                 <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
                     <li>
-                        <strong>Prima Squadra (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
+                        <strong>Pronostici Treppovision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
                         Sistema: 1°: 50pt, 2°: 35pt, 3°: 25pt, 4°: 15pt, 5°: 10pt, 6°-14°: da 9 a 1pt, 15°: 0pt, 16°-25°: da -1pt a -10pt, 26°: 25pt.
                         Nazioni senza ranking valido ottengono 0 punti.
                     </li>
