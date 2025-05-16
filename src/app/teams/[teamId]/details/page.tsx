@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service";
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore } from "@/types";
+import { listenToAllVotesForAllNationsCategorized, getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; // Added import
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Loader2, AlertTriangle, Users, ChevronLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
