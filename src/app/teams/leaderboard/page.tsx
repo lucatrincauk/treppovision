@@ -4,11 +4,11 @@
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp, Lock as LockIcon } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp, Lock as LockIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ const getRankText = (rank?: number): string => {
 interface TeamWithScore extends Team {
   score: number;
   rank?: number;
-  primaSquadraDetails: GlobalPrimaSquadraDetail[];
+  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
   categoryPicksDetails: GlobalCategoryPickDetailType[];
   isTied?: boolean;
 }
@@ -115,6 +115,8 @@ export default function TeamsLeaderboardPage() {
   const [allNations, setAllNations] = useState<Nation[]>([]);
   const [globalCategorizedScoresMap, setGlobalCategorizedScoresMap] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
 
+  const globalCategorizedScoresArray = useMemo(() => Array.from(globalCategorizedScoresMap.entries()), [globalCategorizedScoresMap]);
+
   useEffect(() => {
     async function fetchPageData() {
       setIsLoadingSettings(true);
@@ -144,7 +146,7 @@ export default function TeamsLeaderboardPage() {
 
         let calculatedTeams: TeamWithScore[] = fetchedTeams.map(team => {
           let score = 0;
-          const primaSquadraDetails: GlobalPrimaSquadraDetail[] = [];
+          const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
           const categoryPicksDetails: GlobalCategoryPickDetailType[] = [];
 
           (team.founderChoices || []).forEach(nationId => {
@@ -286,7 +288,6 @@ export default function TeamsLeaderboardPage() {
     );
   }
   
-  const globalCategorizedArray = Array.from(globalCategorizedScoresMap.entries());
   const podiumTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3);
   const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
 
@@ -329,7 +330,7 @@ export default function TeamsLeaderboardPage() {
               <TeamList
                 teams={podiumTeams}
                 allNations={allNations}
-                nationGlobalCategorizedScoresArray={globalCategorizedArray}
+                nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
                 disableListItemEdit={true} 
                 isLeaderboardPodiumDisplay={true}
               />
@@ -367,7 +368,7 @@ export default function TeamsLeaderboardPage() {
                                 {team.name}
                               </div>
                                {team.creatorDisplayName && (
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2" title={`Utente: ${team.creatorDisplayName}`}>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
                                         <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
@@ -414,4 +415,3 @@ export default function TeamsLeaderboardPage() {
     </div>
   );
 }
-
