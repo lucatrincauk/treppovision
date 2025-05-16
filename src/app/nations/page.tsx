@@ -9,7 +9,7 @@ import { NationsDisplayClient } from "@/components/nations/nations-display-clien
 
 export default async function NationsPage() {
   const nations = await getNations();
-  const listTitle = "Elenco Nazioni (per Ordine di Esibizione)";
+  const listTitle = "Elenco Nazioni";
 
   return (
     <div className="space-y-8">
@@ -22,6 +22,9 @@ export default async function NationsPage() {
           </h1>
           <p className="text-xl text-muted-foreground">
             Esplora tutti i paesi partecipanti a TreppoVision.
+          </p>
+          <p className="text-base text-muted-foreground/80">
+            Nazioni elencate per ordine di esibizione.
           </p>
         </header>
         <AdminNationControls nationId={null}>
