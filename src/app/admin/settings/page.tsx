@@ -116,17 +116,22 @@ export default function AdminSettingsPage() {
 
     if (result.success) {
       toast({ title: "Ranking Aggiornato", description: `Ranking per ${nations.find(n => n.id === nationId)?.name} aggiornato.` });
+      // Update local nations state to reflect saved ranking (or its absence)
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
         )
       );
+      // Update rankingsInput to reflect the actual saved value (e.g., "" if ranking was cleared)
+      setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
       // Optionally revert input if save failed, or let user correct it
+      // For now, we keep the user's input in the field
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
   }, [rankingsInput, nations, toast]);
+
 
   const handleRankingInputChange = (nationId: string, value: string) => {
     setRankingsInput(prev => new Map(prev).set(nationId, value));
@@ -164,12 +169,8 @@ export default function AdminSettingsPage() {
     nations.forEach((nation, index) => {
       const newRankString = String(index + 1);
       newRankingsMap.set(nation.id, newRankString);
-      // Trigger save for each, relying on existing handleRankingInputChange to debounce
-      // or directly call save if debounce is not desired here.
-      // For immediate effect and utilizing debounce:
       handleRankingInputChange(nation.id, newRankString);
     });
-    // No, setRankingsInput(newRankingsMap); will be handled by handleRankingInputChange calls
     toast({ title: "Ordine Applicato", description: "I ranking sono stati aggiornati in base all'ordine visuale. Salvataggio in corso..." });
   };
 
@@ -333,7 +334,6 @@ export default function AdminSettingsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                           <span className="text-sm text-muted-foreground mr-2 tabular-nums">({index + 1})</span>
                           <Image
                             src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
                             alt={nation.name}
@@ -347,6 +347,7 @@ export default function AdminSettingsPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center">
+                           <span className="text-sm text-muted-foreground mr-2 tabular-nums">({index + 1})</span>
                           <Input
                             type="text"
                             value={rankingsInput.get(nation.id) ?? ""}
