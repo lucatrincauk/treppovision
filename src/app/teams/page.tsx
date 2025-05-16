@@ -105,6 +105,7 @@ export default function TeamsPage() {
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
   const [finalPredictionsEnabledAdmin, setFinalPredictionsEnabledAdmin] = useState<boolean | null>(null);
+  const [hasUserSubmittedFinalPredictions, setHasUserSubmittedFinalPredictions] = useState(false);
 
   useEffect(() => {
     async function fetchInitialSettingsAndNations() {
@@ -147,7 +148,6 @@ export default function TeamsPage() {
 
   useEffect(() => {
     if (authIsLoading) return;
-
     setIsLoadingUserTeams(true);
     // User team data is now processed in processedAndScoredTeams effect
     setIsLoadingUserTeams(false); 
@@ -250,9 +250,20 @@ export default function TeamsPage() {
 
   useEffect(() => {
     if (user && processedAndScoredTeams.length > 0) {
-      setUserTeam(processedAndScoredTeams.find(team => team.userId === user.uid) || null);
+      const currentTeam = processedAndScoredTeams.find(team => team.userId === user.uid) || null;
+      setUserTeam(currentTeam);
+      if (currentTeam) {
+        const existingPreds = !!currentTeam.bestSongNationId ||
+                             !!currentTeam.bestPerformanceNationId ||
+                             !!currentTeam.bestOutfitNationId ||
+                             !!currentTeam.worstSongNationId;
+        setHasUserSubmittedFinalPredictions(existingPreds);
+      } else {
+        setHasUserSubmittedFinalPredictions(false);
+      }
     } else if (!user) {
       setUserTeam(null); 
+      setHasUserSubmittedFinalPredictions(false);
     }
     setOtherTeams(processedAndScoredTeams.filter(team => !user || team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
   }, [processedAndScoredTeams, user]);
@@ -326,59 +337,6 @@ export default function TeamsPage() {
     );
   };
 
-  const renderCategoryPickCell = (team: TeamWithScore, category: 'bestSong' | 'bestPerf' | 'bestOutfit' | 'worstSong') => {
-    let nationId: string | undefined;
-    let topId: string | undefined;
-    let IconComponent: React.ElementType;
-
-    const topSongNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc')[0]?.id;
-    const worstSongNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc')[0]?.id;
-    const topPerformanceNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc')[0]?.id;
-    const topOutfitNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc')[0]?.id;
-
-    switch (category) {
-      case 'bestSong':
-        nationId = team.bestSongNationId;
-        topId = topSongNationId;
-        IconComponent = Music2;
-        break;
-      case 'bestPerf':
-        nationId = team.bestPerformanceNationId;
-        topId = topPerformanceNationId;
-        IconComponent = Star;
-        break;
-      case 'bestOutfit':
-        nationId = team.bestOutfitNationId;
-        topId = topOutfitNationId;
-        IconComponent = Shirt;
-        break;
-      case 'worstSong':
-        nationId = team.worstSongNationId;
-        topId = worstSongNationId;
-        IconComponent = ThumbsDown;
-        break;
-    }
-    const nation = nationId ? nationsMap.get(nationId) : null;
-    const isCorrectPick = nationId && nationId === topId;
-
-    if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
-
-    return (
-      <div className="flex items-center gap-1.5">
-        {isCorrectPick && !leaderboardLockedAdmin && <IconComponent className="h-3.5 w-3.5 text-accent flex-shrink-0" />}
-        <Image
-          src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
-          alt={nation.name}
-          width={20}
-          height={13}
-          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-          data-ai-hint={`${nation.name} flag icon`}
-        />
-        <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>{nation.name}</span>
-      </div>
-    );
-  };
-
 
   if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null || finalPredictionsEnabledAdmin === null) {
     return (
@@ -409,8 +367,6 @@ export default function TeamsPage() {
     )
   }
   
-  const hasUserSubmittedFinalPredictions = userTeam && userTeam.bestSongNationId !== "" && userTeam.bestSongNationId !== undefined;
-
 
   return (
     <div className="space-y-8">
@@ -472,7 +428,7 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
           />
            <div className="mt-4 flex justify-center">
-            {userTeam && !teamsLockedAdmin && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
+            {userTeam && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="mr-2 h-5 w-5" />
@@ -480,7 +436,7 @@ export default function TeamsPage() {
                     </Link>
                 </Button>
             )}
-            {userTeam && (teamsLockedAdmin || (!teamsLockedAdmin && !finalPredictionsEnabledAdmin)) && (
+            {userTeam && !finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
                 <Button variant="outline" size="lg" disabled>
                     <Lock className="h-5 w-5 mr-2"/>
                     <span className="mr-2">Pronostici Bloccati</span>
@@ -559,6 +515,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
+                     {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -574,10 +531,14 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
+                       {!leaderboardLockedAdmin && (
+                        <TableCell className="text-right font-semibold">
+                            {typeof team.score === 'number' ? team.score : 'N/D'}
+                        </TableCell>
+                       )}
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
-                             const nationDetail = team.primaSquadraDetails?.find(d => d.id === nationId);
                              return (
                                 <PrimaSquadraNationDisplay 
                                 key={`${team.id}-${nationId}-prima`} 
@@ -587,7 +548,7 @@ export default function TeamsPage() {
                                     countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
                                     artistName: nationsMap.get(nationId)?.artistName,
                                     songTitle: nationsMap.get(nationId)?.songTitle,
-                                    points: nationDetail?.points ?? 0, 
+                                    points: 0, // Points details are not shown here
                                     actualRank: nationsMap.get(nationId)?.ranking
                                 }}
                                 leaderboardLocked={leaderboardLockedAdmin}
@@ -611,3 +572,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+

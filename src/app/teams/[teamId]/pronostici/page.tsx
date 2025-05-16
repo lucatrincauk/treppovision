@@ -12,7 +12,7 @@ import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft, Info } f
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
+// Removed getTeamsLockedStatus import
 import { getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 
 export default function EditFinalAnswersPage() {
@@ -25,26 +25,26 @@ export default function EditFinalAnswersPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
+  // const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null); // This is no longer primary gatekeeper
   const [finalPredictionsEnabled, setFinalPredictionsEnabled] = useState<boolean | null>(null);
   const [hasExistingPredictions, setHasExistingPredictions] = useState(false);
 
   useEffect(() => {
     async function fetchTeamAndSettings() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authLoading);
+        setIsLoadingData(authIsLoading);
         return;
       }
 
       setIsLoadingData(true);
       setError(null);
       try {
-        const [fetchedTeam, generalTeamsLockStatus, finalPredictionsEnableStatus] = await Promise.all([
+        // Only fetch finalPredictionsEnableStatus, teamsLocked is not relevant for this page anymore
+        const [fetchedTeam, finalPredictionsEnableStatus] = await Promise.all([
           getTeamById(teamId),
-          getTeamsLockedStatus(),
           getFinalPredictionsEnabledStatus()
         ]);
-        setTeamsLocked(generalTeamsLockStatus);
+        // setTeamsLocked(generalTeamsLockStatus); // Removed
         setFinalPredictionsEnabled(finalPredictionsEnableStatus);
 
         if (fetchedTeam) {
@@ -57,10 +57,6 @@ export default function EditFinalAnswersPage() {
 
           if (user && fetchedTeam.userId === user.uid) {
             setIsAuthorized(true);
-            if (existingPreds) {
-              // If predictions exist, and user is authorized, redirect or show message.
-              // For now, we'll let the form handle read-only, but page logic can redirect.
-            }
           } else {
             setIsAuthorized(false);
             setError("Non sei autorizzato a modificare i pronostici di questa squadra.");
@@ -79,9 +75,9 @@ export default function EditFinalAnswersPage() {
     }
 
     fetchTeamAndSettings();
-  }, [teamId, user, authLoading, router]); // Added router to dependencies for potential redirect
+  }, [teamId, user, authLoading, router]);
 
-  if (authLoading || isLoadingData || teamsLocked === null || finalPredictionsEnabled === null) {
+  if (authLoading || isLoadingData || finalPredictionsEnabled === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -135,20 +131,8 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  if (teamsLocked) {
-    return (
-      <Alert variant="destructive" className="max-w-lg mx-auto">
-        <Lock className="h-4 w-4" />
-        <AlertTitle>Modifica Pronostici Bloccata</AlertTitle>
-        <AlertDescription>
-          L'amministratore ha temporaneamente bloccato la modifica dei pronostici e delle squadre. Riprova più tardi.
-          <Button variant="link" asChild className="p-0 ml-1">
-            <Link href="/teams">Torna alle Squadre</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // teamsLocked check removed from here as it doesn't gate final predictions anymore
+  // if (teamsLocked) { ... }
 
   if (!isAuthorized || !team) {
      return (
@@ -205,9 +189,11 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
-            <span className="block mt-1 text-destructive font-medium">
-                Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.
-            </span>
+             {!hasExistingPredictions && (
+                <span className="block mt-1 text-destructive font-medium">
+                    Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.
+                </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -221,3 +207,4 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
+

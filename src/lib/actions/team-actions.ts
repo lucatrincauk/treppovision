@@ -39,10 +39,10 @@ export async function createTeamAction(
     return { success: false, message: "Il nome del team è obbligatorio." };
   }
   if (!data.founderChoices || data.founderChoices.length !== 3) {
-    return { success: false, message: "Devi selezionare esattamente tre nazioni per la squadra principale." };
+    return { success: false, message: "Devi selezionare esattamente tre nazioni." };
   }
   if (new Set(data.founderChoices).size !== 3) {
-    return { success: false, message: "Le tre nazioni per la squadra principale devono essere diverse." };
+    return { success: false, message: "Le tre nazioni scelte devono essere diverse." };
   }
   if (!data.creatorDisplayName) {
     return { success: false, message: "Nome dell'utente mancante." };
@@ -52,8 +52,8 @@ export async function createTeamAction(
     const teamPayloadToSave: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'score' | 'rank' | 'primaSquadraDetails' | 'categoryPicksDetails'> & { createdAt: any } = {
       userId,
       name: data.name,
-      founderChoices: data.founderChoices,
       creatorDisplayName: data.creatorDisplayName,
+      founderChoices: data.founderChoices,
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
@@ -77,7 +77,7 @@ export async function createTeamAction(
 
 export async function updateTeamAction(
   teamId: string,
-  data: TeamCoreFormData, // Now only core data
+  data: TeamCoreFormData, 
   userId: string | undefined
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
@@ -109,15 +109,19 @@ export async function updateTeamAction(
       return { success: false, message: "Il nome del team è obbligatorio." };
     }
     if (!data.founderChoices || data.founderChoices.length !== 3) {
-      return { success: false, message: "Devi selezionare esattamente tre nazioni per la squadra principale." };
+      return { success: false, message: "Devi selezionare esattamente tre nazioni." };
     }
     if (new Set(data.founderChoices).size !== 3) {
-      return { success: false, message: "Le tre nazioni per la squadra principale devono essere diverse." };
+      return { success: false, message: "Le tre nazioni scelte devono essere diverse." };
+    }
+    if (!data.creatorDisplayName) {
+      return { success: false, message: "Nome dell'utente mancante per l'aggiornamento." };
     }
     
     const teamPayloadToUpdate = {
       name: data.name,
       founderChoices: data.founderChoices,
+      creatorDisplayName: data.creatorDisplayName, // Ensure this is updated if needed
       updatedAt: serverTimestamp(),
     };
 
@@ -147,11 +151,9 @@ export async function updateTeamFinalAnswersAction(
     return { success: false, message: "ID del team mancante." };
   }
 
-  const adminSettings = await getAdminSettingsAction();
-  if (adminSettings.teamsLocked) {
-    return { success: false, message: "La modifica dei pronostici è temporaneamente bloccata dall'amministratore." };
-  }
-  if (!adminSettings.finalPredictionsEnabled) {
+  // `teamsLocked` setting no longer gates final predictions
+  const finalPredictionsEnabled = await getFinalPredictionsEnabledStatus();
+  if (!finalPredictionsEnabled) {
     return { success: false, message: "L'inserimento dei pronostici finali è attualmente disabilitato dall'amministratore." };
   }
 
@@ -165,6 +167,16 @@ export async function updateTeamFinalAnswersAction(
     const teamDataInDb = teamSnap.data() as Team; 
     if (teamDataInDb.userId !== userId) {
       return { success: false, message: "Non sei autorizzato a modificare i pronostici di questo team." };
+    }
+    
+    // Check if predictions have already been submitted
+    const hasExistingPredictions = !!teamDataInDb.bestSongNationId ||
+                                 !!teamDataInDb.bestPerformanceNationId ||
+                                 !!teamDataInDb.bestOutfitNationId ||
+                                 !!teamDataInDb.worstSongNationId;
+
+    if (hasExistingPredictions) {
+      return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
     if (!data.bestSongNationId || !data.bestPerformanceNationId || !data.bestOutfitNationId || !data.worstSongNationId) {
