@@ -58,8 +58,8 @@ export function NationsSubNavigation() {
   return (
     <nav className="mb-8 flex items-center justify-center space-x-1 rounded-md bg-muted p-1 sm:space-x-2">
       {subNavItems.map((item) => {
-        const isLeaderboardLink = item.id === "trepposcore" || item.id === "final"; // Could be more granular if needed
-        const isDisabled = isLeaderboardLink && leaderboardLocked;
+        const isTreppoScoreLink = item.id === "trepposcore";
+        const isDisabled = isTreppoScoreLink && leaderboardLocked;
 
         return (
           <Link
