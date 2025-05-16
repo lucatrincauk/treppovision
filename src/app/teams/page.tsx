@@ -343,49 +343,60 @@ export default function TeamsPage() {
     </div>
   );
 
+  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: PrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
+    const nation = nationsMap.get(detail.id);
+    if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <Image
+          src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+          alt={nation.name}
+          width={20}
+          height={13}
+          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+          data-ai-hint={`${nation.name} flag icon`}
+        />
+        <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
+          {nation.name}
+          {!leaderboardLocked && nation.ranking && nation.ranking > 0 && (
+            <span className="text-muted-foreground/80 ml-0.5">({nation.ranking}°)</span>
+          )}
+        </span>
+      </div>
+    );
+  };
+
   const renderCategoryPickCell = (team: TeamWithScore, category: 'bestSong' | 'bestPerf' | 'bestOutfit' | 'worstSong', leaderboardLocked: boolean | null) => {
     let nationId: string | undefined;
-    let IconComponent: React.ElementType = Music2; // Default Icon
+    let IconComponent: React.ElementType = Music2; 
     let isCorrectPick = false;
     let topId: string | null = null;
-    let rankInCategory: number | undefined = undefined;
     
     if (nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
         const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
             return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
         };
-        const getRankForNationInCategory = (nationIdToCheck?: string, catKey?: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc' = 'desc') => {
-            if (!nationIdToCheck || !catKey) return undefined;
-            const sortedList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order);
-            const index = sortedList.findIndex(n => n.id === nationIdToCheck);
-            return index !== -1 ? index + 1 : undefined;
-        };
-
 
         switch(category) {
             case 'bestSong': 
                 nationId = team.bestSongNationId;
                 topId = getTopNationId('averageSongScore', 'desc');
                 IconComponent = Music2;
-                rankInCategory = getRankForNationInCategory(nationId, 'averageSongScore', 'desc');
                 break;
             case 'bestPerf': 
                 nationId = team.bestPerformanceNationId;
                 topId = getTopNationId('averagePerformanceScore', 'desc');
                 IconComponent = Star;
-                rankInCategory = getRankForNationInCategory(nationId, 'averagePerformanceScore', 'desc');
                 break;
             case 'bestOutfit': 
                 nationId = team.bestOutfitNationId;
                 topId = getTopNationId('averageOutfitScore', 'desc');
                 IconComponent = Shirt;
-                rankInCategory = getRankForNationInCategory(nationId, 'averageOutfitScore', 'desc');
                 break;
             case 'worstSong': 
                 nationId = team.worstSongNationId;
                 topId = getTopNationId('averageSongScore', 'asc');
                 IconComponent = ThumbsDown;
-                rankInCategory = getRankForNationInCategory(nationId, 'averageSongScore', 'asc');
                 break;
         }
         isCorrectPick = nationId === topId && nationId !== undefined;
@@ -402,11 +413,6 @@ export default function TeamsPage() {
     
     if (!nation) return <span className="text-muted-foreground text-xs">N/D</span>;
 
-    let rankSuffix = "";
-    if (category === "Peggior Canzone") rankSuffix = " peggiore";
-    else if (category !== "Miglior Canzone") rankSuffix = " in cat.";
-
-
     return (
       <div className="flex items-center gap-1.5">
         <Image
@@ -417,15 +423,10 @@ export default function TeamsPage() {
           className="rounded-sm border border-border/30 object-contain flex-shrink-0"
           data-ai-hint={`${nation.name} flag icon`}
         />
-        <div className="flex flex-col items-start">
-            <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
-                {nation.name}
-                {!leaderboardLockedAdmin && rankInCategory && (
-                     <span className="text-muted-foreground/80 ml-0.5">({rankInCategory}°{rankSuffix})</span>
-                )}
-            </span>
-        </div>
-        {!leaderboardLockedAdmin && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
+        <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
+          {nation.name}
+        </span>
+        {!leaderboardLocked && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
       </div>
     );
   };
@@ -498,7 +499,7 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
             {!isLoadingUserTeams && !teamsLockedAdmin && userTeams.length > 0 && (
-              <Button asChild variant="default" size="sm">
+              <Button asChild variant="secondary" size="sm">
                 <Link href={`/teams/${userTeams[0].id}/edit`}>
                   <Edit className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Modifica la Tua Squadra</span>
@@ -582,7 +583,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
-                    {!leaderboardLockedAdmin && <TableHead className="w-[80px] text-right">Punti</TableHead>}
+                    {!leaderboardLockedAdmin && <TableHead className="w-[80px] text-right hidden lg:table-cell">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
@@ -603,34 +604,26 @@ export default function TeamsPage() {
                         )}
                       </TableCell>
                        {!leaderboardLockedAdmin && (
-                        <TableCell className="text-right font-semibold">
+                        <TableCell className="text-right font-semibold hidden lg:table-cell">
                           {typeof team.score === 'number' ? team.score : 'N/D'}
                         </TableCell>
                        )}
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {(team.founderChoices || []).map(nationId => {
-                            const nation = nationsMap.get(nationId);
-                            if (!nation) return <span key={nationId} className="text-xs text-muted-foreground">N/D</span>;
-                            return (
-                              <div key={nationId} className="flex items-center gap-1.5">
-                                <Image
-                                  src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
-                                  alt={nation.name}
-                                  width={20}
-                                  height={13}
-                                  className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-                                  data-ai-hint={`${nation.name} flag icon`}
-                                />
-                                <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
-                                    {nation.name}
-                                    {!leaderboardLockedAdmin && nation.ranking && nation.ranking > 0 && (
-                                        <span className="text-muted-foreground/80 ml-0.5">({nation.ranking}°)</span>
-                                    )}
-                                </span>
-                              </div>
-                            );
-                          })}
+                          {(team.founderChoices || []).map(nationId => (
+                            <PrimaSquadraNationDisplay 
+                              key={`${team.id}-${nationId}-prima`} 
+                              detail={{
+                                id: nationId, 
+                                name: nationsMap.get(nationId)?.name || 'Sconosciuto',
+                                countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
+                                // No points/rank needed for this simplified table view
+                                points: 0, 
+                                actualRank: nationsMap.get(nationId)?.ranking
+                              }}
+                              leaderboardLocked={leaderboardLockedAdmin}
+                            />
+                          ))}
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestSong', leaderboardLockedAdmin)}</TableCell>
