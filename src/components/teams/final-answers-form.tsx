@@ -33,6 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
 const finalAnswersFormZodSchema = z.object({
+  // bestTreppoScoreNationId: z.string().min(1, "Devi selezionare la nazione per Miglior TreppoScore."), // REMOVED
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
@@ -50,15 +51,19 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [nations, setNations] = React.useState<Nation[]>([]);
+  const [allNations, setAllNations] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
+
+  const sortedNations = React.useMemo(() => {
+    return [...allNations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [allNations]);
   
   React.useEffect(() => {
     async function fetchData() {
       setIsLoadingNations(true);
       try {
         const fetchedNations = await getNations();
-        setNations(fetchedNations);
+        setAllNations(fetchedNations);
       } catch (error) {
         console.error("Failed to fetch data for final answers form:", error);
         toast({
@@ -76,6 +81,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const form = useForm<TeamFinalAnswersFormData>({
     resolver: zodResolver(finalAnswersFormZodSchema),
     defaultValues: initialData || {
+      // bestTreppoScoreNationId: "", // REMOVED
       bestSongNationId: "",
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
@@ -86,6 +92,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   React.useEffect(() => {
     if (initialData) {
       form.reset({
+        // bestTreppoScoreNationId: initialData.bestTreppoScoreNationId || "", // REMOVED
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
         bestOutfitNationId: initialData.bestOutfitNationId || "",
@@ -131,7 +138,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     );
   }
   
-  if (nations.length === 0 && !isLoadingNations) {
+  if (sortedNations.length === 0 && !isLoadingNations) {
     return (
          <Alert variant="destructive">
             <Users className="h-4 w-4" />
@@ -167,6 +174,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       <>
         <Form {...form}>
           <form className="space-y-6 py-4">
+            {/* Field for bestTreppoScoreNationId REMOVED */}
             <FormField
               control={form.control}
               name="bestSongNationId"
@@ -174,7 +182,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                 <FormItem>
                   <FormLabel>Migliore canzone</FormLabel>
                   <Select value={field.value || ""} disabled={true}>
-                    <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
                 </FormItem>
               )}
@@ -186,7 +194,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                 <FormItem>
                   <FormLabel>Migliore performance</FormLabel>
                    <Select value={field.value || ""} disabled={true}>
-                     <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
                 </FormItem>
               )}
@@ -198,7 +206,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                 <FormItem>
                   <FormLabel>Migliore outfit</FormLabel>
                    <Select value={field.value || ""} disabled={true}>
-                     <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
                 </FormItem>
               )}
@@ -208,9 +216,9 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
               name="worstSongNationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Peggiore canzone</FormLabel>
+                  <FormLabel>Peggior Canzone</FormLabel>
                   <Select value={field.value || ""} disabled={true}>
-                    <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
                 </FormItem>
               )}
@@ -225,22 +233,23 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+        {/* Field for bestTreppoScoreNationId REMOVED */}
         <FormField
           control={form.control}
           name="bestSongNationId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
-                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
-                      {field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : (nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                      {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {nations.map((nation) => (
+                  {sortedNations.map((nation) => (
                     <SelectItem key={`${nation.id}-bestSong`} value={nation.id}>
                        {renderNationSelectItem(nation)}
                     </SelectItem>
@@ -259,16 +268,16 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore performance</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
-                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
-                        {field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : (nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                        {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {nations.map((nation) => (
+                  {sortedNations.map((nation) => (
                     <SelectItem key={`${nation.id}-bestPerf`} value={nation.id}>
                       {renderNationSelectItem(nation)}
                     </SelectItem>
@@ -287,16 +296,16 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore outfit</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
-                        {field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : (nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                        {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {nations.map((nation) => (
+                  {sortedNations.map((nation) => (
                     <SelectItem key={`${nation.id}-bestOutfit`} value={nation.id}>
                       {renderNationSelectItem(nation)}
                     </SelectItem>
@@ -314,17 +323,17 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           name="worstSongNationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Peggiore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
+              <FormLabel>Peggior Canzone</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
-                        {field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : (nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                        {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {nations.map((nation) => (
+                  {sortedNations.map((nation) => (
                     <SelectItem key={`${nation.id}-worstSong`} value={nation.id}>
                        {renderNationSelectItem(nation)}
                     </SelectItem>
@@ -350,7 +359,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
         <Button
           type="submit"
           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-          disabled={isSubmitting || isLoadingNations || nations.length === 0 || isReadOnly}
+          disabled={isSubmitting || isLoadingNations || sortedNations.length === 0 || isReadOnly}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
@@ -360,4 +369,3 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </Form>
   );
 }
-

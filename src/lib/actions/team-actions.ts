@@ -54,10 +54,11 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
+      // bestTreppoScoreNationId: "", // REMOVED
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
-      worstSongNationId: "",
+      worstSongNationId: "", // This was originally "worstSongNationId", ensure consistency if it was changed and then reverted
       createdAt: serverTimestamp(),
     };
 
@@ -168,7 +169,9 @@ export async function updateTeamFinalAnswersAction(
       return { success: false, message: "Non sei autorizzato a modificare i pronostici di questo team." };
     }
     
-    const hasExistingPredictions = !!teamDataInDb.bestSongNationId ||
+    const hasExistingPredictions = 
+                                 // !!teamDataInDb.bestTreppoScoreNationId || // REMOVED
+                                 !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
                                  !!teamDataInDb.worstSongNationId;
@@ -177,11 +180,16 @@ export async function updateTeamFinalAnswersAction(
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
-    if (!data.bestSongNationId || !data.bestPerformanceNationId || !data.bestOutfitNationId || !data.worstSongNationId) {
+    if (/*!data.bestTreppoScoreNationId ||*/ // REMOVED
+        !data.bestSongNationId || 
+        !data.bestPerformanceNationId || 
+        !data.bestOutfitNationId || 
+        !data.worstSongNationId) {
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
     
     const finalAnswersToUpdate = {
+      // bestTreppoScoreNationId: data.bestTreppoScoreNationId, // REMOVED
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,
@@ -254,7 +262,3 @@ export async function getTeamsLockedStatus(): Promise<boolean> {
     const settings = await getAdminSettingsAction();
     return settings.teamsLocked;
 }
-
-
-
-    

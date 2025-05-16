@@ -68,7 +68,8 @@ export default function EditFinalAnswersPage() {
 
         if (fetchedTeam) {
           setTeam(fetchedTeam);
-          const existingPreds = !!fetchedTeam.bestSongNationId ||
+          const existingPreds = 
+                               !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
                                !!fetchedTeam.bestOutfitNationId ||
                                !!fetchedTeam.worstSongNationId;
@@ -84,7 +85,7 @@ export default function EditFinalAnswersPage() {
           setError("Squadra non trovata.");
           setIsAuthorized(false);
         }
-      } catch (fetchError: any) {
+      } catch (fetchError: any) { // Added missing opening brace for catch block
         console.error("Failed to fetch team data for final answers:", fetchError);
         setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
         setIsAuthorized(false);
@@ -231,6 +232,15 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
+            {!hasExistingPredictions && (
+               <Alert variant="destructive" className="mt-2">
+                 <AlertTriangle className="h-4 w-4" />
+                 <AlertTitle>Attenzione</AlertTitle>
+                 <AlertDescription>
+                    I pronostici finali, una volta inviati, non possono essere modificati.
+                 </AlertDescription>
+               </Alert>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -244,6 +254,4 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
-
-    
 

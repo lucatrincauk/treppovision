@@ -88,10 +88,11 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
+  // bestTreppoScoreNationId: string; // REMOVED
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstSongNationId: string; // This should refer to the original "Peggior Canzone", not "Peggior TreppoScore"
 }
 
 
@@ -102,10 +103,11 @@ export interface Team {
   name: string;
   founderChoices: string[];
 
+  // bestTreppoScoreNationId: string; // REMOVED
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstSongNationId: string; // This should refer to the original "Peggior Canzone"
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -143,13 +145,13 @@ export interface NationGlobalCategorizedScores {
   averageSongScore: number | null;
   averagePerformanceScore: number | null;
   averageOutfitScore: number | null;
-  overallAverageScore: number | null;
+  overallAverageScore: number | null; // Still needed for general TreppoScore ranking if used elsewhere
   voteCount: number;
 }
 
 
 export interface NationWithTreppoScore extends Nation {
-  globalTreppoScore: number | null;
+  globalTreppoScore: number | null; // Based on overallAverageScore
   globalVoteCount: number;
   userAverageScore?: number | null;
 }
@@ -162,4 +164,6 @@ export interface TeamWithScore extends Team {
   isTied?: boolean;
   bonusCampionePronostici?: boolean;
   bonusEnPleinTop5?: boolean;
+  // bestTreppoScoreNationId?: string; // REMOVED
+  // worstTreppoScoreNationId?: string; // Keep worstSongNationId as per schema
 }
