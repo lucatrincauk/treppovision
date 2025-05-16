@@ -181,7 +181,7 @@ export default function EditFinalAnswersPage() {
             Pronostici Finali per: {team.name}
           </CardTitle>
           <CardDescription>
-            Inserisci o aggiorna i tuoi pronostici per le categorie basate sul voto degli utenti.
+            Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
           </CardDescription>
         </CardHeader>
         <CardContent>
