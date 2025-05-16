@@ -42,10 +42,10 @@ const finalAnswersFormZodSchema = z.object({
 interface FinalAnswersFormProps {
   initialData: TeamFinalAnswersFormData;
   teamId: string;
-  onSuccess?: () => void; // Optional callback to close dialog
+  // onSuccess prop is no longer needed as navigation is handled internally
 }
 
-export function FinalAnswersForm({ initialData, teamId, onSuccess }: FinalAnswersFormProps) {
+export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -89,7 +89,6 @@ export function FinalAnswersForm({ initialData, teamId, onSuccess }: FinalAnswer
   });
 
   React.useEffect(() => {
-    // Reset form if initialData changes (e.g., parent re-fetches team data)
     if (initialData) {
       form.reset({
         bestSongNationId: initialData.bestSongNationId || "",
@@ -117,8 +116,7 @@ export function FinalAnswersForm({ initialData, teamId, onSuccess }: FinalAnswer
         title: "Pronostici Finali Aggiornati!",
         description: "I tuoi pronostici sono stati salvati.",
       });
-      if (onSuccess) onSuccess();
-      router.refresh(); 
+      router.push('/teams'); // Redirect to teams page on success
     } else {
       toast({
         title: "Errore Aggiornamento Pronostici",
@@ -153,7 +151,7 @@ export function FinalAnswersForm({ initialData, teamId, onSuccess }: FinalAnswer
   if (nations.length === 0 && !isLoadingNations) {
     return (
          <Alert variant="destructive">
-            <Users className="h-4 w-4" /> {/* Assuming Users icon is appropriate here */}
+            <Users className="h-4 w-4" />
             <AlertTitle>Nazioni Mancanti</AlertTitle>
             <AlertDescription>
                 Impossibile caricare l'elenco delle nazioni. Assicurati che ci siano nazioni in Firestore per popolare le selezioni.
@@ -163,7 +161,7 @@ export function FinalAnswersForm({ initialData, teamId, onSuccess }: FinalAnswer
   }
 
   const renderNationSelectItem = (nation: Nation) => (
-    <div className="flex items-center space-x-2 py-1 w-full">
+    <div className="flex items-center space-x-2 py-1 w-full text-left">
       <Image
         src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
         alt={`Bandiera ${nation.name}`}

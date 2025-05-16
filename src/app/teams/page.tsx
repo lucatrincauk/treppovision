@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, TeamFinalAnswersFormData, PrimaSquadraDetail, CategoryPickDetail } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail, CategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, Music2, Star, Shirt, ThumbsDown, ListOrdered } from "lucide-react"; 
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -106,7 +105,6 @@ export default function TeamsPage() {
   const [isLoadingGlobalScores, setIsLoadingGlobalScores] = useState(true);
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
-  const [isFinalAnswersModalOpen, setIsFinalAnswersModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -180,7 +178,7 @@ export default function TeamsPage() {
     return () => unsubscribeTeams();
   }, []);
 
-  const processedAndScoredTeams = useMemo(() => {
+ const processedAndScoredTeams = useMemo(() => {
     if (isLoadingNations || isLoadingGlobalScores || allNations.length === 0 || leaderboardLockedAdmin === null) {
       return [];
     }
@@ -306,7 +304,7 @@ export default function TeamsPage() {
             </Button>
         )}
          {user && userTeam && !teamsLockedAdmin && (
-            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+            <Button asChild variant="default" size="lg" className="w-full sm:w-auto">
                 <Link href={`/teams/${userTeam.id}/edit`}>
                     <Edit className="h-5 w-5 sm:mr-2" />
                     <span className="hidden sm:inline">Modifica Squadra</span>
@@ -373,7 +371,8 @@ export default function TeamsPage() {
     let isCorrectPick = false;
     if (!leaderboardLocked && nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
         const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
-            return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
+            const sortedList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order);
+            return sortedList.length > 0 ? sortedList[0].id : null;
         };
 
         let topId: string | null = null;
@@ -475,7 +474,14 @@ export default function TeamsPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
-            {/* "Modifica la Tua Squadra" button was here, now moved to header section */}
+             {user && userTeam && !teamsLockedAdmin && (
+                <Button asChild variant="default" size="sm" className="ml-auto">
+                    <Link href={`/teams/${userTeam.id}/edit`}>
+                        <Edit className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Modifica Squadra</span>
+                    </Link>
+                </Button>
+            )}
           </div>
           <TeamListItem 
             team={userTeam} 
@@ -484,51 +490,14 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
             leaderboardLocked={leaderboardLockedAdmin}
           />
-          {/* "Pronostici Finali" button moved here */}
           {userTeam && !teamsLockedAdmin && (
             <div className="mt-4 flex justify-end">
-                <Dialog open={isFinalAnswersModalOpen} onOpenChange={setIsFinalAnswersModalOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="secondary" size="lg">
-                            <ListOrdered className="h-5 w-5 sm:mr-2" />
-                            <span className="hidden sm:inline">Pronostici Finali</span>
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[450px]">
-                        <DialogHeader>
-                        <DialogTitle>Inserisci i Tuoi Pronostici Finali</DialogTitle>
-                        <DialogDescription>
-                            Questi sono i tuoi pronostici per le categorie basate sul voto degli utenti.
-                        </DialogDescription>
-                        </DialogHeader>
-                        {userTeam && (
-                            <FinalAnswersForm 
-                                initialData={{
-                                    bestSongNationId: userTeam.bestSongNationId,
-                                    bestPerformanceNationId: userTeam.bestPerformanceNationId,
-                                    bestOutfitNationId: userTeam.bestOutfitNationId,
-                                    worstSongNationId: userTeam.worstSongNationId,
-                                }}
-                                teamId={userTeam.id}
-                                onSuccess={async () => {
-                                  setIsFinalAnswersModalOpen(false);
-                                  if (user) { 
-                                    setIsLoadingUserTeams(true);
-                                    try {
-                                      const teams = await getTeamsByUserId(user.uid);
-                                      const updatedTeam = teams.length > 0 ? teams[0] as TeamWithScore : null;
-                                      setUserTeam(updatedTeam);
-                                    } catch (err) {
-                                      console.error("Error re-fetching user team after final answers update:", err);
-                                    } finally {
-                                      setIsLoadingUserTeams(false);
-                                    }
-                                  }
-                                }}
-                            />
-                        )}
-                    </DialogContent>
-                </Dialog>
+                <Button asChild variant="secondary" size="lg">
+                    <Link href={`/teams/${userTeam.id}/pronostici`}>
+                        <ListOrdered className="h-5 w-5 sm:mr-2" />
+                        <span className="hidden sm:inline">Pronostici Finali</span>
+                    </Link>
+                </Button>
             </div>
             )}
             {userTeam && teamsLockedAdmin && (
@@ -668,4 +637,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-
