@@ -1,5 +1,5 @@
 
-"use client"; // This directive marks this as a Client Component
+"use client"; 
 
 import { useState, useEffect } from "react";
 import { getNationById, getNations } from "@/lib/nation-service";
@@ -13,15 +13,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
-import { NationDetailImage } from "@/components/nations/nation-detail-image";
+// NationDetailImage component is no longer needed here
 import { UserVoteBadge } from "@/components/nations/user-vote-badge";
 import { AllUsersAverageVoteBadge } from "@/components/nations/all-users-average-vote-badge";
 import type { Nation } from "@/types";
-import { useParams } from 'next/navigation'; // For client-side param changes
+import { useParams } from 'next/navigation'; 
 
 interface NationPageClientProps {
   initialNation: Nation;
-  params: { id: string }; // Passed from server for initial consistency
+  params: { id: string }; 
 }
 
 export default function NationPageClient({ initialNation, params: serverParams }: NationPageClientProps) {
@@ -37,11 +37,32 @@ export default function NationPageClient({ initialNation, params: serverParams }
   const clientParams = useParams();
   const currentNationId = typeof clientParams?.id === 'string' ? clientParams.id : serverParams.id;
 
+  // State for the header background image
+  const [headerBgSrc, setHeaderBgSrc] = useState<string>('');
+  const [headerBgAIHint, setHeaderBgAIHint] = useState<string>('');
+
+  useEffect(() => {
+    if (nation) {
+      // Initial attempt: local JPG
+      setHeaderBgSrc(`/${nation.id}.jpg`);
+      setHeaderBgAIHint(`${nation.name} photo`);
+    }
+  }, [nation]);
+
+  const handleHeaderBgError = () => {
+    // Fallback to flag if local JPG fails
+    if (nation) {
+      setHeaderBgSrc(`https://flagcdn.com/w1280/${nation.countryCode.toLowerCase()}.png`);
+      setHeaderBgAIHint(`${nation.name} flag`);
+    }
+  };
+
+
   useEffect(() => {
     async function fetchAllNationsForNav() {
       setIsLoadingAllNations(true);
       try {
-        const nationsList = await getNations(); // Assumes getNations() sorts by performingOrder
+        const nationsList = await getNations(); 
         setAllNations(nationsList);
       } catch (error) {
         console.error("Error fetching all nations for navigation:", error);
@@ -99,11 +120,6 @@ export default function NationPageClient({ initialNation, params: serverParams }
     );
   }
   
-  const isPlaceholderVideo = nation.youtubeVideoId === 'dQw4w9WgXcQ';
-  const youtubeThumbnailUrl = isPlaceholderVideo 
-    ? `https://placehold.co/480x360.png`
-    : `https://i.ytimg.com/vi/${nation.youtubeVideoId}/hqdefault.jpg`;
-
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-4">
@@ -123,7 +139,6 @@ export default function NationPageClient({ initialNation, params: serverParams }
         </AdminNationControls>
       </div>
 
-      {/* Next/Previous Nation Navigation */}
       <div className="flex justify-between items-center">
         {previousNation ? (
           <Button asChild variant="outline" size="sm">
@@ -154,20 +169,25 @@ export default function NationPageClient({ initialNation, params: serverParams }
       </div>
 
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
-        <div className="absolute inset-0">
-           <Image
-            src={youtubeThumbnailUrl}
-            alt={`Miniatura YouTube ${nation.name}`}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectFit: "cover" }}
-            className="opacity-30 blur-sm scale-110"
-            data-ai-hint={isPlaceholderVideo ? "music stage" : `youtube thumbnail ${nation.artistName}`}
-          />
-        </div>
+        {headerBgSrc && (
+          <div className="absolute inset-0">
+            <Image
+              key={headerBgSrc} // Add key to force re-render if src changes between same-sized images
+              src={headerBgSrc}
+              alt={`Sfondo ${nation.name}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              style={{ objectFit: "cover" }}
+              className="opacity-30 blur-sm scale-110"
+              data-ai-hint={headerBgAIHint}
+              onError={handleHeaderBgError} // Handle error to switch to flag
+              priority // Consider making this conditional if many images are slow to load
+            />
+          </div>
+        )}
         <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
-            <div className="flex-grow"> {/* Text details container */}
+            <div className="flex-grow"> 
               <div className="flex items-center gap-3 mb-2">
                 <Image
                   src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -190,13 +210,7 @@ export default function NationPageClient({ initialNation, params: serverParams }
                 <p className="text-lg text-foreground/80">{nation.artistName}</p>
               </div>
             </div>
-            <div className="flex-shrink-0"> {/* Image container */}
-              <NationDetailImage 
-                nationId={nation.id}
-                nationName={nation.name}
-                countryCode={nation.countryCode}
-              />
-            </div>
+            {/* NationDetailImage removed from here */}
           </div>
           <div className="mt-4 flex flex-wrap gap-2 items-center">
             <UserVoteBadge nationId={nation.id} refreshTrigger={voteUpdateTrigger} />
