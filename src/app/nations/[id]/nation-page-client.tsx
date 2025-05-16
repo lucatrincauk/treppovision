@@ -166,13 +166,8 @@ export default function NationPageClient({ initialNation, params: serverParams }
           />
         </div>
         <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
-          <div className="flex flex-col md:flex-row items-start gap-6">
-            <NationDetailImage 
-              nationId={nation.id}
-              nationName={nation.name}
-              countryCode={nation.countryCode}
-            />
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
+            <div className="flex-grow"> {/* Text details container */}
               <div className="flex items-center gap-3 mb-2">
                 <Image
                   src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
@@ -194,6 +189,13 @@ export default function NationPageClient({ initialNation, params: serverParams }
                 <UserSquare2 className="w-5 h-5 text-accent" />
                 <p className="text-lg text-foreground/80">{nation.artistName}</p>
               </div>
+            </div>
+            <div className="flex-shrink-0"> {/* Image container */}
+              <NationDetailImage 
+                nationId={nation.id}
+                nationName={nation.name}
+                countryCode={nation.countryCode}
+              />
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 items-center">
