@@ -182,7 +182,6 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci o aggiorna i tuoi pronostici per le categorie basate sul voto degli utenti.
-            {hasExistingPredictions && <span className="block mt-2 font-semibold text-destructive">Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.</span>}
           </CardDescription>
         </CardHeader>
         <CardContent>
