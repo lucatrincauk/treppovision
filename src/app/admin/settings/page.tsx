@@ -88,19 +88,19 @@ export default function AdminSettingsPage() {
 
   const handleToggleSetting = async (
     settingKey: keyof AdminSettings, 
-    locked: boolean, 
+    valueToStoreForSetting: boolean, // This is the direct value to store (e.g., true if teamsLocked=true)
     setSubmittingState: React.Dispatch<React.SetStateAction<boolean>>,
     toastTitle: string,
-    toastDescriptionLocked: string,
-    toastDescriptionUnlocked: string
+    toastDescriptionIfTrue: string, // Description when valueToStoreForSetting is true
+    toastDescriptionIfFalse: string // Description when valueToStoreForSetting is false
   ) => {
     setSubmittingState(true);
-    const result = await updateAdminSettingsAction({ [settingKey]: locked });
+    const result = await updateAdminSettingsAction({ [settingKey]: valueToStoreForSetting });
     if (result.success) {
-      setSettings(prev => prev ? { ...prev, [settingKey]: locked } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, [settingKey]: locked });
+      setSettings(prev => prev ? { ...prev, [settingKey]: valueToStoreForSetting } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, [settingKey]: valueToStoreForSetting });
       toast({
         title: toastTitle,
-        description: locked ? toastDescriptionLocked : toastDescriptionUnlocked,
+        description: valueToStoreForSetting ? toastDescriptionIfTrue : toastDescriptionIfFalse,
       });
     } else {
       toast({
@@ -123,7 +123,7 @@ export default function AdminSettingsPage() {
       if (index === -1) return prevNations;
 
       const newNationsArray = [...prevNations];
-      const item = newNationsArray.splice(index, 1)[0];
+      const itemToMove = newNationsArray.splice(index, 1)[0];
 
       let newIndex = index;
       if (direction === 'up' && index > 0) {
@@ -131,21 +131,20 @@ export default function AdminSettingsPage() {
       } else if (direction === 'down' && index < newNationsArray.length) {
         newIndex = index + 1;
       }
-      newNationsArray.splice(newIndex, 0, item);
+      newNationsArray.splice(newIndex, 0, itemToMove);
       
-      const newRankingsInput = new Map(rankingsInput);
+      const newRankingsInputMap = new Map(rankingsInput);
       newNationsArray.forEach((nation, idx) => {
         const newTargetRankString = String(idx + 1);
-        const currentRankStringInInput = newRankingsInput.get(nation.id) ?? "";
-        if (newTargetRankString !== currentRankStringInInput) {
-           newRankingsInput.set(nation.id, newTargetRankString);
-        }
+        const currentRankStringInInput = newRankingsInputMap.get(nation.id) ?? "";
+         if (newTargetRankString !== currentRankStringInInput) {
+           handleRankingInputChange(nation.id, newTargetRankString);
+         }
       });
-      setRankingsInput(newRankingsInput); // This will visually update inputs
       
       return newNationsArray;
     });
-  }, [rankingsInput, handleRankingInputChange]); 
+  }, [nations, rankingsInput, handleRankingInputChange]); 
 
   const handleSaveAllChangedRankings = async () => {
     setIsSavingAll(true);
@@ -153,7 +152,7 @@ export default function AdminSettingsPage() {
     let successfulSaves = 0;
     const promises = [];
 
-    for (const nation of allNationsStable) { // Iterate over a stable list
+    for (const nation of allNationsStable) { 
       const currentInputValue = rankingsInput.get(nation.id) ?? "";
       const originalSavedRank = initialRankingsMap.get(nation.id) ?? "";
 
@@ -164,7 +163,6 @@ export default function AdminSettingsPage() {
             .then(result => {
               if (result.success) {
                 successfulSaves++;
-                // Optimistically update the local nations array's ranking for immediate UI consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
@@ -189,7 +187,6 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
-      // Update initialRankingsMap to reflect the new saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -261,20 +258,31 @@ export default function AdminSettingsPage() {
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
                 <Label htmlFor="teams-locked-switch" className="text-base font-medium">
-                    Blocca Modifica Squadre
+                    Abilita Modifica Squadre
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                    Se attivo, gli utenti non potranno creare o modificare le loro squadre.
+                    Se attivo, gli utenti potranno creare e modificare le loro squadre.
                 </p>
             </div>
             <div className="flex items-center space-x-2">
+              {/* Icon logic: if teamsLocked is true (meaning editing is disabled), show Lock icon.
+                   If teamsLocked is false (meaning editing is enabled by the switch), show Unlock icon. */}
               {settings.teamsLocked ? <Lock className="text-destructive" /> : <Unlock className="text-primary" />}
               <Switch
                 id="teams-locked-switch"
-                checked={settings.teamsLocked}
-                onCheckedChange={(locked) => handleToggleSetting('teamsLocked', locked, setIsSubmittingTeams, "Impostazioni Squadre Aggiornate", "Modifica squadre bloccata.", "Modifica squadre sbloccata.")}
+                checked={!settings.teamsLocked} // Switch is ON when teams are NOT locked (i.e., editing is enabled)
+                onCheckedChange={(enabled) => 
+                  handleToggleSetting(
+                    'teamsLocked', 
+                    !enabled, // If switch is ON (enabled=true), teamsLocked should be false. If OFF, teamsLocked true.
+                    setIsSubmittingTeams, 
+                    "Impostazioni Squadre Aggiornate", 
+                    "Modifica squadre disabilitata.", // This is when !enabled is true (teamsLocked = true)
+                    "Modifica squadre abilitata."     // This is when !enabled is false (teamsLocked = false)
+                  )
+                }
                 disabled={isSubmittingTeams}
-                aria-label="Blocca modifica squadre"
+                aria-label="Abilita modifica squadre"
               />
             </div>
           </div>
@@ -462,4 +470,3 @@ export default function AdminSettingsPage() {
     
 
     
-
