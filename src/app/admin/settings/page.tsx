@@ -45,7 +45,9 @@ export default function AdminSettingsPage() {
             getNations() // Fetches nations sorted by performingOrder
           ]);
           setSettings(currentSettings);
-          setNations(fetchedNations); // This now represents the visual order, initially by performingOrder
+          // Initialize nations state based on performingOrder for initial visual order
+          const sortedNations = [...fetchedNations].sort((a, b) => (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity));
+          setNations(sortedNations); 
 
           const initialRankings = new Map<string, string>();
           fetchedNations.forEach(nation => {
@@ -165,11 +167,12 @@ export default function AdminSettingsPage() {
   };
 
   const applyVisualOrderToRankings = () => {
-    const newRankingsMap = new Map<string, string>();
     nations.forEach((nation, index) => {
       const newRankString = String(index + 1);
-      newRankingsMap.set(nation.id, newRankString);
-      handleRankingInputChange(nation.id, newRankString);
+      // This directly updates the rankingsInput state via handleRankingInputChange,
+      // which should trigger re-renders of the Input components.
+      // It also queues the debounced save.
+      handleRankingInputChange(nation.id, newRankString); 
     });
     toast({ title: "Ordine Applicato", description: "I ranking sono stati aggiornati in base all'ordine visuale. Salvataggio in corso..." });
   };
@@ -347,7 +350,6 @@ export default function AdminSettingsPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center">
-                           <span className="text-sm text-muted-foreground mr-2 tabular-nums">({index + 1})</span>
                           <Input
                             type="text"
                             value={rankingsInput.get(nation.id) ?? ""}
@@ -373,3 +375,4 @@ export default function AdminSettingsPage() {
   );
 }
 
+    
