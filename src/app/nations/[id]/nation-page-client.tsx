@@ -63,7 +63,9 @@ export default function NationPageClient({ initialNation, params: serverParams }
       setIsLoadingAllNations(true);
       try {
         const nationsList = await getNations(); 
-        setAllNations(nationsList);
+        // Ensure nations are sorted by performingOrder for consistent navigation
+        const sortedNations = nationsList.sort((a, b) => (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity));
+        setAllNations(sortedNations);
       } catch (error) {
         console.error("Error fetching all nations for navigation:", error);
         setAllNations([]);
@@ -178,14 +180,14 @@ export default function NationPageClient({ initialNation, params: serverParams }
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               style={{ objectFit: "cover" }}
-              className="opacity-30 blur-sm scale-110"
+              className="opacity-40 blur-sm scale-110" // Increased opacity
               data-ai-hint={headerBgAIHint}
               onError={handleHeaderBgError} // Handle error to switch to flag
               priority // Consider making this conditional if many images are slow to load
             />
           </div>
         )}
-        <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
+        <div className="relative p-8 md:p-12 bg-gradient-to-t from-background/80 via-background/50 to-transparent"> {/* Adjusted gradient */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
             <div className="flex-grow"> 
               <div className="flex items-center gap-3 mb-2">
@@ -290,3 +292,4 @@ export default function NationPageClient({ initialNation, params: serverParams }
     </div>
   );
 }
+
