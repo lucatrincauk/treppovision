@@ -23,9 +23,6 @@ export default async function NationsPage() {
           <p className="text-xl text-muted-foreground">
             Esplora tutti i paesi partecipanti a TreppoVision.
           </p>
-          <p className="text-base text-muted-foreground/80">
-            Nazioni elencate per ordine di esibizione.
-          </p>
         </header>
         <AdminNationControls nationId={null}>
           <div className="flex-shrink-0">

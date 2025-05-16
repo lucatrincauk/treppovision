@@ -22,6 +22,11 @@ export function NationList({ nations, title }: NationListProps) {
       <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
         {title}
       </h2>
+      {title === "Elenco Nazioni" && (
+        <p className="text-sm text-muted-foreground -mt-2 mb-4">
+          Nazioni elencate per ordine di esibizione.
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {nations.map((nation) => (
           <NationListItem key={nation.id} nation={nation} />
