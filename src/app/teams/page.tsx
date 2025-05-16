@@ -117,7 +117,9 @@ export default function TeamsPage() {
   const [nationsMap, setNationsMap] = useState<Map<string, Nation>>(new Map());
   
   const [isLoadingNations, setIsLoadingNations] = useState(true);
-  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+  const [isLoadingUserTeams, setIsLoadingUserTeams] = useState(true); // For fetching user's team initially
+  const [isLoadingAllTeams, setIsLoadingAllTeams] = useState(true); // For fetching all other teams
+  
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,32 +131,22 @@ export default function TeamsPage() {
 
 
   useEffect(() => {
-    async function fetchInitialSettings() {
+    async function fetchInitialSettingsAndNations() {
+      setIsLoadingNations(true);
       try {
-        const [teamsLock, leaderboardLock] = await Promise.all([
+        const [teamsLock, leaderboardLock, nationsData] = await Promise.all([
           getTeamsLockedStatus(),
-          getLeaderboardLockedStatus()
+          getLeaderboardLockedStatus(),
+          getNations()
         ]);
         setTeamsLockedAdmin(teamsLock);
         setLeaderboardLockedAdmin(leaderboardLock);
-      } catch (err) {
-        console.error("Failed to fetch admin lock statuses:", err);
-        setTeamsLockedAdmin(false);
-        setLeaderboardLockedAdmin(false);
-      }
-    }
-    fetchInitialSettings();
-  }, []);
-  
-  useEffect(() => {
-    async function fetchNationsData() {
-      setIsLoadingNations(true);
-      try {
-        const nationsData = await getNations();
         setAllNations(nationsData);
         setNationsMap(new Map(nationsData.map(n => [n.id, n])));
-      } catch (fetchError: any) {
-        console.error("Failed to fetch nations:", fetchError);
+      } catch (err) {
+        console.error("Failed to fetch admin lock statuses or nations:", err);
+        setTeamsLockedAdmin(false);
+        setLeaderboardLockedAdmin(false);
         setError(prev => prev ? `${prev}\nNazioni non caricate.` : "Nazioni non caricate.");
         setAllNations([]);
         setNationsMap(new Map());
@@ -162,9 +154,9 @@ export default function TeamsPage() {
         setIsLoadingNations(false);
       }
     }
-    fetchNationsData();
+    fetchInitialSettingsAndNations();
   }, []);
-
+  
   useEffect(() => {
     setIsLoadingGlobalScores(true);
     const unsubscribeGlobalScores = listenToAllVotesForAllNationsCategorized((scores) => {
@@ -175,21 +167,48 @@ export default function TeamsPage() {
   }, []); 
 
   useEffect(() => {
-    setIsLoadingTeams(true);
-    setError(null);
+    if (authIsLoading) return;
+
+    setIsLoadingUserTeams(true);
+    if (user) {
+      getTeamsByUserId(user.uid)
+        .then(teams => {
+          // This logic assumes user can have at most one team.
+          // Score calculation for this team will happen in processedAndScoredTeams memo.
+          setUserTeams(teams as TeamWithScore[]); // Will be re-processed with scores later
+          setShowCreateTeamButton(teams.length === 0 && !teamsLockedAdmin);
+        })
+        .catch(err => {
+          console.error("Failed to fetch user teams:", err);
+          setError(prev => prev ? `${prev}\nSquadra utente non caricata.` : "Squadra utente non caricata.");
+          setUserTeams([]);
+          setShowCreateTeamButton(!teamsLockedAdmin); // Show if no team and not locked
+        })
+        .finally(() => setIsLoadingUserTeams(false));
+    } else {
+      setUserTeams([]);
+      setShowCreateTeamButton(false); // No user, no create button
+      setIsLoadingUserTeams(false);
+    }
+  }, [user, authIsLoading, teamsLockedAdmin]);
+
+
+  useEffect(() => {
+    setIsLoadingAllTeams(true);
     const unsubscribeTeams = listenToTeams((teamsData) => {
       setAllFetchedTeams(teamsData);
-      setIsLoadingTeams(false);
+      setIsLoadingAllTeams(false);
     }, (err) => {
-      console.error("Failed to fetch teams:", err);
-      setError(err.message || "Si è verificato un errore durante il caricamento delle squadre.");
-      setIsLoadingTeams(false);
+      console.error("Failed to fetch all teams:", err);
+      setError(prev => prev ? `${prev}\nErrore caricamento squadre.` : "Errore caricamento squadre.");
+      setAllFetchedTeams([]);
+      setIsLoadingAllTeams(false);
     });
     return () => unsubscribeTeams();
   }, []);
 
   const processedAndScoredTeams = useMemo(() => {
-    if (isLoadingNations || isLoadingTeams || isLoadingGlobalScores || allNations.length === 0 || leaderboardLockedAdmin === null) {
+    if (isLoadingNations || isLoadingGlobalScores || allNations.length === 0 || leaderboardLockedAdmin === null) {
       return [];
     }
 
@@ -268,22 +287,18 @@ export default function TeamsPage() {
       return teamWithDetails;
 
     });
-  }, [allFetchedTeams, allNations, nationsMap, nationGlobalCategorizedScoresMap, isLoadingNations, isLoadingTeams, isLoadingGlobalScores, leaderboardLockedAdmin]);
+  }, [allFetchedTeams, allNations, nationsMap, nationGlobalCategorizedScoresMap, isLoadingNations, isLoadingGlobalScores, leaderboardLockedAdmin]);
 
   useEffect(() => {
-    if (authIsLoading || teamsLockedAdmin === null) return; 
-
-    if (user) {
-      const userSpecificTeams = processedAndScoredTeams.filter(team => team.userId === user.uid);
-      setUserTeams(userSpecificTeams);
-      setShowCreateTeamButton(userSpecificTeams.length === 0 && !teamsLockedAdmin);
-      setOtherTeams(processedAndScoredTeams.filter(team => team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
-    } else {
-      setUserTeams([]);
-      setShowCreateTeamButton(false); 
-      setOtherTeams(processedAndScoredTeams.sort((a, b) => a.name.localeCompare(b.name)));
+    // Update userTeams and otherTeams based on processedAndScoredTeams
+    if (user && processedAndScoredTeams.length > 0) {
+      setUserTeams(processedAndScoredTeams.filter(team => team.userId === user.uid));
+    } else if (!user) {
+      setUserTeams([]); // Clear if no user
     }
-  }, [processedAndScoredTeams, user, authIsLoading, teamsLockedAdmin]);
+    setOtherTeams(processedAndScoredTeams.filter(team => !user || team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
+  }, [processedAndScoredTeams, user]);
+
 
   useEffect(() => {
     if (!searchTerm) {
@@ -311,7 +326,7 @@ export default function TeamsPage() {
           Scopri tutte le squadre create dagli utenti e le loro scelte.
         </p>
       </header>
-      {user && showCreateTeamButton && (
+      {user && showCreateTeamButton && !teamsLockedAdmin && (
         <Button asChild variant="outline" size="lg">
           <Link href="/teams/new">
             <PlusCircle className="mr-2 h-5 w-5" />
@@ -319,18 +334,10 @@ export default function TeamsPage() {
           </Link>
         </Button>
       )}
-       {user && !showCreateTeamButton && userTeams.length > 0 && !teamsLockedAdmin && (
-        <Button asChild variant="default" size="lg">
-            <Link href={`/teams/${userTeams[0].id}/edit`}>
-                <Edit className="mr-2 h-5 w-5"/>
-                Modifica la Tua Squadra
-            </Link>
-        </Button>
-      )}
        {user && teamsLockedAdmin && (
          <Button variant="outline" size="lg" disabled>
             <Lock className="mr-2 h-5 w-5"/>
-            Creazione/Modifica Bloccata
+            Creazione Bloccata
         </Button>
       )}
     </div>
@@ -343,7 +350,6 @@ export default function TeamsPage() {
     let topId: string | null = null;
     let rankInCategory: number | undefined = undefined;
     
-    // Determine top nation for the category
     if (nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
         const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
             return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
@@ -384,7 +390,6 @@ export default function TeamsPage() {
         }
         isCorrectPick = nationId === topId && nationId !== undefined;
     } else {
-        // Fallback if scores are not loaded - just get nation and icon
         switch(category) {
             case 'bestSong': nationId = team.bestSongNationId; IconComponent = Music2; break;
             case 'bestPerf': nationId = team.bestPerformanceNationId; IconComponent = Star; break;
@@ -415,17 +420,17 @@ export default function TeamsPage() {
         <div className="flex flex-col items-start">
             <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
                 {nation.name}
-                {!leaderboardLocked && rankInCategory && (
+                {!leaderboardLockedAdmin && rankInCategory && (
                      <span className="text-muted-foreground/80 ml-0.5">({rankInCategory}°{rankSuffix})</span>
                 )}
             </span>
         </div>
-        {!leaderboardLocked && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
+        {!leaderboardLockedAdmin && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
       </div>
     );
   };
 
-  if (authIsLoading || isLoadingNations || isLoadingTeams || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null) {
+  if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null) {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
@@ -481,13 +486,25 @@ export default function TeamsPage() {
         </Alert>
       )}
       
-      {user && userTeams.length > 0 && allNations.length > 0 && (
+      {user && (isLoadingUserTeams ? (
+         <div className="flex flex-col items-center justify-center min-h-[20vh]">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+            <p className="text-muted-foreground">Caricamento squadra utente...</p>
+        </div>
+      ) : userTeams.length > 0 && allNations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
-          <div className="flex items-center gap-3 mb-6">
-             {/* Removed ThumbsUp Icon */}
-            <h2 className="text-3xl font-semibold tracking-tight text-secondary">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-semibold tracking-tight text-secondary text-left">
               La Mia Squadra
             </h2>
+            {!isLoadingUserTeams && !teamsLockedAdmin && userTeams.length > 0 && (
+              <Button asChild variant="default" size="sm">
+                <Link href={`/teams/${userTeams[0].id}/edit`}>
+                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Modifica la Tua Squadra</span>
+                </Link>
+              </Button>
+            )}
           </div>
           {userTeams.map(team => (
             <div key={team.id} className="mb-6">
@@ -500,7 +517,7 @@ export default function TeamsPage() {
             </div>
           ))}
         </section>
-      )}
+      ))}
 
       <section className="pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -520,7 +537,14 @@ export default function TeamsPage() {
           </div>
         </div>
 
-        {allNations.length === 0 && allFetchedTeams.length > 0 && (
+        {isLoadingAllTeams && (
+           <div className="flex flex-col items-center justify-center min-h-[20vh]">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+            <p className="text-muted-foreground">Caricamento altre squadre...</p>
+          </div>
+        )}
+
+        {!isLoadingAllTeams && allNations.length === 0 && allFetchedTeams.length > 0 && (
           <Alert variant="destructive">
             <Users className="h-4 w-4" />
             <AlertTitle>Dati Nazioni Mancanti</AlertTitle>
@@ -530,7 +554,7 @@ export default function TeamsPage() {
           </Alert>
         )}
 
-        {allFetchedTeams.length === 0 && allNations.length > 0 && !isLoadingNations && !isLoadingTeams && (
+        {!isLoadingAllTeams && allFetchedTeams.length === 0 && allNations.length > 0 && (
           <Alert>
             <Users className="h-4 w-4" />
             <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
@@ -540,7 +564,7 @@ export default function TeamsPage() {
           </Alert>
         )}
       
-       {allNations.length === 0 && allFetchedTeams.length === 0 && !isLoadingNations && !isLoadingTeams && (
+       {!isLoadingAllTeams && allNations.length === 0 && allFetchedTeams.length === 0 && (
           <Alert variant="destructive">
             <Users className="h-4 w-4" />
             <AlertTitle>Dati Iniziali Mancanti</AlertTitle>
@@ -551,7 +575,7 @@ export default function TeamsPage() {
           </Alert>
        )}
 
-        {filteredOtherTeams.length > 0 && allNations.length > 0 ? (
+        {!isLoadingAllTeams && filteredOtherTeams.length > 0 && allNations.length > 0 ? (
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -619,9 +643,9 @@ export default function TeamsPage() {
               </Table>
             </CardContent>
           </Card>
-        ) : searchTerm && allNations.length > 0 && !isLoadingNations && !isLoadingTeams ? (
+        ) : !isLoadingAllTeams && searchTerm && allNations.length > 0 ? (
           <p className="text-center text-muted-foreground py-10">Nessuna squadra trovata corrispondente alla tua ricerca.</p>
-        ) : filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && allNations.length > 0 && !isLoadingNations && !isLoadingTeams ? (
+        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && allNations.length > 0 ? (
            <p className="text-center text-muted-foreground py-10">Nessun'altra squadra creata dagli utenti.</p>
         ) : null }
       </section>
