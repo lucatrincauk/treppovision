@@ -24,13 +24,8 @@ export function NationListItem({ nation }: NationListItemProps) {
 
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
-
-  const [fetchedUserAverageScore, setFetchedUserAverageScore] = useState<number | null>(null);
-  const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
 
-  // This prop-based score is primarily for the TreppoScore page's top 3 cards
-  const userAverageScoreToDisplay = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
 
   useEffect(() => {
     async function fetchLockStatus() {
@@ -52,54 +47,11 @@ export function NationListItem({ nation }: NationListItemProps) {
     }
   };
 
-  useEffect(() => {
-    // If userAverageScore is already passed via props, don't re-fetch
-    if (nation.userAverageScore !== undefined) {
-      setIsLoadingUserVote(false);
-      return;
-    }
-
-    if (authLoading) {
-      setIsLoadingUserVote(true);
-      return;
-    }
-    if (!user) {
-      setFetchedUserAverageScore(null);
-      setIsLoadingUserVote(false);
-      return;
-    }
-
-    setIsLoadingUserVote(true);
-    let isMounted = true;
-    getUserVoteForNationFromDB(nation.id, user.uid)
-      .then((vote) => {
-        if (isMounted) {
-          if (vote) {
-            const avg = (vote.scores.song + vote.scores.performance + vote.scores.outfit) / 3;
-            setFetchedUserAverageScore(parseFloat(avg.toFixed(2)));
-          } else {
-            setFetchedUserAverageScore(null);
-          }
-        }
-      })
-      .catch(error => console.error("Error fetching user vote for list item:", error))
-      .finally(() => {
-        if (isMounted) setIsLoadingUserVote(false);
-      });
-
-    return () => { isMounted = false; };
-  }, [nation.id, nation.userAverageScore, user, authLoading]);
-
-
   const rankBorderClass =
     nation.ranking === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30" :
     nation.ranking === 2 ? "border-slate-400 border-2 shadow-slate-400/30" :
     nation.ranking === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
     "border-border group-hover:border-primary/50";
-
-  const displayUserScoreInContent = nation.ranking && [1, 2, 3].includes(nation.ranking) && userAverageScoreToDisplay !== null;
-  // const displayUserScoreOnThumbnail = user && !authLoading && userAverageScoreToDisplay !== null && !displayUserScoreInContent;
-
 
   return (
     <Link href={`/nations/${nation.id}`} className="group block h-full">
@@ -119,8 +71,9 @@ export function NationListItem({ nation }: NationListItemProps) {
               onError={handleImageError}
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-col justify-end p-3">
-              <div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-row justify-between items-end p-3">
+              {/* Left part: Flag and Nation Name */}
+              <div className="flex flex-col">
                 <CardTitle className="text-lg font-bold text-white drop-shadow-md flex items-center gap-2">
                   <Image
                     src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
@@ -132,27 +85,19 @@ export function NationListItem({ nation }: NationListItemProps) {
                   />
                   <span>{nation.name}</span>
                 </CardTitle>
-                <p className="text-xs text-white/90 drop-shadow-sm truncate" title={nation.artistName}>
+              </div>
+              {/* Right part: Artist and Song Title */}
+              <div className="text-right">
+                <p className="text-xs text-white/90 drop-shadow-sm" title={nation.artistName}>
                   {nation.artistName}
                 </p>
-                <p className="text-xs text-white/80 drop-shadow-sm truncate" title={nation.songTitle}>
+                <p className="text-xs text-white/80 drop-shadow-sm" title={nation.songTitle}>
                   {nation.songTitle}
                 </p>
               </div>
             </div>
-            {/* Badges on thumbnail removed */}
           </div>
         </CardHeader>
-        
-        {displayUserScoreInContent && (
-          <div className="px-3 py-2 border-t border-border/50 bg-card/70">
-            <div className="flex items-center text-xs text-accent-foreground">
-              <Star className="w-3 h-3 mr-1 text-accent" />
-              <span className="font-medium">Il tuo Voto:</span>
-              <span className="font-bold ml-1">{userAverageScoreToDisplay?.toFixed(2)}</span>
-            </div>
-          </div>
-        )}
       </Card>
     </Link>
   );
