@@ -106,7 +106,6 @@ export default function TeamsPage() {
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
 
-
   useEffect(() => {
     async function fetchInitialSettingsAndNations() {
       setIsLoadingNations(true);
@@ -148,20 +147,11 @@ export default function TeamsPage() {
 
     setIsLoadingUserTeams(true);
     if (user) {
-      getTeamsByUserId(user.uid)
-        .then(teams => {
-          setUserTeam(teams.length > 0 ? teams[0] as TeamWithScore : null); 
-        })
-        .catch(err => {
-          console.error("Failed to fetch user teams:", err);
-          setError(prev => prev ? `${prev}\nSquadra utente non caricata.` : "Squadra utente non caricata.");
-          setUserTeam(null);
-        })
-        .finally(() => setIsLoadingUserTeams(false));
+      // Team data is now processed in processedAndScoredTeams effect
     } else {
       setUserTeam(null);
-      setIsLoadingUserTeams(false);
     }
+    setIsLoadingUserTeams(false); // Set this false even if no user, as user team check is done
   }, [user, authIsLoading]);
 
   useEffect(() => {
@@ -178,20 +168,21 @@ export default function TeamsPage() {
     return () => unsubscribeTeams();
   }, []);
 
- const processedAndScoredTeams = useMemo(() => {
+  const processedAndScoredTeams = useMemo(() => {
     if (isLoadingNations || isLoadingGlobalScores || allNations.length === 0 || leaderboardLockedAdmin === null) {
       return [];
     }
 
     return allFetchedTeams.map(team => {
       let scoreValue: number | undefined = 0;
+      if(leaderboardLockedAdmin) {
+        scoreValue = undefined;
+      }
       
       const primaSquadraDetails: PrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
-        if (leaderboardLockedAdmin) {
-          scoreValue = undefined; // Score hidden if leaderboard locked
-        } else if(scoreValue !== undefined) {
+        if (scoreValue !== undefined && !leaderboardLockedAdmin) {
             scoreValue += points;
         }
         return {
@@ -201,7 +192,7 @@ export default function TeamsPage() {
           artistName: nation?.artistName,
           songTitle: nation?.songTitle,
           actualRank: nation?.ranking,
-          points: leaderboardLockedAdmin ? 0 : points, // Points are 0 if leaderboard locked
+          points: leaderboardLockedAdmin ? 0 : points, 
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
       
@@ -212,7 +203,7 @@ export default function TeamsPage() {
       const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
       
       const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
-      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestSongPick.points;
+      if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += bestSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Canzone", pickedNationId: team.bestSongNationId, 
         pickedNationName: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.name : undefined,
@@ -221,7 +212,7 @@ export default function TeamsPage() {
       });
 
       const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerfNationsList);
-      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestPerfPick.points;
+      if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += bestPerfPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId,
         pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined,
@@ -230,7 +221,7 @@ export default function TeamsPage() {
       });
       
       const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNationsList);
-      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestOutfitPick.points;
+      if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += bestOutfitPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId,
         pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined,
@@ -239,7 +230,7 @@ export default function TeamsPage() {
       });
 
       const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
-      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += worstSongPick.points;
+      if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += worstSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId,
         pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined,
@@ -303,24 +294,10 @@ export default function TeamsPage() {
             </Link>
             </Button>
         )}
-         {user && userTeam && !teamsLockedAdmin && (
-            <Button asChild variant="default" size="lg" className="w-full sm:w-auto">
-                <Link href={`/teams/${userTeam.id}/edit`}>
-                    <Edit className="h-5 w-5 sm:mr-2" />
-                    <span className="hidden sm:inline">Modifica Squadra</span>
-                </Link>
-            </Button>
-        )}
-         {user && teamsLockedAdmin && !userTeam && (
+        {user && teamsLockedAdmin && !userTeam && (
             <Button variant="outline" size="lg" disabled>
                 <Lock className="mr-2 h-5 w-5"/>
                 Creazione Bloccata
-            </Button>
-        )}
-         {user && userTeam && teamsLockedAdmin && (
-             <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
-                <Lock className="h-5 w-5 sm:mr-2"/>
-                <span className="hidden sm:inline">Modifica Bloccata</span>
             </Button>
         )}
       </div>
@@ -474,14 +451,6 @@ export default function TeamsPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
-             {user && userTeam && !teamsLockedAdmin && (
-                <Button asChild variant="default" size="sm" className="ml-auto">
-                    <Link href={`/teams/${userTeam.id}/edit`}>
-                        <Edit className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Modifica Squadra</span>
-                    </Link>
-                </Button>
-            )}
           </div>
           <TeamListItem 
             team={userTeam} 
@@ -490,24 +459,22 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
             leaderboardLocked={leaderboardLockedAdmin}
           />
-          {userTeam && !teamsLockedAdmin && (
             <div className="mt-4 flex justify-end">
+            {userTeam && !teamsLockedAdmin && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="h-5 w-5 sm:mr-2" />
                         <span className="hidden sm:inline">Pronostici Finali</span>
                     </Link>
                 </Button>
-            </div>
             )}
             {userTeam && teamsLockedAdmin && (
-                <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="lg" disabled>
-                        <Lock className="h-5 w-5 sm:mr-2"/>
-                        <span className="hidden sm:inline">Pronostici Bloccati</span>
-                    </Button>
-                </div>
+                <Button variant="outline" size="lg" disabled>
+                    <Lock className="h-5 w-5 sm:mr-2"/>
+                    <span className="hidden sm:inline">Pronostici Bloccati</span>
+                </Button>
             )}
+            </div>
         </section>
       ))}
 
@@ -574,7 +541,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
-                    {!leaderboardLockedAdmin && <TableHead className="w-[80px] text-right hidden lg:table-cell">Punti</TableHead>}
+                    {!leaderboardLockedAdmin && <TableHead className="w-[80px] text-right hidden xl:table-cell">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
@@ -595,7 +562,7 @@ export default function TeamsPage() {
                         )}
                       </TableCell>
                        {!leaderboardLockedAdmin && (
-                        <TableCell className="text-right font-semibold hidden lg:table-cell">
+                        <TableCell className="text-right font-semibold hidden xl:table-cell">
                           {typeof team.score === 'number' ? team.score : 'N/D'}
                         </TableCell>
                        )}
@@ -637,3 +604,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+
