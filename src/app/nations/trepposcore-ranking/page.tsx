@@ -5,7 +5,7 @@ import * as React from "react";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib/voting-service";
 import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores, RankingCategoryKey } from "@/types";
-import { NationList } from "@/components/nations/nation-list";
+// NationList is no longer needed here
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
 import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon, SlidersHorizontal, Music, Diamond } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -251,8 +251,6 @@ export default function TreppoScoreRankingPage() {
     );
   }
 
-  const top3Nations = nationsWithScores.filter(n => n.rank !== undefined && n.rank <=3);
-
   return (
     <div className="space-y-8">
       <NationsSubNavigation />
@@ -297,19 +295,7 @@ export default function TreppoScoreRankingPage() {
         </div>
       ) : (
         <>
-          {top3Nations.length > 0 && (
-            <NationList
-              nations={top3Nations.map(nation => ({
-                ...nation,
-                // NationList expects ranking based on Eurovision for styling, so we use the dynamic rank
-                ranking: nation.rank,
-                userAverageScore: nation.userAverageScore,
-                // Pass the specific score for display on the card if needed, though NationListItem primarily shows overall
-              }))}
-              title={`Il Podio - ${categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}`}
-            />
-          )}
-
+          {/* Section for top 3 cards removed */}
           {nationsWithScores.length > 0 && (
             <section className="mt-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
