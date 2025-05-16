@@ -5,9 +5,8 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail, CategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail, GlobalCategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
-import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
 import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, Music2, Star, Shirt, ThumbsDown, ListOrdered } from "lucide-react"; 
@@ -151,7 +150,7 @@ export default function TeamsPage() {
     } else {
       setUserTeam(null);
     }
-    setIsLoadingUserTeams(false); // Set this false even if no user, as user team check is done
+    setIsLoadingUserTeams(false); 
   }, [user, authIsLoading]);
 
   useEffect(() => {
@@ -196,7 +195,7 @@ export default function TeamsPage() {
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
       
-      const categoryPicksDetails: CategoryPickDetail[] = [];
+      const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
       const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
       const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
       const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
@@ -304,7 +303,7 @@ export default function TeamsPage() {
     </div>
   );
 
-  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: TeamWithScore['primaSquadraDetails'][0], leaderboardLocked: boolean | null }) => {
+  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: PrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
     const nation = nationsMap.get(detail.id);
     if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
     return (
@@ -451,6 +450,22 @@ export default function TeamsPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
+            <div className="flex items-center gap-2">
+              {userTeam && !teamsLockedAdmin && (
+                  <Button asChild variant="outline" size="sm">
+                      <Link href={`/teams/${userTeam.id}/edit`}>
+                          <Edit className="h-4 w-4 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Modifica Squadra</span>
+                      </Link>
+                  </Button>
+              )}
+              {userTeam && teamsLockedAdmin && (
+                  <Button variant="outline" size="sm" disabled>
+                      <Lock className="h-4 w-4 sm:mr-1.5"/>
+                      <span className="hidden sm:inline">Modifica Bloccata</span>
+                  </Button>
+              )}
+            </div>
           </div>
           <TeamListItem 
             team={userTeam} 
