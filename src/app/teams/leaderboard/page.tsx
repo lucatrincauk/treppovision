@@ -1,9 +1,9 @@
 
 "use client";
 
-import { getTeams } from "@/lib/team-service";
+import { getTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
+import { getAllNationsGlobalCategorizedScores, listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
 import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreTypeFromTypes } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,8 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { TeamList } from "@/components/teams/team-list";
-import { TeamListItem } from "@/components/teams/team-list-item";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// Removed Dialog imports as modal is being replaced
 import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
@@ -131,10 +130,6 @@ export default function TeamsLeaderboardPage() {
   
   const globalCategorizedScoresArray = useMemo(() => Array.from(globalCategorizedScoresMap.entries()), [globalCategorizedScoresMap]);
 
-  const [selectedTeamDetail, setSelectedTeamDetail] = useState<TeamWithScore | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
-
   useEffect(() => {
     async function fetchPageData() {
       setIsLoadingSettings(true);
@@ -151,19 +146,19 @@ export default function TeamsLeaderboardPage() {
           return;
         }
 
-        const [fetchedTeams, fetchedNations, fetchedGlobalScores] = await Promise.all([
+        const [fetchedTeams, fetchedNationsData, fetchedGlobalScoresMap] = await Promise.all([
           getTeams(),
           getNations(),
           getAllNationsGlobalCategorizedScores()
         ]);
-        setAllNations(fetchedNations);
-        setGlobalCategorizedScoresMap(fetchedGlobalScores);
+        setAllNations(fetchedNationsData);
+        setGlobalCategorizedScoresMap(fetchedGlobalScoresMap);
 
-        const nationsMap = new Map(fetchedNations.map(nation => [nation.id, nation]));
-        const topSongNations = getTopNationsForCategory(fetchedGlobalScores, nationsMap, 'averageSongScore', 'desc');
-        const bottomSongNations = getTopNationsForCategory(fetchedGlobalScores, nationsMap, 'averageSongScore', 'asc'); 
-        const topPerformanceNations = getTopNationsForCategory(fetchedGlobalScores, nationsMap, 'averagePerformanceScore', 'desc');
-        const topOutfitNations = getTopNationsForCategory(fetchedGlobalScores, nationsMap, 'averageOutfitScore', 'desc');
+        const nationsMap = new Map(fetchedNationsData.map(nation => [nation.id, nation]));
+        const topSongNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averageSongScore', 'desc');
+        const bottomSongNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averageSongScore', 'asc'); 
+        const topPerformanceNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+        const topOutfitNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averageOutfitScore', 'desc');
 
         let calculatedTeams: TeamWithScore[] = fetchedTeams.map(team => {
           let score = 0;
@@ -351,6 +346,11 @@ export default function TeamsLeaderboardPage() {
                   <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                 )}
               </Link>
+               {(nationData?.artistName || nationData?.songTitle) && (
+                <span className="text-xs text-muted-foreground/80 block">
+                    {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                </span>
+            )}
           </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
@@ -382,7 +382,7 @@ export default function TeamsLeaderboardPage() {
     }
     
     const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
-      ? `(${detail.actualCategoryRank}°${rankSuffix ? `${rankSuffix}` : ''})`.trim()
+      ? `(${detail.actualCategoryRank}°${rankSuffix})`.trim()
       : "";
 
     const titleText = `${detail.categoryName}: ${pickedNationFullDetails?.name || 'N/D'}${rankText}${!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' ? ` Punti: ${detail.pointsAwarded}`: ''}`;
@@ -401,7 +401,7 @@ export default function TeamsLeaderboardPage() {
             )}
         </div>
 
-        <div className="w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
+        <div className="w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> {/* Consistent indent */}
           {pickedNationFullDetails ? (
             <div className="flex items-start">
               <div className="flex items-center gap-1">
@@ -475,8 +475,8 @@ export default function TeamsLeaderboardPage() {
                 teams={podiumTeams}
                 allNations={allNations}
                 nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
+                isLeaderboardPodiumDisplay={true} 
                 disableListItemEdit={true} 
-                isLeaderboardPodiumDisplay={true}
               />
             </section>
           )}
@@ -488,7 +488,7 @@ export default function TeamsLeaderboardPage() {
               </h2>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <Info className="h-4 w-4" />
-                <span>Clicca sul nome di una squadra per vedere il dettaglio del punteggio.</span>
+                <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio in una nuova pagina.</span>
               </div>
               <Card>
                 <CardContent className="p-0">
@@ -504,10 +504,11 @@ export default function TeamsLeaderboardPage() {
                       {teamsWithScores.map((team) => (
                         <TableRow 
                             key={team.id}
-                            className={cn(user && user.uid === team.userId && "bg-primary/10 hover:bg-primary/20 border-l-2 border-primary")}
+                            className={cn(user && user.uid === team.userId && "bg-primary/10 hover:bg-primary/20")}
                         >
                           <TableCell className="font-medium text-center align-top pt-4">
                             <div className="flex items-center justify-center">
+                                {!adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && <MedalIcon rank={team.rank} className="mr-1"/>}
                                 <span className={cn(
                                     !adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && 
                                     (team.rank === 1 ? "text-yellow-400" : team.rank === 2 ? "text-slate-400" : "text-amber-500"),
@@ -517,14 +518,9 @@ export default function TeamsLeaderboardPage() {
                                 </span>
                             </div>
                           </TableCell>
-                          <TableCell 
-                            className="align-top pt-4 cursor-pointer hover:text-primary"
-                            onClick={() => {
-                              setSelectedTeamDetail(team);
-                              setIsDetailModalOpen(true);
-                            }}
-                          >
-                              <div className="font-medium text-base">
+                          <TableCell className="align-top pt-4">
+                            <Link href={`/teams/${team.id}/details`} className="hover:text-primary group">
+                              <div className="font-medium text-base group-hover:underline">
                                 {team.name}
                               </div>
                               {team.creatorDisplayName && (
@@ -532,6 +528,7 @@ export default function TeamsLeaderboardPage() {
                                       <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                   </div>
                               )}
+                            </Link>
                           </TableCell>
                           {!adminSettings.leaderboardLocked && 
                             <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">
@@ -572,26 +569,7 @@ export default function TeamsLeaderboardPage() {
             </div>
           </CardContent>
         </Card>
-
-      {selectedTeamDetail && (
-        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Dettaglio Punteggio: {selectedTeamDetail.name}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <TeamListItem
-                team={selectedTeamDetail}
-                allNations={allNations}
-                nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
-                isLeaderboardPodiumDisplay={true} 
-                disableEdit={true}
-                isOwnTeamCard={user?.uid === selectedTeamDetail.userId}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
+
