@@ -4,7 +4,7 @@
 import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListChecks } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListChecks, Loader2, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,7 +20,8 @@ interface SelectedNationDisplayProps {
   categoryRank?: number;
   isCorrectPick?: boolean;
   isOwnTeamCard?: boolean;
-  allNations: Nation[];
+  allNations: Nation[]; 
+  globalScoreForCategory?: number | null;
 }
 
 const SelectedNationDisplay = React.memo(({
@@ -31,9 +32,10 @@ const SelectedNationDisplay = React.memo(({
   categoryRank,
   isCorrectPick,
   isOwnTeamCard,
-  allNations
+  allNations: propAllNations, 
+  globalScoreForCategory
 }: SelectedNationDisplayProps) => {
-  const iconColorClass = isCorrectPick ? "text-accent" : "text-accent";
+  const iconColor = isCorrectPick ? "text-accent" : "text-accent";
 
   const MedalIcon = ({ rank }: { rank?: number }) => {
     if (!rank || rank < 1 || rank > 3) return null;
@@ -44,35 +46,35 @@ const SelectedNationDisplay = React.memo(({
   const nationData = nation;
   const nationNameForDisplay = nationData?.name || "N/D";
   const artistAndSongForDisplay = nationData ? `${nationData.artistName} - ${nationData.songTitle}` : "";
-  
+
   let rankTextForDisplay = "";
   let rankSuffix = "";
 
-  if (label) { 
+  if (label) {
     if (categoryRank) {
       if (label === "Miglior Canzone:") rankSuffix = "";
       else if (label === "Peggior Canzone:") rankSuffix = " peggiore";
       else rankSuffix = " in cat.";
       rankTextForDisplay = `(${categoryRank}°${rankSuffix})`;
     }
-  } else if (nationData?.ranking && nationData.ranking > 0) { 
+  } else if (nationData?.ranking && nationData.ranking > 0) {
     rankTextForDisplay = `(${nationData.ranking}°)`;
   }
-
-  const mainContainerClasses = cn(
-    "px-2 py-1.5", 
-    label ? "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5" : "flex items-center gap-1.5",
-    isEvenRow && label && "bg-muted/50 rounded-md",
-    isEvenRow && !label && "bg-muted/50 rounded-md"
-  );
   
+  const mainContainerClasses = cn(
+    "px-2 py-1", 
+    label ? "flex flex-col items-start sm:flex-row sm:items-center gap-1 sm:gap-1.5 py-1.5" : "flex items-center gap-1.5 py-1",
+    isEvenRow && "bg-muted/50 rounded-md"
+  );
+
   const labelAndIconContainerClasses = cn(
     "flex items-center gap-1.5",
-    label && (isOwnTeamCard) && "w-full sm:w-auto" 
+    label && (isOwnTeamCard) && "w-full sm:w-auto"
   );
   
   const nationInfoContainerOuterClasses = cn(
-    label && (isOwnTeamCard) ? "w-full mt-1 sm:mt-0 sm:ml-[calc(1.25rem+0.375rem)]" : "flex-grow"
+    "flex-grow",
+    label && (isOwnTeamCard) ? "w-full mt-1 sm:mt-0 sm:ml-[calc(1.25rem+0.375rem)]" : "" 
   );
 
   const NationInfoContent = () => (
@@ -95,24 +97,14 @@ const SelectedNationDisplay = React.memo(({
                 </span>
                 {!label && nationData?.ranking && [1,2,3].includes(nationData.ranking) && <MedalIcon rank={nationData.ranking} />}
                 {label && categoryRank && [1,2,3].includes(categoryRank) && <MedalIcon rank={categoryRank} />}
-                {rankTextForDisplay && !label && (
+                {rankTextForDisplay && (
                   <span className={cn("text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5 whitespace-nowrap")}>
                     {rankTextForDisplay}
                   </span>
                 )}
-                 {rankTextForDisplay && label && categoryRank && (
-                   <span className={cn("text-xs text-muted-foreground group-hover:text-primary/80 ml-0.5 whitespace-nowrap")}>
-                     {rankTextForDisplay}
-                   </span>
-                )}
               </div>
-              {(isOwnTeamCard) && artistAndSongForDisplay && label && (
-                <span className="text-xs text-muted-foreground group-hover:text-primary/80 block" title={artistAndSongForDisplay}>
-                    {artistAndSongForDisplay}
-                </span>
-              )}
-              {(!label || !(isOwnTeamCard)) && artistAndSongForDisplay && (
-                 <span className="text-xs text-muted-foreground group-hover:text-primary/80" title={artistAndSongForDisplay}>
+               {((!label && isOwnTeamCard) || (label && isOwnTeamCard)) && artistAndSongForDisplay && (
+                 <span className="text-xs text-muted-foreground group-hover:text-primary/80 block">
                     {artistAndSongForDisplay}
                 </span>
               )}
@@ -128,10 +120,11 @@ const SelectedNationDisplay = React.memo(({
     </div>
   );
 
+
   return (
     <div className={mainContainerClasses}>
       <div className={labelAndIconContainerClasses}>
-        <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColorClass)} />
+        <IconComponent className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
         {label && <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{label}</span>}
       </div>
       <div className={nationInfoContainerOuterClasses}>
@@ -141,6 +134,7 @@ const SelectedNationDisplay = React.memo(({
   );
 });
 SelectedNationDisplay.displayName = 'SelectedNationDisplay';
+
 
 interface PrimaSquadraNationDisplayDetailPodiumProps {
   detail: { id: string; name: string; countryCode: string; artistName?: string; songTitle?: string; actualRank?: number; points: number };
@@ -177,7 +171,7 @@ const PrimaSquadraNationDisplayDetailPodium = React.memo(({ detail, allNations }
               <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
           </div>
          {nationData?.artistName && nationData?.songTitle && (
-            <p className="text-[10px] text-muted-foreground sm:text-xs" title={`${nationData.artistName} - ${nationData.songTitle}`}>
+            <p className="text-[10px] text-muted-foreground sm:text-xs">
                 {nationData.artistName} - {nationData.songTitle}
             </p>
         )}
@@ -243,7 +237,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({ detail, allNations }: Cate
         </span>
       </div>
 
-      <div className={cn("w-full mt-1", "sm:ml-[calc(1.25rem+0.375rem)]")}> {/* Use 1.625rem for exact value */}
+      <div className={cn("w-full mt-1", "sm:ml-[calc(1.25rem+0.375rem)]")}>
           <div className="flex items-center gap-1.5">
               {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
               <Link href={`/nations/${detail.pickedNationId}`}
@@ -269,11 +263,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({ detail, allNations }: Cate
                       </span>
                       )}
                   </div>
-                   {pickedNationFullDetails?.artistName && pickedNationFullDetails?.songTitle && (
-                      <p className="text-[10px] text-muted-foreground sm:text-xs" title={`${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}`}>
-                          {pickedNationFullDetails.artistName} - {pickedNationFullDetails.songTitle}
-                      </p>
-                  )}
+                  {/* Artist and song title removed from here for podium cards based on previous request */}
               </Link>
               ) : (
                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -290,20 +280,25 @@ CategoryPickDisplayDetailPodium.displayName = 'CategoryPickDisplayDetailPodium';
 
 interface TeamListItemProps {
   team: TeamWithScore;
-  nations: Nation[]; // Used for looking up nation details for display if not pre-calculated on team object
-  allNations: Nation[]; // Complete list for podium item lookups
+  allNations: Nation[]; // Use this prop name consistently
   nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
   isOwnTeamCard?: boolean;
   disableEdit?: boolean;
 }
 
-export function TeamListItem({ team, nations, allNations, nationGlobalCategorizedScoresMap, isOwnTeamCard = false, disableEdit = false }: TeamListItemProps) {
+export function TeamListItem({
+  team,
+  allNations, // Destructure allNations
+  nationGlobalCategorizedScoresMap,
+  isOwnTeamCard = false,
+  disableEdit = false,
+}: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
-
   const [categoryRanksAndCorrectness, setCategoryRanksAndCorrectness] = useState<{
-    [key: string]: { rank?: number; isCorrectPick?: boolean };
+    [key: string]: { rank?: number; isCorrectPick?: boolean; globalScore?: number | null };
   }>({});
+
 
   useEffect(() => {
     async function fetchLockStatus() {
@@ -316,7 +311,8 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
   }, [disableEdit]);
 
   useEffect(() => {
-    if (nationGlobalCategorizedScoresMap.size > 0 && nations.length > 0) {
+    // Corrected: Use 'allNations' which is the prop holding the nations list
+    if (nationGlobalCategorizedScoresMap && nationGlobalCategorizedScoresMap.size > 0 && allNations && allNations.length > 0) {
       const getSortedList = (categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
         return Array.from(nationGlobalCategorizedScoresMap.entries())
           .map(([nationId, scores]) => ({
@@ -325,40 +321,45 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
           }))
           .filter(item => item.score !== null && (nationGlobalCategorizedScoresMap.get(item.id)?.voteCount || 0) > 0)
           .sort((a, b) => {
-            if (a.score === null && b.score === null) return 0;
             if (a.score === null) return 1;
             if (b.score === null) return -1;
             return order === 'desc' ? (b.score as number) - (a.score as number) : (a.score as number) - (b.score as number);
           });
       };
       
-      const getRank = (nationId?: string, sortedList?: Array<{id: string, score: number | null}>): number | undefined => {
-        if (!nationId || !sortedList) return undefined;
+      const getRankAndScore = (nationId?: string, sortedList?: Array<{id: string, score: number | null}>): { rank?: number; score?: number | null } => {
+        if (!nationId || !sortedList) return { rank: undefined, score: null };
         const rankIndex = sortedList.findIndex(n => n.id === nationId);
-        return rankIndex !== -1 ? rankIndex + 1 : undefined;
+        const rank = rankIndex !== -1 ? rankIndex + 1 : undefined;
+        const score = rank !== undefined && rankIndex < sortedList.length ? sortedList[rankIndex].score : null;
+        return { rank, score };
       };
 
-      const newRanks: { [key: string]: { rank?: number; isCorrectPick?: boolean } } = {};
+      const newRanks: typeof categoryRanksAndCorrectness = {};
       
       const bestSongList = getSortedList('averageSongScore', 'desc');
-      newRanks['bestSong'] = { rank: getRank(team.bestSongNationId, bestSongList), isCorrectPick: team.bestSongNationId === bestSongList[0]?.id };
+      const bestSongPick = getRankAndScore(team.bestSongNationId, bestSongList);
+      newRanks['bestSong'] = { rank: bestSongPick.rank, isCorrectPick: team.bestSongNationId === bestSongList[0]?.id, globalScore: bestSongPick.score };
 
       const worstSongList = getSortedList('averageSongScore', 'asc');
-      newRanks['worstSong'] = { rank: getRank(team.worstSongNationId, worstSongList), isCorrectPick: team.worstSongNationId === worstSongList[0]?.id };
+      const worstSongPick = getRankAndScore(team.worstSongNationId, worstSongList);
+      newRanks['worstSong'] = { rank: worstSongPick.rank, isCorrectPick: team.worstSongNationId === worstSongList[0]?.id, globalScore: worstSongPick.score };
       
       const bestPerfList = getSortedList('averagePerformanceScore', 'desc');
-      newRanks['bestPerf'] = { rank: getRank(team.bestPerformanceNationId, bestPerfList), isCorrectPick: team.bestPerformanceNationId === bestPerfList[0]?.id };
+      const bestPerfPick = getRankAndScore(team.bestPerformanceNationId, bestPerfList);
+      newRanks['bestPerf'] = { rank: bestPerfPick.rank, isCorrectPick: team.bestPerformanceNationId === bestPerfList[0]?.id, globalScore: bestPerfPick.score };
       
       const bestOutfitList = getSortedList('averageOutfitScore', 'desc');
-      newRanks['bestOutfit'] = { rank: getRank(team.bestOutfitNationId, bestOutfitList), isCorrectPick: team.bestOutfitNationId === bestOutfitList[0]?.id };
+      const bestOutfitPick = getRankAndScore(team.bestOutfitNationId, bestOutfitList);
+      newRanks['bestOutfit'] = { rank: bestOutfitPick.rank, isCorrectPick: team.bestOutfitNationId === bestOutfitList[0]?.id, globalScore: bestOutfitPick.score };
       
       setCategoryRanksAndCorrectness(newRanks);
     }
-  }, [nationGlobalCategorizedScoresMap, nations, team]);
+  }, [nationGlobalCategorizedScoresMap, allNations, team]); // Corrected: Use 'allNations' in dependency array
 
 
   const getNationDetailsById = (id?: string): Nation | undefined => {
-    if (!id || !allNations || allNations.length === 0) return undefined;
+    if (!id || !allNations || !Array.isArray(allNations)) return undefined;
     return allNations.find(n => n.id === id);
   };
 
@@ -368,10 +369,10 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
     .sort((a, b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity));
   
   const treppoScorePicks = [
-    { id: 'bestSong', details: getNationDetailsById(team.bestSongNationId), Icon: Music2, label: "Miglior Canzone:", rankInfo: categoryRanksAndCorrectness['bestSong'] },
-    { id: 'bestPerf', details: getNationDetailsById(team.bestPerformanceNationId), Icon: Star, label: "Miglior Performance:", rankInfo: categoryRanksAndCorrectness['bestPerf'] },
-    { id: 'bestOutfit', details: getNationDetailsById(team.bestOutfitNationId), Icon: Shirt, label: "Miglior Outfit:", rankInfo: categoryRanksAndCorrectness['bestOutfit'] },
-    { id: 'worstSong', details: getNationDetailsById(team.worstSongNationId), Icon: ThumbsDown, label: "Peggior Canzone:", rankInfo: categoryRanksAndCorrectness['worstSong'] },
+    { id: 'bestSong', teamPickNationId: team.bestSongNationId, Icon: Music2, label: "Miglior Canzone:", rankInfo: categoryRanksAndCorrectness['bestSong'] },
+    { id: 'bestPerf', teamPickNationId: team.bestPerformanceNationId, Icon: Star, label: "Miglior Performance:", rankInfo: categoryRanksAndCorrectness['bestPerf'] },
+    { id: 'bestOutfit', teamPickNationId: team.bestOutfitNationId, Icon: Shirt, label: "Miglior Outfit:", rankInfo: categoryRanksAndCorrectness['bestOutfit'] },
+    { id: 'worstSong', teamPickNationId: team.worstSongNationId, Icon: ThumbsDown, label: "Peggior Canzone:", rankInfo: categoryRanksAndCorrectness['worstSong'] },
   ];
 
   const isOwner = user?.uid === team.userId;
@@ -382,7 +383,8 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
     team.rank === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
     "border-border";
 
-  if (!allNations || allNations.length === 0) {
+  // Use allNations here for the guard
+  if (!allNations) { 
     return (
       <Card className={cn(
         "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300 p-4 items-center justify-center",
@@ -443,7 +445,6 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
       </CardHeader>
       <CardContent className="flex-grow space-y-1 pt-0 pb-4">
         {team.primaSquadraDetails && team.categoryPicksDetails ? (
-          // Detailed display for Leaderboard Podium or "La Mia Squadra"
           <>
             <p className="text-xl font-bold text-foreground mt-2 mb-1.5">
                 Pronostici TreppoVision
@@ -463,7 +464,6 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
             ))}
           </>
         ) : (
-          // Simpler display for general team list items (if detailed data isn't pre-calculated)
           <>
             <p className="text-xl font-bold text-foreground mt-2 mb-1.5">
               Pronostici TreppoVision
@@ -484,7 +484,7 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
             {treppoScorePicks.map((category, index) => (
               <SelectedNationDisplay
                 key={category.id}
-                nation={category.details}
+                nation={getNationDetailsById(category.teamPickNationId)}
                 IconComponent={category.Icon}
                 label={category.label}
                 isEvenRow={index % 2 !== 0}
@@ -492,6 +492,7 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
                 isCorrectPick={category.rankInfo?.isCorrectPick}
                 isOwnTeamCard={isOwnTeamCard}
                 allNations={allNations}
+                globalScoreForCategory={category.rankInfo?.globalScore}
               />
             ))}
           </>
@@ -500,4 +501,3 @@ export function TeamListItem({ team, nations, allNations, nationGlobalCategorize
     </Card>
   );
 }
-
