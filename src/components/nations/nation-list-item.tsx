@@ -5,7 +5,7 @@ import type { Nation, Vote } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Star, Users, TrendingUp, Award } from "lucide-react";
+import { Loader2, Star, Users, TrendingUp, Award, Music2, UserSquare2 } from "lucide-react"; // Added Music2, UserSquare2
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,6 +25,13 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
+  const [userVote, setUserVote] = useState<Vote | null | undefined>(undefined);
+  const [userAverageScore, setUserAverageScore] = useState<string | null>(null);
+  const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
+
+  const [globalAverage, setGlobalAverage] = useState<number | null>(null);
+  const [globalVoteCount, setGlobalVoteCount] = useState<number | null>(null);
+  const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
 
   useEffect(() => {
     async function fetchLockStatus() {
@@ -45,7 +52,7 @@ export function NationListItem({ nation }: NationListItemProps) {
       setImageAlt(`Bandiera ${nation.name}`);
     }
   };
-
+  
   const rankBorderClass =
     nation.ranking === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30" :
     nation.ranking === 2 ? "border-slate-400 border-2 shadow-slate-400/30" :
@@ -87,11 +94,13 @@ export function NationListItem({ nation }: NationListItemProps) {
               </div>
               {/* Right part: Artist and Song Title */}
               <div className="text-right">
-                <p className="text-sm text-white/90 drop-shadow-sm" title={nation.artistName}>
-                  {nation.artistName}
+                <p className="text-sm text-white/90 drop-shadow-sm flex items-center justify-end gap-1" title={nation.artistName}>
+                  <UserSquare2 className="w-3 h-3" />
+                  <span>{nation.artistName}</span>
                 </p>
-                <p className="text-sm text-white/80 drop-shadow-sm" title={nation.songTitle}>
-                  {nation.songTitle}
+                <p className="text-sm text-white/80 drop-shadow-sm flex items-center justify-end gap-1" title={nation.songTitle}>
+                  <Music2 className="w-3 h-3" />
+                  <span>{nation.songTitle}</span>
                 </p>
               </div>
             </div>
