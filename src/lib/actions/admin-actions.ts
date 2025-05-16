@@ -166,7 +166,10 @@ export async function getLeaderboardLockedStatus(): Promise<boolean> {
 export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
   try {
     const nations = await getNations();
-    return nations.some(nation => nation.ranking && nation.ranking > 0);
+    if (nations.length === 0) {
+      return false; // No nations, so not all can be ranked.
+    }
+    return nations.every(nation => nation.ranking && nation.ranking > 0);
   } catch (error) {
     console.error("Error checking for ranked nations:", error);
     return false; // Default to false on error, preventing access if data is unreadable
