@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, CategoryPickDetail as GlobalCategoryPickDetail, PrimaSquadraDetail as GlobalPrimaSquadraDetail } from "@/types"; // Import new types if defined globally
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail as GlobalPrimaSquadraDetail, CategoryPickDetail as GlobalCategoryPickDetail } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
@@ -173,21 +173,19 @@ export default function TeamsPage() {
     if (user) {
       getTeamsByUserId(user.uid)
         .then(teams => {
-          // This logic assumes user can have at most one team.
-          // Score calculation for this team will happen in processedAndScoredTeams memo.
-          setUserTeams(teams as TeamWithScore[]); // Will be re-processed with scores later
+          setUserTeams(teams as TeamWithScore[]); 
           setShowCreateTeamButton(teams.length === 0 && !teamsLockedAdmin);
         })
         .catch(err => {
           console.error("Failed to fetch user teams:", err);
           setError(prev => prev ? `${prev}\nSquadra utente non caricata.` : "Squadra utente non caricata.");
           setUserTeams([]);
-          setShowCreateTeamButton(!teamsLockedAdmin); // Show if no team and not locked
+          setShowCreateTeamButton(!teamsLockedAdmin); 
         })
         .finally(() => setIsLoadingUserTeams(false));
     } else {
       setUserTeams([]);
-      setShowCreateTeamButton(false); // No user, no create button
+      setShowCreateTeamButton(false); 
       setIsLoadingUserTeams(false);
     }
   }, [user, authIsLoading, teamsLockedAdmin]);
@@ -277,7 +275,6 @@ export default function TeamsPage() {
         scoreValue = undefined;
       }
       
-      // Explicitly cast to TeamWithScore
       const teamWithDetails: TeamWithScore = {
         ...team,
         score: scoreValue,
@@ -290,11 +287,10 @@ export default function TeamsPage() {
   }, [allFetchedTeams, allNations, nationsMap, nationGlobalCategorizedScoresMap, isLoadingNations, isLoadingGlobalScores, leaderboardLockedAdmin]);
 
   useEffect(() => {
-    // Update userTeams and otherTeams based on processedAndScoredTeams
     if (user && processedAndScoredTeams.length > 0) {
       setUserTeams(processedAndScoredTeams.filter(team => team.userId === user.uid));
     } else if (!user) {
-      setUserTeams([]); // Clear if no user
+      setUserTeams([]); 
     }
     setOtherTeams(processedAndScoredTeams.filter(team => !user || team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
   }, [processedAndScoredTeams, user]);
@@ -334,7 +330,7 @@ export default function TeamsPage() {
           </Link>
         </Button>
       )}
-       {user && teamsLockedAdmin && (
+       {user && teamsLockedAdmin && !showCreateTeamButton && userTeams.length === 0 && (
          <Button variant="outline" size="lg" disabled>
             <Lock className="mr-2 h-5 w-5"/>
             Creazione Bloccata
@@ -495,16 +491,22 @@ export default function TeamsPage() {
       ) : userTeams.length > 0 && allNations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-semibold tracking-tight text-secondary text-left">
+            <h2 className="text-3xl font-semibold tracking-tight text-primary text-left">
               La Mia Squadra
             </h2>
             {!isLoadingUserTeams && !teamsLockedAdmin && userTeams.length > 0 && (
-              <Button asChild variant="secondary" size="sm">
+              <Button asChild variant="default" size="sm">
                 <Link href={`/teams/${userTeams[0].id}/edit`}>
                   <Edit className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Modifica la Tua Squadra</span>
                 </Link>
               </Button>
+            )}
+             {!isLoadingUserTeams && teamsLockedAdmin && userTeams.length > 0 && (
+                <Button variant="outline" size="sm" disabled>
+                    <Lock className="mr-2 h-4 w-4"/>
+                    <span className="hidden sm:inline">Modifica Bloccata</span>
+                </Button>
             )}
           </div>
           {userTeams.map(team => (
@@ -617,7 +619,6 @@ export default function TeamsPage() {
                                 id: nationId, 
                                 name: nationsMap.get(nationId)?.name || 'Sconosciuto',
                                 countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
-                                // No points/rank needed for this simplified table view
                                 points: 0, 
                                 actualRank: nationsMap.get(nationId)?.ranking
                               }}
@@ -638,7 +639,7 @@ export default function TeamsPage() {
           </Card>
         ) : !isLoadingAllTeams && searchTerm && allNations.length > 0 ? (
           <p className="text-center text-muted-foreground py-10">Nessuna squadra trovata corrispondente alla tua ricerca.</p>
-        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && allNations.length > 0 ? (
+        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 ? (
            <p className="text-center text-muted-foreground py-10">Nessun'altra squadra creata dagli utenti.</p>
         ) : null }
       </section>
