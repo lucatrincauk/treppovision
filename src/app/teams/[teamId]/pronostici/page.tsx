@@ -12,7 +12,6 @@ import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft, Info } f
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-// Removed getTeamsLockedStatus import
 import { getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 
 export default function EditFinalAnswersPage() {
@@ -25,26 +24,26 @@ export default function EditFinalAnswersPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  // const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null); // This is no longer primary gatekeeper
   const [finalPredictionsEnabled, setFinalPredictionsEnabled] = useState<boolean | null>(null);
   const [hasExistingPredictions, setHasExistingPredictions] = useState(false);
 
   useEffect(() => {
     async function fetchTeamAndSettings() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authIsLoading);
+        // If auth is still loading or no teamId, reflect this in isLoadingData
+        // if not already true (though initial state is true).
+        // No further action if these prerequisites aren't met.
+        setIsLoadingData(authLoading || !teamId);
         return;
       }
 
       setIsLoadingData(true);
       setError(null);
       try {
-        // Only fetch finalPredictionsEnableStatus, teamsLocked is not relevant for this page anymore
         const [fetchedTeam, finalPredictionsEnableStatus] = await Promise.all([
           getTeamById(teamId),
           getFinalPredictionsEnabledStatus()
         ]);
-        // setTeamsLocked(generalTeamsLockStatus); // Removed
         setFinalPredictionsEnabled(finalPredictionsEnableStatus);
 
         if (fetchedTeam) {
@@ -75,7 +74,7 @@ export default function EditFinalAnswersPage() {
     }
 
     fetchTeamAndSettings();
-  }, [teamId, user, authLoading, router]);
+  }, [teamId, user, authLoading]); // Removed router from dependencies
 
   if (authLoading || isLoadingData || finalPredictionsEnabled === null) {
     return (
@@ -116,7 +115,7 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  if (!finalPredictionsEnabled) {
+  if (finalPredictionsEnabled === false) { // Explicitly check for false
      return (
       <Alert variant="destructive" className="max-w-lg mx-auto">
         <Lock className="h-4 w-4" />
@@ -130,9 +129,6 @@ export default function EditFinalAnswersPage() {
       </Alert>
     );
   }
-
-  // teamsLocked check removed from here as it doesn't gate final predictions anymore
-  // if (teamsLocked) { ... }
 
   if (!isAuthorized || !team) {
      return (
@@ -166,7 +162,6 @@ export default function EditFinalAnswersPage() {
       </div>
     );
   }
-
 
   const initialFinalAnswers: TeamFinalAnswersFormData = {
     bestSongNationId: team.bestSongNationId || "",
@@ -207,4 +202,3 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
-
