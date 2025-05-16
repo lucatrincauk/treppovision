@@ -28,7 +28,8 @@ export default function AdminSettingsPage() {
   const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
 
-  const [nations, setNations] = React.useState<Nation[]>([]);
+  const [nations, setNations] = React.useState<Nation[]>([]); // This state holds the visually ordered list of nations
+  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); // For stable lookups like name for toast
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [savingStates, setSavingStates] = React.useState<Map<string, boolean>>(new Map());
@@ -42,10 +43,10 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations() // This now uses noStore()
+            getNations()
           ]);
           setSettings(currentSettings);
-          // Sort initially by performingOrder, then by name for consistent initial display
+          
           const sortedNations = [...fetchedNations].sort((a, b) => {
             const orderA = a.performingOrder ?? Infinity;
             const orderB = b.performingOrder ?? Infinity;
@@ -55,9 +56,12 @@ export default function AdminSettingsPage() {
             return orderA - orderB;
           });
           setNations(sortedNations);
+          setAllNationsStable(fetchedNations); // Store a stable copy
 
           const initialRankings = new Map<string, string>();
-          sortedNations.forEach(nation => { // Use sortedNations to initialize inputs based on initial sort
+          // Initialize rankingsInput based on the visually sorted nations (which are initially sorted by performingOrder)
+          // or by their actual ranking if available. For this table, initial display relies on actual ranks.
+          fetchedNations.forEach(nation => { 
             initialRankings.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
           setRankingsInput(initialRankings);
@@ -117,29 +121,28 @@ export default function AdminSettingsPage() {
     setIsSubmittingLeaderboard(false);
   };
 
-  const handleSaveRanking = React.useCallback(async (nationId: string) => {
+  const handleSaveRanking = React.useCallback(async (nationId: string, rankingToSave: string) => {
     setSavingStates(prev => new Map(prev).set(nationId, true));
-    const rankingString = rankingsInput.get(nationId) ?? ""; // Get the latest value from input state
     
-    // The server action will parse the string
-    const result = await updateNationRankingAction(nationId, rankingString);
+    const nationNameForToast = allNationsStable.find(n => n.id === nationId)?.name || nationId;
+
+    const result = await updateNationRankingAction(nationId, rankingToSave);
 
     if (result.success) {
-      toast({ title: "Ranking Aggiornato", description: `Ranking per ${nations.find(n => n.id === nationId)?.name} aggiornato.` });
-      // Update the main 'nations' state to reflect the saved ranking for optimistic UI updates
-      // and to keep the 'originalRankString' comparison accurate for future direct edits
+      toast({ title: "Ranking Aggiornato", description: `Ranking per ${nationNameForToast} aggiornato.` });
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
         )
       );
-      // Also ensure rankingsInput reflects the canonical value from the server (e.g., empty string if rank was cleared)
       setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
+      // Optionally revert rankingsInput to its state before this save attempt if needed
+      // For now, it will keep the user's typed value.
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
-  }, [rankingsInput, nations, toast]);
+  }, [toast, setNations, setRankingsInput, allNationsStable]);
 
 
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
@@ -149,7 +152,7 @@ export default function AdminSettingsPage() {
       clearTimeout(debounceTimers.current.get(nationId)!);
     }
     debounceTimers.current.set(nationId, setTimeout(() => {
-      handleSaveRanking(nationId);
+      handleSaveRanking(nationId, value); // Pass the current value from the input
     }, DEBOUNCE_DELAY));
   }, [handleSaveRanking]);
 
@@ -169,21 +172,19 @@ export default function AdminSettingsPage() {
       }
       newNationsArray.splice(newIndex, 0, item);
 
-      // After updating the visual order, update and trigger save ONLY for modified ranking inputs
       newNationsArray.forEach((nation, idx) => {
         const newTargetRankString = String(idx + 1);
         // Get current value from the rankingsInput state for comparison
         const currentRankStringInInput = rankingsInput.get(nation.id) ?? ""; 
 
         if (newTargetRankString !== currentRankStringInInput) {
-          // This will update the input field's value and trigger the debounced save
           handleRankingInputChange(nation.id, newTargetRankString);
         }
       });
       
       return newNationsArray;
     });
-  }, [rankingsInput, handleRankingInputChange]);
+  }, [rankingsInput, handleRankingInputChange, setNations]);
 
 
   if (authLoading || isLoadingSettings || (user?.isAdmin && isLoadingNations)) {
@@ -292,7 +293,7 @@ export default function AdminSettingsPage() {
             Gestione Ranking Nazioni
           </CardTitle>
           <CardDescription>
-            Modifica l'ordine visuale con le frecce. Il ranking di tutte le nazioni si aggiornerà automaticamente per riflettere il nuovo ordine e verrà salvato.
+            Modifica l'ordine visuale con le frecce. Il ranking di tutte le nazioni modificate si aggiornerà automaticamente per riflettere il nuovo ordine e verrà salvato.
             Il campo "Ordine Esibizione" non è affetto da questa tabella.
           </CardDescription>
         </CardHeader>
