@@ -138,7 +138,7 @@ export default function EditTeamPage() {
   const initialCoreFormData: TeamCoreFormData = {
     name: team.name,
     founderChoices: team.founderChoices || [],
-    // creatorDisplayName is handled by the server action using the authenticated user
+    creatorDisplayName: team.creatorDisplayName,
   };
 
   return (
@@ -155,7 +155,7 @@ export default function EditTeamPage() {
           </CardTitle>
           <CardDescription>
             Aggiorna il nome della tua squadra e le tue scelte per le nazioni principali.
-            I pronostici finali (miglior canzone, ecc.) si modificano dalla pagina Squadre, cliccando "Pronostici Finali".
+            I pronostici finali (miglior canzone, ecc.) si modificano dalla pagina TreppoVision, cliccando "Pronostici Finali".
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,3 +170,4 @@ export default function EditTeamPage() {
     </div>
   );
 }
+

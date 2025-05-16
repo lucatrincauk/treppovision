@@ -11,11 +11,11 @@ export default function HomePage() {
       <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl">
         <Image
             src="/banner.png"
-            alt="App Banner"
+            alt="Banner TreppoVision"
             layout="fill"
             objectFit="cover"
             priority
-            data-ai-hint="site banner"
+            data-ai-hint="Eurovision banner"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex flex-col items-center justify-end p-8">
           {/* Text removed from here */}
@@ -54,3 +54,4 @@ export default function HomePage() {
     </div>
   );
 }
+

@@ -260,8 +260,8 @@ export default async function TeamsLeaderboardPage() {
   }
 
 
-  const podiumTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank <= 3);
-  const tableTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank > 3);
+  const podiumTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3);
+  const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
 
   const MedalIcon = ({ rank, className }: { rank?: number, className?: string }) => {
     if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
@@ -317,6 +317,8 @@ export default async function TeamsLeaderboardPage() {
 
   const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
     let IconComponent: React.ElementType;
+    const iconColorClass = "text-accent";
+
     switch (detail.iconName) {
         case 'Music2': IconComponent = Music2; break;
         case 'Star': IconComponent = Star; break;
@@ -324,7 +326,6 @@ export default async function TeamsLeaderboardPage() {
         case 'ThumbsDown': IconComponent = ThumbsDown; break;
         default: IconComponent = Info; 
     }
-    const iconColorClass = "text-accent";
     
     let rankTextSuffix = "";
     if (detail.actualCategoryRank && detail.actualCategoryRank > 0) {
@@ -334,7 +335,7 @@ export default async function TeamsLeaderboardPage() {
     }
     
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${rankTextSuffix})` : ''} - Punti: ${detail.pointsAwarded}`;
+    const titleText = `${detail.pickedNationName || 'N/D'}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}°${rankTextSuffix})` : ''} - Punti: ${detail.pointsAwarded}`;
 
     return (
       <div className="px-2 py-1.5">
@@ -447,16 +448,16 @@ export default async function TeamsLeaderboardPage() {
                                 team.rank === 2 ? "text-slate-400" :
                                 team.rank === 3 ? "text-amber-500" : "text-muted-foreground"
                                 )}>
-                                <MedalIcon rank={team.rank} className="mr-1" />
+                                <MedalIcon rank={team.rank} className="mr-1.5" />
                                 {getRankText(team.rank)}
-                                {team.isTied ? <span className="ml-1 text-muted-foreground">(Pari merito)</span> : ""}
+                                {team.isTied ? <span className="ml-1.5 text-muted-foreground">(Pari merito)</span> : ""}
                               </div>
                               <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
                               </div>
-                               {team.creatorDisplayName && (
+                              {team.creatorDisplayName && (
                                     <div className="text-xs text-muted-foreground flex items-center gap-1" title={`Utente: ${team.creatorDisplayName}`}>
-                                        (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
+                                        <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                     </div>
                                 )}
                               
@@ -511,3 +512,4 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
+

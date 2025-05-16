@@ -176,10 +176,7 @@ export default function TeamsPage() {
     }
 
     return allFetchedTeams.map(team => {
-      let scoreValue: number | undefined = 0;
-      if(leaderboardLockedAdmin) {
-        scoreValue = undefined;
-      }
+      let scoreValue: number | undefined = leaderboardLockedAdmin ? undefined : 0;
       
       const primaSquadraDetails: GlobalPrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
@@ -423,27 +420,26 @@ export default function TeamsPage() {
             <p className="text-muted-foreground">Caricamento squadra utente...</p>
         </div>
       ) : userTeam && allNations.length > 0 && (
-        <>
-        <section className="mb-6 pt-6 border-t border-border">
-           <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-semibold tracking-tight text-primary">
-                  La Mia Squadra
-                </h2>
-                {userTeam && !teamsLockedAdmin && (
-                  <Button asChild variant="outline" size="sm" className="w-auto">
-                      <Link href={`/teams/${userTeam.id}/edit`}>
-                          <Edit className="h-4 w-4 sm:mr-1.5" />
-                          <span className="hidden sm:inline">Modifica Squadra</span>
-                      </Link>
-                  </Button>
+        <section className="mb-12 pt-6 border-t border-border">
+          <div className="flex items-center justify-between mb-6">
+             <h2 className="text-3xl font-semibold tracking-tight text-primary">
+                La Mia Squadra
+              </h2>
+              {user && userTeam && !teamsLockedAdmin && (
+                <Button asChild variant="default" size="sm" className="w-auto">
+                    <Link href={`/teams/${userTeam.id}/edit`}>
+                        <Edit className="h-4 w-4 sm:mr-1.5" />
+                        <span className="hidden sm:inline">Modifica Squadra</span>
+                    </Link>
+                </Button>
                 )}
-                {userTeam && teamsLockedAdmin && (
+                {user && userTeam && teamsLockedAdmin && (
                     <Button variant="outline" size="sm" disabled className="w-auto">
                         <Lock className="h-4 w-4 sm:mr-1.5"/>
                         <span className="hidden sm:inline">Modifica Bloccata</span>
                     </Button>
                 )}
-            </div>
+          </div>
           <TeamListItem 
             team={userTeam} 
             allNations={allNations}
@@ -451,8 +447,7 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
             disableEdit={true}
           />
-          </section>
-           <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center">
             {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && (
                 <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
@@ -474,7 +469,7 @@ export default function TeamsPage() {
                 </Button>
             )}
             </div>
-        </>
+        </section>
       ))}
 
       <section className="pt-6 border-t border-border">
@@ -540,7 +535,9 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
+                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[80px]">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
+                    {/* Columns for specific category picks are removed here */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -555,6 +552,7 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
+                       {!leaderboardLockedAdmin && <TableCell className="text-right font-medium">{team.score ?? 'N/D'}</TableCell>}
                        <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => (

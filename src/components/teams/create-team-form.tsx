@@ -354,7 +354,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Scegli esattamente 3 nazioni per la tua squadra principale. Questi sono i tuoi pronostici per la classifica finale Eurovision.
+                Scegli esattamente 3 nazioni per la tua prima squadra. Questi sono i tuoi pronostici per la classifica finale Eurovision.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -374,3 +374,4 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     </Form>
   );
 }
+

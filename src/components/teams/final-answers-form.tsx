@@ -247,7 +247,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>Scegli la migliore canzone secondo gli utenti di Treppovision.</FormDescription>
+              <FormDescription>Scegli la migliore canzone secondo gli utenti di TreppoVision.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -275,7 +275,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>Scegli la migliore performance secondo gli utenti di Treppovision.</FormDescription>
+              <FormDescription>Scegli la migliore performance secondo gli utenti di TreppoVision.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -303,7 +303,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>Scegli l'outfit migliore secondo gli utenti di Treppovision.</FormDescription>
+              <FormDescription>Scegli l'outfit migliore secondo gli utenti di TreppoVision.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -331,7 +331,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>La peggiore canzone secondo gli utenti di Treppovision.</FormDescription>
+              <FormDescription>La peggiore canzone secondo gli utenti di TreppoVision.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -360,3 +360,4 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </Form>
   );
 }
+

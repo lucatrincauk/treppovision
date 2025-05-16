@@ -51,3 +51,4 @@ export default async function NationPageServer({ params }: NationPageProps) {
   return <NationPageClient initialNation={nation} params={{ id: params.id }} />;
 }
 
+

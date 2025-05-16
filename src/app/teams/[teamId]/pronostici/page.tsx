@@ -31,7 +31,7 @@ export default function EditFinalAnswersPage() {
     async function fetchPageData() {
       if (authLoading || !teamId) {
         setIsLoadingSettings(authLoading);
-        setIsLoadingData(authLoading); // Ensure data loading is also true if auth is loading
+        setIsLoadingData(authLoading); 
         if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
           setIsLoadingData(false);
@@ -50,15 +50,15 @@ export default function EditFinalAnswersPage() {
       } catch (settingsError: any) {
         console.error("Failed to fetch final predictions enabled status:", settingsError);
         setError("Impossibile caricare le impostazioni dei pronostici.");
-        setFinalPredictionsEnabled(false); // Default to false on error
+        setFinalPredictionsEnabled(false); 
         setIsLoadingSettings(false);
-        setIsLoadingData(false); // Stop data loading if settings fetch fails
+        setIsLoadingData(false); 
         return;
       }
       setIsLoadingSettings(false);
 
       if (predictionsEnabledStatus === false) {
-        setIsLoadingData(false); // No need to load team data if predictions are disabled
+        setIsLoadingData(false); 
         return;
       }
       
@@ -223,7 +223,6 @@ export default function EditFinalAnswersPage() {
             <ChevronLeft className="w-4 h-4 mr-1" />
             Torna alle Squadre
         </Link>
-       {/* Warning Alert is now moved inside FinalAnswersForm */}
       <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
@@ -239,7 +238,6 @@ export default function EditFinalAnswersPage() {
             initialData={initialFinalAnswers}
             teamId={team!.id}
             isReadOnly={hasExistingPredictions} 
-            // showOneTimeSubmitWarning={!hasExistingPredictions} // Pass this prop
           />
         </CardContent>
       </Card>
@@ -248,3 +246,4 @@ export default function EditFinalAnswersPage() {
 }
 
     
+
