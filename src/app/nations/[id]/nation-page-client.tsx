@@ -135,6 +135,53 @@ export default function NationPageClient({ initialNation, params: serverParams }
           </div>
         </AdminNationControls>
       </div>
+      
+      <div className="flex justify-between items-center mb-6">
+        {previousNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${previousNation.id}`} title={`Precedente: ${previousNation.name}`} className="flex items-center">
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              <Image
+                src={`https://flagcdn.com/w20/${previousNation.countryCode.toLowerCase()}.png`}
+                alt={`Bandiera ${previousNation.name}`}
+                width={20}
+                height={13}
+                className="rounded-sm border border-border/50 object-contain mr-1.5"
+                data-ai-hint={`${previousNation.name} flag icon`}
+              />
+              {previousNation.name}
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled className="flex items-center">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+             <span className="w-5 h-[13px] mr-1.5"></span> {/* Placeholder for flag */}
+            Precedente
+          </Button>
+        )}
+        {nextNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${nextNation.id}`} title={`Successiva: ${nextNation.name}`} className="flex items-center">
+              {nextNation.name}
+              <Image
+                src={`https://flagcdn.com/w20/${nextNation.countryCode.toLowerCase()}.png`}
+                alt={`Bandiera ${nextNation.name}`}
+                width={20}
+                height={13}
+                className="rounded-sm border border-border/50 object-contain ml-1.5"
+                data-ai-hint={`${nextNation.name} flag icon`}
+              />
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled className="flex items-center">
+            Successiva
+            <span className="w-5 h-[13px] ml-1.5"></span> {/* Placeholder for flag */}
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        )}
+      </div>
 
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
         {headerBgSrc && (
@@ -205,53 +252,6 @@ export default function NationPageClient({ initialNation, params: serverParams }
         </div>
       </header>
       
-      <div className="flex justify-between items-center mb-6">
-        {previousNation ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/nations/${previousNation.id}`} title={`Precedente: ${previousNation.name}`} className="flex items-center">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              <Image
-                src={`https://flagcdn.com/w20/${previousNation.countryCode.toLowerCase()}.png`}
-                alt={`Bandiera ${previousNation.name}`}
-                width={20}
-                height={13}
-                className="rounded-sm border border-border/50 object-contain mr-1.5"
-                data-ai-hint={`${previousNation.name} flag icon`}
-              />
-              {previousNation.name}
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" disabled className="flex items-center">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-             <span className="w-5 h-[13px] mr-1.5"></span> {/* Placeholder for flag */}
-            Precedente
-          </Button>
-        )}
-        {nextNation ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/nations/${nextNation.id}`} title={`Successiva: ${nextNation.name}`} className="flex items-center">
-              {nextNation.name}
-              <Image
-                src={`https://flagcdn.com/w20/${nextNation.countryCode.toLowerCase()}.png`}
-                alt={`Bandiera ${nextNation.name}`}
-                width={20}
-                height={13}
-                className="rounded-sm border border-border/50 object-contain ml-1.5"
-                data-ai-hint={`${nextNation.name} flag icon`}
-              />
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" disabled className="flex items-center">
-            Successiva
-            <span className="w-5 h-[13px] ml-1.5"></span> {/* Placeholder for flag */}
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        )}
-      </div>
-
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
           {nation.songDescription && (
