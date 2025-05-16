@@ -84,6 +84,7 @@ const getTopNationsForCategory = (
       if (a.score === null && b.score === null) return 0;
       if (a.score === null) return 1; 
       if (b.score === null) return -1; 
+      if (a.score === b.score) return a.name.localeCompare(b.name);
       if (sortOrder === 'desc') {
         return (b.score as number) - (a.score as number);
       }
@@ -93,7 +94,7 @@ const getTopNationsForCategory = (
 
 const getCategoryPickPointsAndRank = (
   pickedNationId: string | undefined,
-  sortedNationsForCategory: Array<{ id: string; score: number | null }> 
+  sortedNationsForCategory: Array<{ id: string; name: string; score: number | null }> 
 ): { points: number; rank?: number; score?: number | null } => {
   if (!pickedNationId || sortedNationsForCategory.length === 0) return { points: 0, rank: undefined, score: null };
   
@@ -154,8 +155,8 @@ export default async function TeamsLeaderboardPage() {
           id: nation.id,
           name: nation.name,
           countryCode: nation.countryCode,
-          artistName: nation.artistName,
-          songTitle: nation.songTitle,
+          artistName: nation?.artistName,
+          songTitle: nation?.songTitle,
           actualRank: nation.ranking,
           points,
         });
@@ -247,7 +248,6 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  // Second pass to determine ties
   for (let i = 0; i < teamsWithScores.length; i++) {
     let isTied = false;
     if (i > 0 && teamsWithScores[i].rank === teamsWithScores[i-1].rank) {
@@ -269,7 +269,7 @@ export default async function TeamsLeaderboardPage() {
     if (rank === 1) colorClass = "text-yellow-400";
     else if (rank === 2) colorClass = "text-slate-400";
     else if (rank === 3) colorClass = "text-amber-500";
-    return <Award className={cn("w-4 h-4 flex-shrink-0 ml-1", colorClass, className)} />;
+    return <Award className={cn("w-4 h-4 flex-shrink-0", colorClass, className)} />;
   };
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => {
@@ -295,7 +295,7 @@ export default async function TeamsLeaderboardPage() {
                     />
                 )}
                 <span className="font-medium">{detail.name}</span>
-                <MedalIcon rank={detail.actualRank} className="w-3.5 h-3.5"/>
+                <MedalIcon rank={detail.actualRank} className="ml-1"/>
                 <span className="text-muted-foreground ml-0.5 text-xs">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
               </Link>
               {nationData && (
@@ -360,16 +360,18 @@ export default async function TeamsLeaderboardPage() {
                         alt={detail.pickedNationName}
                         width={20}
                         height={13}
-                        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                        className="rounded-sm border border-border/30 object-contain flex-shrink-0 mr-0"
                         data-ai-hint={`${detail.pickedNationName} flag`}
                     />
                     <span className="font-medium">
                         {detail.pickedNationName}
                     </span>
-                    <MedalIcon rank={detail.actualCategoryRank} className="w-3.5 h-3.5"/>
                     {detail.actualCategoryRank && (
-                        <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                           ({detail.actualCategoryRank}°{rankTextSuffix})
+                        <span className="flex items-center gap-0.5">
+                           <MedalIcon rank={detail.actualCategoryRank} className="ml-1"/>
+                           <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
+                               ({detail.actualCategoryRank}°{rankTextSuffix})
+                           </span>
                         </span>
                     )}
                 </Link>
@@ -439,10 +441,15 @@ export default async function TeamsLeaderboardPage() {
                       {tableTeams.map((team) => (
                         <TableRow key={team.id}>
                           <TableCell className="align-top pt-4">
-                              <div className="text-sm font-medium text-muted-foreground mb-0.5 flex items-center">
+                              <div className={cn(
+                                "text-sm font-medium mb-0.5 flex items-center",
+                                team.rank === 1 ? "text-yellow-400" :
+                                team.rank === 2 ? "text-slate-400" :
+                                team.rank === 3 ? "text-amber-500" : "text-muted-foreground"
+                                )}>
+                                <MedalIcon rank={team.rank} className="mr-1" />
                                 {getRankText(team.rank)}
-                                <MedalIcon rank={team.rank} />
-                                {team.isTied ? <span className="ml-1">(Pari merito)</span> : ""}
+                                {team.isTied ? <span className="ml-1 text-muted-foreground">(Pari merito)</span> : ""}
                               </div>
                               <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
@@ -504,14 +511,3 @@ export default async function TeamsLeaderboardPage() {
     </div>
   );
 }
-  
-
-    
-
-
-
-
-
-
-
-
