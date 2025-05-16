@@ -175,10 +175,10 @@ export default function TreppoScoreRankingPage() {
       // Second pass to mark ties
       rankedNations.forEach((nation, index, arr) => {
         let isTiedValue = false;
-        if (index > 0 && nation.rank === arr[index - 1].rank) {
+        if (index > 0 && nation.rank === arr[index - 1].rank && nation.scoreForRanking === arr[index-1].scoreForRanking) {
           isTiedValue = true;
         }
-        if (index < arr.length - 1 && nation.rank === arr[index + 1].rank) {
+        if (index < arr.length - 1 && nation.rank === arr[index + 1].rank && nation.scoreForRanking === arr[index+1].scoreForRanking) {
           isTiedValue = true;
         }
         nation.isTied = isTiedValue;
@@ -337,14 +337,28 @@ export default function TreppoScoreRankingPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[60px] text-center">Pos.</TableHead>
+                        <TableHead className="w-[80px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
                         <TableHead className="text-right w-[140px]">{currentScoreColumnHeader}</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {nationsWithScores.map((nation) => (
+                      {nationsWithScores.map((nation) => {
+                        let rankDiffText = "";
+                        let rankDiffColor = "";
+                        if (nation.ranking && nation.rank) {
+                            const diff = nation.ranking - nation.rank;
+                            if (diff > 0) {
+                                rankDiffText = `(+${diff})`;
+                                rankDiffColor = "text-green-500";
+                            } else if (diff < 0) {
+                                rankDiffText = `(${diff})`;
+                                rankDiffColor = "text-red-500";
+                            }
+                        }
+
+                        return (
                         <TableRow key={nation.id}>
                           <TableCell className="font-medium text-center align-middle">
                             <div className="flex items-center justify-center">
@@ -356,6 +370,11 @@ export default function TreppoScoreRankingPage() {
                               )}>
                                 {nation.rank}{nation.isTied && "*"}
                               </span>
+                              {rankDiffText && (
+                                <span className={cn("ml-1 text-xs", rankDiffColor)}>
+                                    {rankDiffText}
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -394,7 +413,7 @@ export default function TreppoScoreRankingPage() {
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.voteCount}</TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 </CardContent>
