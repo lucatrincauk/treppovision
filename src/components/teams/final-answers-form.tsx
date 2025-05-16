@@ -26,9 +26,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Nation, TeamFinalAnswersFormData } from "@/types";
 import { getNations } from "@/lib/nation-service";
-import { updateTeamFinalAnswersAction, getTeamsLockedStatus } from "@/lib/actions/team-actions";
+import { updateTeamFinalAnswersAction } from "@/lib/actions/team-actions"; // Removed getTeamsLockedStatus
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Lock, Users, Info } from "lucide-react";
+import { Loader2, Save, Lock, Users, Info } from "lucide-react"; // Lock icon can be removed if not used elsewhere
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
@@ -42,7 +42,7 @@ const finalAnswersFormZodSchema = z.object({
 interface FinalAnswersFormProps {
   initialData: TeamFinalAnswersFormData;
   teamId: string;
-  isReadOnly?: boolean; // New prop
+  isReadOnly?: boolean;
 }
 
 export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: FinalAnswersFormProps) {
@@ -52,18 +52,14 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [nations, setNations] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
-  const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
+  // Removed teamsLocked state and related useEffect
 
   React.useEffect(() => {
     async function fetchData() {
       setIsLoadingNations(true);
       try {
-        const [fetchedNations, lockStatus] = await Promise.all([
-          getNations(),
-          getTeamsLockedStatus()
-        ]);
+        const fetchedNations = await getNations();
         setNations(fetchedNations);
-        setTeamsLocked(lockStatus);
       } catch (error) {
         console.error("Failed to fetch data for final answers form:", error);
         toast({
@@ -104,8 +100,9 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login.", variant: "destructive" });
       return;
     }
-    if (teamsLocked || isReadOnly) {
-      toast({ title: "Modifica Bloccata", description: "La modifica dei pronostici è temporaneamente bloccata o i pronostici sono già stati inviati.", variant: "destructive" });
+    // Removed check for teamsLocked here
+    if (isReadOnly) {
+      toast({ title: "Modifica Bloccata", description: "I pronostici sono già stati inviati e non possono essere modificati.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -127,7 +124,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     setIsSubmitting(false);
   }
 
-  if (authLoading || isLoadingNations || teamsLocked === null) {
+  if (authLoading || isLoadingNations) { // Removed teamsLocked === null check
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
@@ -136,17 +133,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     );
   }
 
-  if (teamsLocked) {
-    return (
-      <Alert variant="destructive">
-        <Lock className="h-4 w-4" />
-        <AlertTitle>Modifica Pronostici Bloccata</AlertTitle>
-        <AlertDescription>
-          L'amministratore ha temporaneamente bloccato la modifica dei pronostici. Riprova più tardi.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // Removed the Alert for teamsLocked as this form's access is controlled by parent page based on finalPredictionsEnabled
   
   if (nations.length === 0 && !isLoadingNations) {
     return (
@@ -180,6 +167,9 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   );
   
   if (isReadOnly) {
+    // This block handles the case where the form is read-only because predictions have already been submitted
+    // The parent page `pronostici/page.tsx` will likely show a different message already,
+    // but this provides a fallback if the form component is somehow rendered when read-only.
     return (
       <>
         <Alert variant="default" className="mb-6">
@@ -191,7 +181,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
         </Alert>
         <Form {...form}>
           <form className="space-y-6 py-4">
-             {/* Render disabled fields to show current selections */}
             <FormField
               control={form.control}
               name="bestSongNationId"
@@ -256,7 +245,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                      <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -284,7 +273,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore performance</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                      <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -312,7 +301,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore outfit</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -340,7 +329,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Peggiore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -365,7 +354,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
         <Button
           type="submit"
           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-          disabled={isSubmitting || isLoadingNations || teamsLocked || nations.length === 0 || isReadOnly}
+          disabled={isSubmitting || isLoadingNations || nations.length === 0 || isReadOnly}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
@@ -375,4 +364,3 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </Form>
   );
 }
-
