@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation"; // Removed useRouter as it's not used
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamFinalAnswersFormData } from "@/types";
@@ -17,34 +17,56 @@ import { getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 export default function EditFinalAnswersPage() {
   const { user, isLoading: authLoading } = useAuth();
   const params = useParams();
-  const router = useRouter();
   const teamId = typeof params.teamId === "string" ? params.teamId : undefined;
 
   const [team, setTeam] = useState<Team | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [finalPredictionsEnabled, setFinalPredictionsEnabled] = useState<boolean | null>(null);
   const [hasExistingPredictions, setHasExistingPredictions] = useState(false);
 
   useEffect(() => {
-    async function fetchTeamAndSettings() {
+    async function fetchPageData() {
       if (authLoading || !teamId) {
-        // If auth is still loading or no teamId, reflect this in isLoadingData
-        // if not already true (though initial state is true).
-        // No further action if these prerequisites aren't met.
-        setIsLoadingData(authLoading || !teamId);
+        setIsLoadingData(authLoading); // Reflect auth loading in main data loading
+        setIsLoadingSettings(authLoading);
+        if (!teamId && !authLoading) { // If no teamId and auth is resolved
+          setError("ID Squadra non valido.");
+          setIsLoadingData(false);
+          setIsLoadingSettings(false);
+        }
         return;
       }
 
-      setIsLoadingData(true);
-      setError(null);
+      setIsLoadingSettings(true);
+      setError(null); // Reset error on new fetch attempt
+
+      let predictionsEnabledStatus = false;
       try {
-        const [fetchedTeam, finalPredictionsEnableStatus] = await Promise.all([
-          getTeamById(teamId),
-          getFinalPredictionsEnabledStatus()
-        ]);
-        setFinalPredictionsEnabled(finalPredictionsEnableStatus);
+        predictionsEnabledStatus = await getFinalPredictionsEnabledStatus();
+        setFinalPredictionsEnabled(predictionsEnabledStatus);
+      } catch (settingsError: any) {
+        console.error("Failed to fetch final predictions enabled status:", settingsError);
+        setError("Impossibile caricare le impostazioni dei pronostici.");
+        setFinalPredictionsEnabled(false); // Default to false on error
+        setIsLoadingSettings(false);
+        setIsLoadingData(false); // Stop main data loading if settings fail
+        return;
+      }
+      setIsLoadingSettings(false);
+
+      // If predictions are not enabled, don't bother fetching team data for the form
+      if (predictionsEnabledStatus === false) {
+        setIsLoadingData(false);
+        return;
+      }
+
+      // Proceed to fetch team data only if predictions are enabled
+      setIsLoadingData(true);
+      try {
+        const fetchedTeam = await getTeamById(teamId);
 
         if (fetchedTeam) {
           setTeam(fetchedTeam);
@@ -58,25 +80,54 @@ export default function EditFinalAnswersPage() {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
-            setError("Non sei autorizzato a modificare i pronostici di questa squadra.");
+            // Don't set a generic error if just unauthorized, page will handle it
           }
         } else {
           setError("Squadra non trovata.");
           setIsAuthorized(false);
         }
       } catch (fetchError: any) {
-        console.error("Failed to fetch team or settings for final answers:", fetchError);
-        setError(fetchError.message || "Errore durante il caricamento dei dati della squadra o delle impostazioni.");
+        console.error("Failed to fetch team data for final answers:", fetchError);
+        setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
         setIsAuthorized(false);
       } finally {
         setIsLoadingData(false);
       }
     }
 
-    fetchTeamAndSettings();
-  }, [teamId, user, authLoading]); // Removed router from dependencies
+    fetchPageData();
+  }, [teamId, user, authLoading]);
 
-  if (authLoading || isLoadingData || finalPredictionsEnabled === null) {
+  if (authLoading || isLoadingSettings) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Caricamento impostazioni...</p>
+      </div>
+    );
+  }
+
+  // This check is now more reliable as finalPredictionsEnabled has been fetched
+  if (finalPredictionsEnabled === false) {
+     return (
+      <div className="space-y-6">
+        <Link href="/teams" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Torna alle Squadre
+        </Link>
+        <Alert variant="destructive" className="max-w-lg mx-auto">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Inserimento Pronostici Bloccato</AlertTitle>
+          <AlertDescription>
+            L'amministratore ha temporaneamente disabilitato l'inserimento dei pronostici finali.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // If settings are loaded and predictions are enabled, then check for main data loading
+  if (isLoadingData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -115,28 +166,13 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  if (finalPredictionsEnabled === false) { // Explicitly check for false
-     return (
-      <Alert variant="destructive" className="max-w-lg mx-auto">
-        <Lock className="h-4 w-4" />
-        <AlertTitle>Inserimento Pronostici Bloccato</AlertTitle>
-        <AlertDescription>
-          L'amministratore ha temporaneamente disabilitato l'inserimento dei pronostici finali.
-          <Button variant="link" asChild className="p-0 ml-1">
-            <Link href="/teams">Torna alle Squadre</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!isAuthorized || !team) {
+  if (!isAuthorized && team) { // Check team to ensure it's not a "Squadra non trovata" case
      return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Accesso Negato</AlertTitle>
         <AlertDescription>
-          Non sei autorizzato a modificare questi pronostici o la squadra non è stata trovata.
+          Non sei autorizzato a modificare questi pronostici.
           <Button variant="link" asChild className="p-0 ml-1">
             <Link href="/teams">Torna alle Squadre</Link>
           </Button>
@@ -144,6 +180,22 @@ export default function EditFinalAnswersPage() {
       </Alert>
     );
   }
+  
+  if (!team && !error) { // Case where team is null but no specific error was set (e.g. bad teamId early)
+    return (
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Squadra Non Trovata</AlertTitle>
+            <AlertDescription>
+                La squadra richiesta non è stata trovata.
+                <Button variant="link" asChild className="p-0 ml-1">
+                <Link href="/teams">Torna alle Squadre</Link>
+                </Button>
+            </AlertDescription>
+        </Alert>
+    );
+  }
+
 
   if (hasExistingPredictions) {
     return (
@@ -156,18 +208,19 @@ export default function EditFinalAnswersPage() {
           <Info className="h-4 w-4" />
           <AlertTitle>Pronostici Già Inviati</AlertTitle>
           <AlertDescription>
-            Hai già inviato i tuoi pronostici finali per la squadra "{team.name}". Non possono essere modificati.
+            Hai già inviato i tuoi pronostici finali per la squadra "{team?.name || 'sconosciuta'}". Non possono essere modificati.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
+  // This implies team must exist if we reach here
   const initialFinalAnswers: TeamFinalAnswersFormData = {
-    bestSongNationId: team.bestSongNationId || "",
-    bestPerformanceNationId: team.bestPerformanceNationId || "",
-    bestOutfitNationId: team.bestOutfitNationId || "",
-    worstSongNationId: team.worstSongNationId || "",
+    bestSongNationId: team!.bestSongNationId || "",
+    bestPerformanceNationId: team!.bestPerformanceNationId || "",
+    bestOutfitNationId: team!.bestOutfitNationId || "",
+    worstSongNationId: team!.worstSongNationId || "",
   };
 
   return (
@@ -180,7 +233,7 @@ export default function EditFinalAnswersPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
             <ListOrdered className="mr-2 h-6 w-6" />
-            Pronostici Finali per: {team.name}
+            Pronostici Finali per: {team!.name}
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
@@ -194,7 +247,7 @@ export default function EditFinalAnswersPage() {
         <CardContent>
           <FinalAnswersForm
             initialData={initialFinalAnswers}
-            teamId={team.id}
+            teamId={team!.id}
             isReadOnly={hasExistingPredictions} 
           />
         </CardContent>
@@ -202,3 +255,5 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
+
+    
