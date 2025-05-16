@@ -1,11 +1,11 @@
 
 "use client";
 
-import type { Nation } from "@/types";
+import type { Nation, Vote } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Star, TrendingUp, Lock, Award } from "lucide-react"; // TrendingUp might be unused now
+import { Loader2, Star, Users, TrendingUp, Award } from "lucide-react"; // TrendingUp might be unused now
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,7 +14,6 @@ import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 
 interface NationListItemProps {
   nation: Nation & { userAverageScore?: number | null };
-  // Add other props if NationListItem is used in different contexts that require them.
 }
 
 export function NationListItem({ nation }: NationListItemProps) {
@@ -28,21 +27,15 @@ export function NationListItem({ nation }: NationListItemProps) {
 
   const [fetchedUserAverageScore, setFetchedUserAverageScore] = useState<number | null>(null);
   const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
-
-  // Global score state is no longer needed here for display on the card
-  // const [globalAverageScore, setGlobalAverageScore] = useState<number | null>(null);
-  // const [globalVoteCount, setGlobalVoteCount] = useState<number>(0);
-  // const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
 
-  const userAverageScore = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
+  // This prop-based score is primarily for the TreppoScore page's top 3 cards
+  const userAverageScoreToDisplay = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
 
   useEffect(() => {
     async function fetchLockStatus() {
-      // setIsLoadingGlobalVote(true); // Not fetching global scores for display here anymore
       const status = await getLeaderboardLockedStatus();
       setLeaderboardLocked(status);
-      // setIsLoadingGlobalVote(false);
     }
     fetchLockStatus();
   }, []);
@@ -60,6 +53,7 @@ export function NationListItem({ nation }: NationListItemProps) {
   };
 
   useEffect(() => {
+    // If userAverageScore is already passed via props, don't re-fetch
     if (nation.userAverageScore !== undefined) {
       setIsLoadingUserVote(false);
       return;
@@ -103,9 +97,9 @@ export function NationListItem({ nation }: NationListItemProps) {
     nation.ranking === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
     "border-border group-hover:border-primary/50";
 
-  // Logic to display user score in content based on rank, only used in TreppoScore page for top 3
-  const displayUserScoreInContent = nation.ranking && [1, 2, 3].includes(nation.ranking) && userAverageScore !== null;
-  const displayUserScoreOnThumbnail = user && !authLoading && userAverageScore !== null && !displayUserScoreInContent;
+  const displayUserScoreInContent = nation.ranking && [1, 2, 3].includes(nation.ranking) && userAverageScoreToDisplay !== null;
+  // const displayUserScoreOnThumbnail = user && !authLoading && userAverageScoreToDisplay !== null && !displayUserScoreInContent;
+
 
   return (
     <Link href={`/nations/${nation.id}`} className="group block h-full">
@@ -125,7 +119,7 @@ export function NationListItem({ nation }: NationListItemProps) {
               onError={handleImageError}
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-3">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-col justify-end p-3">
               <div>
                 <CardTitle className="text-lg font-bold text-white drop-shadow-md flex items-center gap-2">
                   <Image
@@ -138,7 +132,7 @@ export function NationListItem({ nation }: NationListItemProps) {
                   />
                   <span>{nation.name}</span>
                 </CardTitle>
-                <p className="text-xs text-white/90 drop-shadow-sm truncate" title={`${nation.artistName} - ${nation.songTitle}`}>
+                <p className="text-xs text-white/90 drop-shadow-sm truncate" title={nation.artistName}>
                   {nation.artistName}
                 </p>
                 <p className="text-xs text-white/80 drop-shadow-sm truncate" title={nation.songTitle}>
@@ -146,42 +140,16 @@ export function NationListItem({ nation }: NationListItemProps) {
                 </p>
               </div>
             </div>
-
-            <div className="absolute bottom-2 right-2 flex flex-col items-end">
-              {(!user || (isLoadingUserVote && !nation.userAverageScore && !authLoading)) && (
-                 <div className={cn(
-                    "flex items-center justify-start bg-accent/70 text-accent-foreground/70 rounded-sm animate-pulse min-w-[70px] mb-[2px]",
-                     "px-1.5 py-0.5"
-                 )}>
-                    <Star className={cn("mr-1 text-accent-foreground/70", "w-3 h-3")} />
-                    <span className={cn("w-6 bg-accent-foreground/30 rounded", "h-3")}></span>
-                 </div>
-              )}
-              {displayUserScoreOnThumbnail && userAverageScore !== null && (
-                <div className={cn(
-                  "flex items-center justify-start bg-accent text-accent-foreground rounded-sm min-w-[70px] mb-[2px]",
-                  "px-1.5 py-0.5"
-                )}>
-                  <Star className={cn("mr-1", "w-3 h-3")} />
-                  <span className={cn("font-semibold", "text-xs")}>
-                    {userAverageScore.toFixed(2)}
-                  </span>
-                </div>
-              )}
-
-              {/* Global score badge removed from here */}
-
-            </div>
+            {/* Badges on thumbnail removed */}
           </div>
         </CardHeader>
-        {/* CardContent and CardFooter are removed for compact view */}
-        {/* Display user's score in content for top 3 on TreppoScore page */}
+        
         {displayUserScoreInContent && (
           <div className="px-3 py-2 border-t border-border/50 bg-card/70">
             <div className="flex items-center text-xs text-accent-foreground">
               <Star className="w-3 h-3 mr-1 text-accent" />
               <span className="font-medium">Il tuo Voto:</span>
-              <span className="font-bold ml-1">{userAverageScore?.toFixed(2)}</span>
+              <span className="font-bold ml-1">{userAverageScoreToDisplay?.toFixed(2)}</span>
             </div>
           </div>
         )}
