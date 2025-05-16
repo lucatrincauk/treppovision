@@ -213,10 +213,36 @@ export default function TeamsPage() {
     return allFetchedTeams.map(team => {
       let scoreValue: number | undefined = 0;
       
-      const primaSquadraDetails: PrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
+      if (leaderboardLockedAdmin) {
+        scoreValue = undefined;
+      } else {
+        (team.founderChoices || []).forEach(nationId => {
+          const nation = nationsMap.get(nationId);
+          const points = nation ? getPointsForRank(nation.ranking) : 0;
+          if(scoreValue !== undefined) scoreValue += points;
+        });
+
+        const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+        const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
+        const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+        const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
+        
+        const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
+        if(scoreValue !== undefined) scoreValue += bestSongPick.points;
+
+        const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerfNationsList);
+        if(scoreValue !== undefined) scoreValue += bestPerfPick.points;
+        
+        const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNationsList);
+        if(scoreValue !== undefined) scoreValue += bestOutfitPick.points;
+
+        const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
+        if(scoreValue !== undefined) scoreValue += worstSongPick.points;
+      }
+      
+      const primaSquadraDetails: GlobalPrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
-        if(scoreValue !== undefined) scoreValue += points;
         return {
           id: nationId,
           name: nation?.name || 'Sconosciuto',
@@ -227,16 +253,14 @@ export default function TeamsPage() {
           points: points,
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
-
+      
+      const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
       const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
       const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
       const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
       const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
       
-      const categoryPicksDetails: CategoryPickDetail[] = [];
-
       const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
-      if(scoreValue !== undefined) scoreValue += bestSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Canzone", pickedNationId: team.bestSongNationId, 
         pickedNationName: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.name : undefined,
@@ -245,7 +269,6 @@ export default function TeamsPage() {
       });
 
       const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerfNationsList);
-      if(scoreValue !== undefined) scoreValue += bestPerfPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId,
         pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined,
@@ -254,7 +277,6 @@ export default function TeamsPage() {
       });
       
       const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNationsList);
-      if(scoreValue !== undefined) scoreValue += bestOutfitPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId,
         pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined,
@@ -263,7 +285,6 @@ export default function TeamsPage() {
       });
 
       const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
-      if(scoreValue !== undefined) scoreValue += worstSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId,
         pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined,
@@ -271,15 +292,11 @@ export default function TeamsPage() {
         actualCategoryRank: worstSongPick.rank, pointsAwarded: worstSongPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstSongPick.score,
       });
       
-      if (leaderboardLockedAdmin) {
-        scoreValue = undefined;
-      }
-      
       const teamWithDetails: TeamWithScore = {
         ...team,
         score: scoreValue,
-        primaSquadraDetails: primaSquadraDetails as GlobalPrimaSquadraDetail[],
-        categoryPicksDetails: categoryPicksDetails as GlobalCategoryPickDetail[],
+        primaSquadraDetails: primaSquadraDetails,
+        categoryPicksDetails: categoryPicksDetails,
       };
       return teamWithDetails;
 
@@ -495,7 +512,7 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
             {!isLoadingUserTeams && !teamsLockedAdmin && userTeams.length > 0 && (
-              <Button asChild variant="default" size="sm">
+              <Button asChild variant="outline" size="sm">
                 <Link href={`/teams/${userTeams[0].id}/edit`}>
                   <Edit className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Modifica la Tua Squadra</span>
@@ -524,7 +541,7 @@ export default function TeamsPage() {
 
       <section className="pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h2 className="text-3xl font-semibold tracking-tight text-primary flex-grow text-left">
+          <h2 className="text-3xl font-semibold tracking-tight text-primary text-left">
             Altre Squadre
           </h2>
           <div className="relative w-full md:w-auto md:min-w-[300px]">
