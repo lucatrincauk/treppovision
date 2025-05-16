@@ -4,9 +4,9 @@
 import * as React from "react";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib/voting-service";
-import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores, RankingCategoryKey } from "@/types";
+import type { Nation, NationWithTreppoScore as BaseNationWithTreppoScore, Vote, NationGlobalCategorizedScores, RankingCategoryKey } from "@/types";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
-import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon, SlidersHorizontal, Music, Diamond } from "lucide-react";
+import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon, SlidersHorizontal, Music, Diamond, Award } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+interface NationWithRankAndTie extends BaseNationWithTreppoScore {
+  isTied?: boolean;
+}
+
+
 const categoryOptions: { value: RankingCategoryKey; label: string; title: string; columnHeader: string; icon: React.ElementType }[] = [
   { value: 'overallAverageScore', label: 'Globale', title: "Classifica TreppoScore Globale", columnHeader: "TreppoScore Globale", icon: TrendingUp },
   { value: 'averageSongScore', label: 'Canzone', title: "Classifica Miglior Canzone", columnHeader: "Punteggio Canzone", icon: Music },
@@ -26,16 +31,27 @@ const categoryOptions: { value: RankingCategoryKey; label: string; title: string
   { value: 'averageOutfitScore', label: 'Outfit', title: "Classifica Miglior Outfit", columnHeader: "Punteggio Outfit", icon: Diamond },
 ];
 
+const MedalIcon = React.memo(({ rank, isTied }: { rank?: number, isTied?: boolean }) => {
+  if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
+  let colorClass = "";
+  if (rank === 1) colorClass = "text-yellow-400";
+  else if (rank === 2) colorClass = "text-slate-400";
+  else if (rank === 3) colorClass = "text-amber-500";
+  return <Award className={cn("w-4 h-4 inline-block mr-1", colorClass)} />;
+});
+MedalIcon.displayName = 'MedalIcon';
+
 export default function TreppoScoreRankingPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [allNations, setAllNations] = React.useState<Nation[]>([]);
   const [globalScoresMap, setGlobalScoresMap] = React.useState<Map<string, NationGlobalCategorizedScores>>(new Map());
   const [userVotesMap, setUserVotesMap] = React.useState<Map<string, Vote | null>>(new Map());
   
-  const [nationsWithScores, setNationsWithScores] = React.useState<NationWithTreppoScore[]>([]);
+  const [nationsWithScores, setNationsWithScores] = React.useState<NationWithRankAndTie[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [isLoadingNationsData, setIsLoadingNationsData] = React.useState(true);
   const [isLoadingUserVotes, setIsLoadingUserVotes] = React.useState(false);
+  const [isLoadingGlobalScores, setIsLoadingGlobalScores] = React.useState(true);
 
   const [leaderboardLocked, setLeaderboardLocked] = React.useState<boolean | null>(null);
   const [isLoadingLockStatus, setIsLoadingLockStatus] = React.useState(true);
@@ -105,27 +121,28 @@ export default function TreppoScoreRankingPage() {
   }, [user, authLoading, leaderboardLocked]);
 
   React.useEffect(() => {
-    if (leaderboardLocked) return; 
+    if (leaderboardLocked === null || leaderboardLocked) {
+      setIsLoadingGlobalScores(false);
+      return;
+    }
     
-    setIsLoadingData(true); 
+    setIsLoadingGlobalScores(true); 
     
     const unsubscribe = listenToAllVotesForAllNationsCategorized((scores) => {
       setGlobalScoresMap(scores);
-      if (!isLoadingNationsData && !isLoadingUserVotes) {
-          setIsLoadingData(false);
-      }
+      setIsLoadingGlobalScores(false);
     });
 
     return () => unsubscribe(); 
-  }, [isLoadingNationsData, isLoadingUserVotes, leaderboardLocked]);
+  }, [leaderboardLocked]);
 
   React.useEffect(() => {
     if (leaderboardLocked) {
       setNationsWithScores([]); 
       return;
     }
-    if (allNations.length > 0 && globalScoresMap.size > 0) {
-      const processedNations: NationWithTreppoScore[] = allNations
+    if (allNations.length > 0 && globalScoresMap.size > 0 && !isLoadingGlobalScores) {
+      const processedNations: NationWithRankAndTie[] = allNations
         .map(nation => {
           const scoreData = globalScoresMap.get(nation.id);
           const userVote = user ? userVotesMap.get(nation.id) : null;
@@ -154,37 +171,52 @@ export default function TreppoScoreRankingPage() {
         }
         return { ...nation, rank: currentRank };
       });
+
+      // Second pass to mark ties
+      rankedNations.forEach((nation, index, arr) => {
+        let isTiedValue = false;
+        if (index > 0 && nation.rank === arr[index - 1].rank) {
+          isTiedValue = true;
+        }
+        if (index < arr.length - 1 && nation.rank === arr[index + 1].rank) {
+          isTiedValue = true;
+        }
+        nation.isTied = isTiedValue;
+      });
       
       setNationsWithScores(rankedNations);
-    } else if (allNations.length > 0) {
-        const processedNationsWithNoScores: NationWithTreppoScore[] = allNations.map(nation => ({
+    } else if (allNations.length > 0 && !isLoadingGlobalScores) {
+        const processedNationsWithNoScores: NationWithRankAndTie[] = allNations.map(nation => ({
             ...nation,
             globalScores: null,
             scoreForRanking: null,
             voteCount: 0,
             userAverageScore: user ? (userVotesMap.get(nation.id) ? ((userVotesMap.get(nation.id)!.scores.song + userVotesMap.get(nation.id)!.scores.performance + userVotesMap.get(nation.id)!.scores.outfit) / 3) : null) : null,
+            rank: undefined,
+            isTied: false,
         }));
         setNationsWithScores(processedNationsWithNoScores);
     } else {
       setNationsWithScores([]);
     }
-  }, [allNations, globalScoresMap, userVotesMap, user, leaderboardLocked, selectedCategoryKey]);
+  }, [allNations, globalScoresMap, userVotesMap, user, leaderboardLocked, selectedCategoryKey, isLoadingGlobalScores]);
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     if (leaderboardLocked) {
       setIsLoadingData(false);
       return;
     }
-    if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size > 0) {
+    if (!isLoadingNationsData && !isLoadingUserVotes && !isLoadingGlobalScores && globalScoresMap.size > 0) {
       setIsLoadingData(false);
-    } else if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size === 0 && allNations.length > 0) {
+    } else if (!isLoadingNationsData && !isLoadingUserVotes && !isLoadingGlobalScores && globalScoresMap.size === 0 && allNations.length > 0) {
       setIsLoadingData(false);
-    } else if (!isLoadingNationsData && !isLoadingUserVotes && allNations.length === 0){
+    } else if (!isLoadingNationsData && !isLoadingUserVotes && !isLoadingGlobalScores && allNations.length === 0){
         setIsLoadingData(false);
     } else {
         setIsLoadingData(true);
     }
-  }, [isLoadingNationsData, isLoadingUserVotes, globalScoresMap, allNations, leaderboardLocked]);
+  }, [isLoadingNationsData, isLoadingUserVotes, isLoadingGlobalScores, globalScoresMap, allNations, leaderboardLocked]);
+
 
   const handleCategoryChange = (value: string) => {
     const newKey = value as RankingCategoryKey;
@@ -314,7 +346,18 @@ export default function TreppoScoreRankingPage() {
                     <TableBody>
                       {nationsWithScores.map((nation) => (
                         <TableRow key={nation.id}>
-                          <TableCell className="font-medium text-center">{nation.rank}</TableCell>
+                          <TableCell className="font-medium text-center align-middle">
+                            <div className="flex items-center justify-center">
+                              <MedalIcon rank={nation.rank} />
+                              <span className={cn(
+                                nation.rank && [1,2,3].includes(nation.rank) && 
+                                (nation.rank === 1 ? "text-yellow-400" : nation.rank === 2 ? "text-slate-400" : "text-amber-500"),
+                                "font-semibold"
+                              )}>
+                                {nation.rank}{nation.isTied && "*"}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group">
                               <Image
