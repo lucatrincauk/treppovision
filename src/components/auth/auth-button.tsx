@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock, Settings, KeyRound } from "lucide-react"; // Added KeyRound
+import { LogIn, LogOut, UserPlus, Loader2, Link2, Edit3, FileEdit, Lock, Settings, KeyRound } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,19 +42,22 @@ import { getTeamsByUserId } from "@/lib/team-service";
 import type { Team } from "@/types";
 import { useRouter } from "next/navigation";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
+import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; // Import new status
 
 export function AuthButton() {
   const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName, sendPasswordReset } = useAuth();
   const router = useRouter();
   const [authDialogOpen, setAuthDialogOpen] = React.useState(false);
   const [editNameDialogOpen, setEditNameDialogOpen] = React.useState(false);
-  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = React.useState(false); // New state for reset password dialog
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("login");
 
   const [userTeam, setUserTeam] = React.useState<Team | null>(null);
   const [isLoadingUserTeam, setIsLoadingUserTeam] = React.useState(false);
   const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
+  const [userRegistrationEnabled, setUserRegistrationEnabled] = React.useState<boolean | null>(null); // New state
+  const [isLoadingRegStatus, setIsLoadingRegStatus] = React.useState(true); // Loading for reg status
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
 
@@ -73,8 +75,19 @@ export function AuthButton() {
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
+      setIsLoadingRegStatus(true);
+      try {
+        const regStatus = await getUserRegistrationEnabledStatus();
+        setUserRegistrationEnabled(regStatus);
+      } catch (error) {
+        console.error("Failed to fetch user registration status:", error);
+        setUserRegistrationEnabled(false); // Default to false on error
+      } finally {
+        setIsLoadingRegStatus(false);
+      }
+
       if (user) {
-        setIsLoadingUserTeam(true); 
+        setIsLoadingUserTeam(true);
         try {
           const [teamsResult, lockedStatusResult] = await Promise.all([
             getTeamsByUserId(user.uid),
@@ -86,19 +99,19 @@ export function AuthButton() {
         } catch (error) {
           console.error("Failed to fetch initial user data/lock status:", error);
           setUserTeam(null);
-          setTeamsLocked(false); 
+          setTeamsLocked(false);
         } finally {
           setIsLoadingUserTeam(false);
         }
       } else {
         setUserTeam(null);
         setTeamsLocked(null);
-        setIsLoadingUserTeam(false); 
+        setIsLoadingUserTeam(false);
       }
     };
 
     fetchInitialData();
-  }, [user]); 
+  }, [user]);
 
   React.useEffect(() => {
     const refreshLockStatusOnOpen = async () => {
@@ -108,12 +121,12 @@ export function AuthButton() {
           setTeamsLocked(currentLockedStatus);
         } catch (error) {
           console.error("Failed to refresh teams lock status:", error);
-        } 
+        }
       }
     };
 
     refreshLockStatusOnOpen();
-  }, [user, isDropdownOpen]); 
+  }, [user, isDropdownOpen]);
 
 
   const handleAuthSuccess = () => {
@@ -133,11 +146,11 @@ export function AuthButton() {
   const handlePasswordReset = async () => {
     if (user?.email) {
       await sendPasswordReset(user.email);
-      setResetPasswordDialogOpen(false); // Close dialog after attempting to send
+      setResetPasswordDialogOpen(false);
     }
   };
 
-  if (isLoading && !user) { 
+  if ((isLoading && !user) || isLoadingRegStatus) {
     return <Button variant="outline" size="sm" disabled><Loader2 className="animate-spin mr-2" />Caricamento...</Button>;
   }
 
@@ -166,8 +179,7 @@ export function AuthButton() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            
-            {/* Edit Name Dialog Trigger */}
+
             <AlertDialog open={editNameDialogOpen} onOpenChange={setEditNameDialogOpen}>
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -206,8 +218,7 @@ export function AuthButton() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {/* Reset Password Dialog Trigger */}
-            {user.email && ( // Only show if user has an email
+            {user.email && (
               <AlertDialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -240,7 +251,7 @@ export function AuthButton() {
                 Caricamento squadra...
               </DropdownMenuItem>
             )}
-            
+
             {userTeam !== undefined && teamsLocked !== null && !isLoadingUserTeam && (
                 <>
                     {userTeam && teamsLocked === false && (
@@ -298,7 +309,9 @@ export function AuthButton() {
         <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
-            <TabsTrigger value="signup"><UserPlus className="mr-1"/>Registrati</TabsTrigger>
+            <TabsTrigger value="signup" disabled={userRegistrationEnabled === false || isLoadingRegStatus}>
+              <UserPlus className="mr-1"/>Registrati
+            </TabsTrigger>
             <TabsTrigger value="emailLink"><Link2 className="mr-1"/>Link Email</TabsTrigger>
           </TabsList>
           <TabsContent value="login">

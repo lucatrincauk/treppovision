@@ -1,7 +1,7 @@
 
 "use server";
 
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import type { AdminNationPayload, AdminSettings } from "@/types";
 import { doc, setDoc, getDoc, deleteDoc, deleteField, updateDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
@@ -41,6 +41,7 @@ export async function addNationAction(
 
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
+    revalidatePath("/admin/settings");
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
     revalidatePath("/nations/trepposcore-ranking");
@@ -73,6 +74,7 @@ export async function updateNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
+    revalidatePath("/admin/settings");
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
     revalidatePath("/nations/trepposcore-ranking");
@@ -98,6 +100,7 @@ export async function deleteNationAction(
 
         revalidatePath("/nations");
         revalidatePath(`/nations/${nationId}`);
+        revalidatePath("/admin/settings");
         revalidatePath("/teams/leaderboard");
         revalidatePath("/nations/ranking");
         revalidatePath("/nations/trepposcore-ranking");
@@ -119,13 +122,14 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
       return {
         teamsLocked: data.teamsLocked === undefined ? false : data.teamsLocked,
         leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked,
-        finalPredictionsEnabled: data.finalPredictionsEnabled === undefined ? false : data.finalPredictionsEnabled, // Default to false
+        finalPredictionsEnabled: data.finalPredictionsEnabled === undefined ? false : data.finalPredictionsEnabled,
+        userRegistrationEnabled: data.userRegistrationEnabled === undefined ? true : data.userRegistrationEnabled, // Default to true
       };
     }
-    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false };
+    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
-    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false };
+    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true };
   }
 }
 
@@ -142,10 +146,14 @@ export async function updateAdminSettingsAction(
     await setDoc(settingsDocRef, payload, { merge: true });
 
     revalidatePath("/admin/settings");
-    revalidatePath("/teams", "layout"); 
-    revalidatePath("/nations", "layout"); 
+    revalidatePath("/teams", "layout");
+    revalidatePath("/nations", "layout");
     if (payload.finalPredictionsEnabled !== undefined) {
       revalidatePath("/teams/[teamId]/pronostici", "page");
+    }
+    if (payload.userRegistrationEnabled !== undefined) {
+      revalidatePath("/components/auth/signup-form", "page"); // Attempt to revalidate
+      revalidatePath("/components/auth/auth-button", "page");
     }
 
 
@@ -161,7 +169,7 @@ export async function updateNationRankingAction(
   nationId: string,
   newRankingString?: string | null
 ): Promise<{ success: boolean; message: string; newRanking?: number }> {
-  noStore(); 
+  noStore();
   const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato.", newRanking: undefined };
@@ -173,8 +181,11 @@ export async function updateNationRankingAction(
       const parsed = parseInt(newRankingString.trim(), 10);
       if (!isNaN(parsed) && parsed > 0) {
         numericRanking = parsed;
+      } else if (parsed <= 0) { // Treat 0 or negative as clearing the rank
+        numericRanking = undefined;
       }
     }
+
 
     const nationRef = doc(db, NATIONS_COLLECTION, nationId);
     const rankingUpdate = numericRanking === undefined ? deleteField() : numericRanking;
@@ -182,11 +193,12 @@ export async function updateNationRankingAction(
     await updateDoc(nationRef, {
       ranking: rankingUpdate,
     });
-
+    
     revalidatePath(`/nations/${nationId}`);
     revalidatePath("/nations/ranking");
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/trepposcore-ranking");
+    // No revalidatePath("/admin/settings") here, as it's handled by optimistic client update
 
 
     return { success: true, message: `Ranking per ${nationId} aggiornato.`, newRanking: numericRanking };
@@ -199,7 +211,7 @@ export async function updateNationRankingAction(
 
 
 export async function getLeaderboardLockedStatus(): Promise<boolean> {
-    noStore(); 
+    noStore();
     const settings = await getAdminSettingsAction();
     return settings.leaderboardLocked;
 }
@@ -210,17 +222,22 @@ export async function getFinalPredictionsEnabledStatus(): Promise<boolean> {
   return settings.finalPredictionsEnabled;
 }
 
+export async function getUserRegistrationEnabledStatus(): Promise<boolean> {
+  noStore();
+  const settings = await getAdminSettingsAction();
+  return settings.userRegistrationEnabled;
+}
+
 export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
-  noStore(); 
+  noStore();
   try {
     const nations = await getNations();
     if (nations.length === 0) {
-      return false; 
+      return false;
     }
     return nations.every(nation => nation.ranking && nation.ranking > 0);
   } catch (error) {
     console.error("Error checking if all nations are ranked:", error);
-    return false; 
+    return false;
   }
 }
-

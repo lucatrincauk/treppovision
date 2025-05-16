@@ -24,7 +24,7 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; 
+  ranking?: string;
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -97,7 +97,7 @@ export interface AdminNationPayload {
 export interface TeamCoreFormData {
   name: string;
   founderChoices: string[]; // Array of 3 nation IDs
-  creatorDisplayName: string; 
+  creatorDisplayName: string;
 }
 
 // Team Final Answers (Category Predictions)
@@ -110,21 +110,22 @@ export interface TeamFinalAnswersFormData {
 
 
 export interface Team {
-  id: string; 
-  userId: string; 
+  id: string;
+  userId: string;
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; 
+  founderChoices: string[];
 
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
   worstSongNationId: string;
 
-  createdAt: number | null; 
-  updatedAt?: number | null; 
-  score?: number; 
-  rank?: number; 
+  createdAt: number | null;
+  updatedAt?: number | null;
+  score?: number;
+  rank?: number;
+  isTied?: boolean;
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
   categoryPicksDetails?: GlobalCategoryPickDetail[];
 }
@@ -153,21 +154,21 @@ export interface GlobalCategoryPickDetail {
 export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
-  finalPredictionsEnabled: boolean; // New setting
+  finalPredictionsEnabled: boolean;
+  userRegistrationEnabled: boolean; // New setting
 }
 
 export interface NationGlobalCategorizedScores {
   averageSongScore: number | null;
   averagePerformanceScore: number | null;
   averageOutfitScore: number | null;
-  overallAverageScore: number | null; 
+  overallAverageScore: number | null;
   voteCount: number;
 }
 
 
 export interface NationWithTreppoScore extends Nation {
-  globalTreppoScore: number | null; 
+  globalTreppoScore: number | null;
   globalVoteCount: number;
-  userAverageScore?: number | null; 
+  userAverageScore?: number | null;
 }
-

@@ -20,7 +20,9 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SignupFormData } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions";
 
 const signupSchema = z.object({
   displayName: z.string().min(2, { message: "Il nome visualizzato deve contenere almeno 2 caratteri." }).optional(),
@@ -33,8 +35,26 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSuccess }: SignupFormProps) {
-  const { signupWithEmail, isLoading } = useAuth();
+  const { signupWithEmail, isLoading: authIsLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = React.useState<boolean | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchStatus() {
+      setIsLoadingStatus(true);
+      try {
+        const status = await getUserRegistrationEnabledStatus();
+        setRegistrationEnabled(status);
+      } catch (error) {
+        console.error("Failed to fetch registration status:", error);
+        setRegistrationEnabled(false); // Default to disabled on error
+      } finally {
+        setIsLoadingStatus(false);
+      }
+    }
+    fetchStatus();
+  }, []);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -46,12 +66,43 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   });
 
   async function onSubmit(values: SignupFormData) {
+    if (!registrationEnabled) {
+      // This should ideally not be reachable if form is disabled, but as a safeguard
+      return;
+    }
     setIsSubmitting(true);
     const success = await signupWithEmail(values);
     if (success) {
       onSuccess();
     }
     setIsSubmitting(false);
+  }
+
+  if (isLoadingStatus) {
+    return (
+      <div className="flex justify-center items-center p-10">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (registrationEnabled === false) {
+    return (
+      <Card className="border-none shadow-none">
+        <CardHeader>
+          <CardTitle>Registrazione Disabilitata</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle>Registrazione Non Attiva</AlertTitle>
+            <AlertDescription>
+              La registrazione di nuovi utenti è temporaneamente disabilitata dall'amministratore.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -70,7 +121,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
                 <FormItem>
                   <FormLabel>Nome Visualizzato (Opzionale)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Il Tuo Nome" {...field} disabled={isLoading || isSubmitting}/>
+                    <Input placeholder="Il Tuo Nome" {...field} disabled={authIsLoading || isSubmitting}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -83,7 +134,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="tuamail@esempio.com" {...field} type="email" disabled={isLoading || isSubmitting}/>
+                    <Input placeholder="tuamail@esempio.com" {...field} type="email" disabled={authIsLoading || isSubmitting}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,7 +147,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="••••••••" {...field} type="password" disabled={isLoading || isSubmitting}/>
+                    <Input placeholder="••••••••" {...field} type="password" disabled={authIsLoading || isSubmitting}/>
                   </FormControl>
                   <FormDescription>
                     Minimo 6 caratteri.
@@ -107,8 +158,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             />
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
-              {(isLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={authIsLoading || isSubmitting}>
+              {(authIsLoading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Registrati
             </Button>
           </CardFooter>

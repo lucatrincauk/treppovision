@@ -4,25 +4,25 @@
 import type { User, LoginFormData, SignupFormData, AuthContextType } from "@/types";
 import type { ReactNode } from "react";
 import { createContext, useState, useEffect } from "react";
-import { 
-  auth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import {
+  auth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   updateProfile,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
-  sendPasswordResetEmail, // Import sendPasswordResetEmail
+  sendPasswordResetEmail,
   actionCodeSettings
 } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser, type AuthError } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { getTeamsByUserId } from "@/lib/team-service"; 
-import { updateTeamCreatorDisplayNameAction } from "@/lib/actions/team-actions"; 
-
+import { getTeamsByUserId } from "@/lib/team-service";
+import { updateTeamCreatorDisplayNameAction } from "@/lib/actions/team-actions";
+import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; // Import the action
 
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
-const ADMIN_EMAIL = "lucatrinca.uk@gmail.com"; 
+const ADMIN_EMAIL = "lucatrinca.uk@gmail.com";
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
-  
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined' && isSignInWithEmailLink(auth, window.location.href)) {
       completeEmailLinkSignIn();
     }
-    
+
     return () => unsubscribe();
   }, []);
 
@@ -129,12 +129,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signupWithEmail = async (data: SignupFormData) => {
     setIsLoading(true);
+    let registrationEnabled = false;
+    try {
+      registrationEnabled = await getUserRegistrationEnabledStatus();
+    } catch (statusError) {
+      console.error("Errore nel recuperare lo stato della registrazione:", statusError);
+      toast({ title: "Errore di Registrazione", description: "Impossibile verificare le impostazioni di registrazione. Riprova.", variant: "destructive" });
+      setIsLoading(false);
+      return false;
+    }
+
+    if (!registrationEnabled) {
+      toast({ title: "Registrazione Disabilitata", description: "La registrazione di nuovi utenti è attualmente disabilitata.", variant: "destructive" });
+      setIsLoading(false);
+      return false;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       if (data.displayName && userCredential.user) {
         await updateProfile(userCredential.user, { displayName: data.displayName });
         setUser(prevUser => prevUser ? { ...prevUser, displayName: data.displayName } : (
-            userCredential.user ? { 
+            userCredential.user ? {
                 uid: userCredential.user.uid,
                 displayName: data.displayName,
                 email: userCredential.user.email,
@@ -198,7 +214,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Errore durante il logout:", authError);
       toast({ title: "Errore Logout", description: mapFirebaseAuthError(authError.code), variant: "destructive" });
     } finally {
-      setIsLoading(false); 
+      setIsLoading(false);
     }
   };
 
@@ -238,7 +254,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
   };
-  
+
   return (
     <AuthContext.Provider value={{ user, loginWithEmail, signupWithEmail, sendLoginLink, sendPasswordReset, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName }}>
       {children}

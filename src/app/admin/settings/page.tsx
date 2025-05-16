@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit, UserPlus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from "next/image";
@@ -27,10 +27,11 @@ export default function AdminSettingsPage() {
   const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
   const [isSubmittingFinalPredictions, setIsSubmittingFinalPredictions] = React.useState(false);
+  const [isSubmittingUserRegistration, setIsSubmittingUserRegistration] = React.useState(false);
 
 
-  const [nations, setNations] = React.useState<Nation[]>([]); 
-  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); 
+  const [nations, setNations] = React.useState<Nation[]>([]);
+  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [initialRankingsMap, setInitialRankingsMap] = React.useState<Map<string, string>>(new Map());
@@ -49,7 +50,7 @@ export default function AdminSettingsPage() {
             getNations()
           ]);
           setSettings(currentSettings);
-          
+
           const sortedNations = [...fetchedNations].sort((a, b) => {
             const rankA = a.ranking ?? Infinity;
             const rankB = b.ranking ?? Infinity;
@@ -59,11 +60,11 @@ export default function AdminSettingsPage() {
             return rankA - rankB;
           });
 
-          setNations(sortedNations); 
-          setAllNationsStable(fetchedNations); 
+          setNations(sortedNations);
+          setAllNationsStable(fetchedNations);
 
           const initialRanks = new Map<string, string>();
-          fetchedNations.forEach(nation => { 
+          fetchedNations.forEach(nation => {
             initialRanks.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
           setRankingsInput(new Map(initialRanks));
@@ -87,17 +88,17 @@ export default function AdminSettingsPage() {
   }, [user, authLoading, toast]);
 
   const handleToggleSetting = async (
-    settingKey: keyof AdminSettings, 
-    valueToStoreForSetting: boolean, // This is the direct value to store (e.g., true if teamsLocked=true)
+    settingKey: keyof AdminSettings,
+    valueToStoreForSetting: boolean,
     setSubmittingState: React.Dispatch<React.SetStateAction<boolean>>,
     toastTitle: string,
-    toastDescriptionIfTrue: string, // Description when valueToStoreForSetting is true
-    toastDescriptionIfFalse: string // Description when valueToStoreForSetting is false
+    toastDescriptionIfTrue: string,
+    toastDescriptionIfFalse: string
   ) => {
     setSubmittingState(true);
     const result = await updateAdminSettingsAction({ [settingKey]: valueToStoreForSetting });
     if (result.success) {
-      setSettings(prev => prev ? { ...prev, [settingKey]: valueToStoreForSetting } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, [settingKey]: valueToStoreForSetting });
+      setSettings(prev => prev ? { ...prev, [settingKey]: valueToStoreForSetting } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true, [settingKey]: valueToStoreForSetting });
       toast({
         title: toastTitle,
         description: valueToStoreForSetting ? toastDescriptionIfTrue : toastDescriptionIfFalse,
@@ -132,21 +133,19 @@ export default function AdminSettingsPage() {
         newIndex = index + 1;
       }
       newNationsArray.splice(newIndex, 0, itemToMove);
-      
-      // Update rankingsInput for all nations based on new visual order
-      // Only trigger save if the target rank is different from current input
-      const newRankingsInputMap = new Map(rankingsInput);
+
       newNationsArray.forEach((nation, idx) => {
         const newTargetRankString = String(idx + 1);
-        const currentRankStringInInput = newRankingsInputMap.get(nation.id) ?? "";
-         if (newTargetRankString !== currentRankStringInInput) {
-           handleRankingInputChange(nation.id, newTargetRankString); // This updates the input and queues the save
-         }
+        const currentRankStringInInput = rankingsInput.get(nation.id) ?? "";
+
+        if (newTargetRankString !== currentRankStringInInput) {
+          handleRankingInputChange(nation.id, newTargetRankString);
+        }
       });
-      
+
       return newNationsArray;
     });
-  }, [rankingsInput, handleRankingInputChange]); 
+  }, [rankingsInput, handleRankingInputChange]);
 
   const handleSaveAllChangedRankings = async () => {
     setIsSavingAll(true);
@@ -154,7 +153,7 @@ export default function AdminSettingsPage() {
     let successfulSaves = 0;
     const promises = [];
 
-    for (const nation of allNationsStable) { 
+    for (const nation of allNationsStable) {
       const currentInputValue = rankingsInput.get(nation.id) ?? "";
       const originalSavedRank = initialRankingsMap.get(nation.id) ?? "";
 
@@ -165,7 +164,6 @@ export default function AdminSettingsPage() {
             .then(result => {
               if (result.success) {
                 successfulSaves++;
-                // Optimistically update the main 'nations' state as well for visual consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
@@ -190,7 +188,6 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
-      // Update initialRankingsMap to reflect the new saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -200,7 +197,7 @@ export default function AdminSettingsPage() {
     setIsDeletingAll(true);
     const promises = [];
     for (const nation of allNationsStable) {
-      promises.push(updateNationRankingAction(nation.id, "")); 
+      promises.push(updateNationRankingAction(nation.id, ""));
     }
     await Promise.all(promises);
 
@@ -272,15 +269,15 @@ export default function AdminSettingsPage() {
               {settings.teamsLocked ? <Lock className="text-destructive" /> : <Unlock className="text-primary" />}
               <Switch
                 id="teams-locked-switch"
-                checked={!settings.teamsLocked} 
-                onCheckedChange={(enabled) => 
+                checked={!settings.teamsLocked}
+                onCheckedChange={(enabled) =>
                   handleToggleSetting(
-                    'teamsLocked', 
-                    !enabled, 
-                    setIsSubmittingTeams, 
-                    "Impostazioni Squadre Aggiornate", 
-                    "Modifica squadre disabilitata.", 
-                    "Modifica squadre abilitata."    
+                    'teamsLocked',
+                    !enabled,
+                    setIsSubmittingTeams,
+                    "Impostazioni Squadre Aggiornate",
+                    "Modifica squadre disabilitata.",
+                    "Modifica squadre abilitata."
                   )
                 }
                 disabled={isSubmittingTeams}
@@ -309,14 +306,14 @@ export default function AdminSettingsPage() {
               <Switch
                 id="leaderboard-locked-switch"
                 checked={!settings.leaderboardLocked}
-                onCheckedChange={(enabled) => 
+                onCheckedChange={(enabled) =>
                   handleToggleSetting(
-                    'leaderboardLocked', 
-                    !enabled, // If switch is ON (enabled=true), leaderboardLocked should be false.
-                    setIsSubmittingLeaderboard, 
-                    "Impostazioni Classifiche Aggiornate", 
-                    "Accesso classifiche utenti disabilitato.", // This is when !enabled is true (leaderboardLocked = true)
-                    "Accesso classifiche utenti abilitato."     // This is when !enabled is false (leaderboardLocked = false)
+                    'leaderboardLocked',
+                    !enabled,
+                    setIsSubmittingLeaderboard,
+                    "Impostazioni Classifiche Aggiornate",
+                    "Accesso classifiche utenti disabilitato.",
+                    "Accesso classifiche utenti abilitato."
                   )
                 }
                 disabled={isSubmittingLeaderboard}
@@ -330,7 +327,7 @@ export default function AdminSettingsPage() {
                 Salvataggio modifiche classifiche...
             </div>
             )}
-            
+
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
                 <Label htmlFor="final-predictions-switch" className="text-base font-medium">
@@ -357,6 +354,42 @@ export default function AdminSettingsPage() {
                 Salvataggio modifiche pronostici finali...
             </div>
             )}
+
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+                <Label htmlFor="user-registration-switch" className="text-base font-medium">
+                    Abilita Registrazione Utenti
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Se attivo, i nuovi utenti potranno registrarsi all'applicazione.
+                </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              {settings.userRegistrationEnabled ? <UserPlus className="text-primary" /> : <Lock className="text-muted-foreground" />}
+              <Switch
+                id="user-registration-switch"
+                checked={settings.userRegistrationEnabled}
+                onCheckedChange={(enabled) =>
+                  handleToggleSetting(
+                    'userRegistrationEnabled',
+                     enabled,
+                     setIsSubmittingUserRegistration,
+                    "Impostazioni Registrazione Utenti Aggiornate",
+                    "Registrazione utenti abilitata.",
+                    "Registrazione utenti disabilitata."
+                  )
+                }
+                disabled={isSubmittingUserRegistration}
+                aria-label="Abilita registrazione utenti"
+              />
+            </div>
+          </div>
+           {isSubmittingUserRegistration && (
+            <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvataggio modifiche registrazione...
+            </div>
+            )}
         </CardContent>
       </Card>
 
@@ -368,8 +401,8 @@ export default function AdminSettingsPage() {
           </CardTitle>
           <CardDescription>
             Usa le frecce per riordinare visivamente le nazioni. Questo aggiornerà i campi input del ranking.
-            Inserisci manualmente il ranking desiderato se preferisci. 
-            Poi clicca "Salva Ranking Modificati" per persistere le modifiche. 
+            Inserisci manualmente il ranking desiderato se preferisci.
+            Poi clicca "Salva Ranking Modificati" per persistere le modifiche.
             "Elimina Tutti i Ranking" rimuoverà il ranking da tutte le nazioni.
           </CardDescription>
         </CardHeader>
@@ -478,6 +511,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-    
-
-    
