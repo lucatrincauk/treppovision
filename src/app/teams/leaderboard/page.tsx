@@ -267,7 +267,7 @@ export default function TeamsLeaderboardPage() {
           </p>
         </header>
          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <Loader2 className="mr-2 h-12 w-12 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -347,6 +347,7 @@ export default function TeamsLeaderboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[80px] text-center">Pos.</TableHead>
                         <TableHead>Squadra</TableHead>
                         <TableHead className="text-right">Punteggio Totale</TableHead>
                       </TableRow>
@@ -354,16 +355,8 @@ export default function TeamsLeaderboardPage() {
                     <TableBody>
                       {tableTeams.map((team) => (
                         <TableRow key={team.id}>
+                          <TableCell className="font-medium text-center">{team.rank}</TableCell>
                           <TableCell className="align-top pt-4">
-                              <div className={cn("text-sm font-semibold flex items-center mb-1", 
-                                !adminSettings.leaderboardLocked && team.rank === 1 ? "text-yellow-400" :
-                                !adminSettings.leaderboardLocked && team.rank === 2 ? "text-slate-400" :
-                                !adminSettings.leaderboardLocked && team.rank === 3 ? "text-amber-500" :
-                                "text-muted-foreground"
-                                )}>
-                                  {!adminSettings.leaderboardLocked && <MedalIcon rank={team.rank} className="mr-1" />}
-                                  {!adminSettings.leaderboardLocked && getRankText(team.rank)}{!adminSettings.leaderboardLocked && team.isTied ? "*" : ""}
-                              </div>
                               <div className="font-medium text-base mb-0.5">
                                 {team.name}
                               </div>
@@ -415,3 +408,4 @@ export default function TeamsLeaderboardPage() {
     </div>
   );
 }
+
