@@ -133,18 +133,20 @@ export default function AdminSettingsPage() {
       }
       newNationsArray.splice(newIndex, 0, itemToMove);
       
+      // Update rankingsInput for all nations based on new visual order
+      // Only trigger save if the target rank is different from current input
       const newRankingsInputMap = new Map(rankingsInput);
       newNationsArray.forEach((nation, idx) => {
         const newTargetRankString = String(idx + 1);
         const currentRankStringInInput = newRankingsInputMap.get(nation.id) ?? "";
          if (newTargetRankString !== currentRankStringInInput) {
-           handleRankingInputChange(nation.id, newTargetRankString);
+           handleRankingInputChange(nation.id, newTargetRankString); // This updates the input and queues the save
          }
       });
       
       return newNationsArray;
     });
-  }, [nations, rankingsInput, handleRankingInputChange]); 
+  }, [rankingsInput, handleRankingInputChange]); 
 
   const handleSaveAllChangedRankings = async () => {
     setIsSavingAll(true);
@@ -163,6 +165,7 @@ export default function AdminSettingsPage() {
             .then(result => {
               if (result.success) {
                 successfulSaves++;
+                // Optimistically update the main 'nations' state as well for visual consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
@@ -187,6 +190,7 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
+      // Update initialRankingsMap to reflect the new saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -265,20 +269,18 @@ export default function AdminSettingsPage() {
                 </p>
             </div>
             <div className="flex items-center space-x-2">
-              {/* Icon logic: if teamsLocked is true (meaning editing is disabled), show Lock icon.
-                   If teamsLocked is false (meaning editing is enabled by the switch), show Unlock icon. */}
               {settings.teamsLocked ? <Lock className="text-destructive" /> : <Unlock className="text-primary" />}
               <Switch
                 id="teams-locked-switch"
-                checked={!settings.teamsLocked} // Switch is ON when teams are NOT locked (i.e., editing is enabled)
+                checked={!settings.teamsLocked} 
                 onCheckedChange={(enabled) => 
                   handleToggleSetting(
                     'teamsLocked', 
-                    !enabled, // If switch is ON (enabled=true), teamsLocked should be false. If OFF, teamsLocked true.
+                    !enabled, 
                     setIsSubmittingTeams, 
                     "Impostazioni Squadre Aggiornate", 
-                    "Modifica squadre disabilitata.", // This is when !enabled is true (teamsLocked = true)
-                    "Modifica squadre abilitata."     // This is when !enabled is false (teamsLocked = false)
+                    "Modifica squadre disabilitata.", 
+                    "Modifica squadre abilitata."    
                   )
                 }
                 disabled={isSubmittingTeams}
@@ -296,20 +298,29 @@ export default function AdminSettingsPage() {
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
                 <Label htmlFor="leaderboard-locked-switch" className="text-base font-medium">
-                    Blocca Accesso Classifiche Utenti
+                    Abilita Accesso Classifiche Utenti
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                    Se attivo, "Classifica TreppoScore" e "Classifica Squadre" non saranno accessibili.
+                    Se attivo, "Classifica TreppoScore" e "Classifica Squadre" saranno accessibili.
                 </p>
             </div>
             <div className="flex items-center space-x-2">
               {settings.leaderboardLocked ? <Lock className="text-destructive" /> : <Unlock className="text-primary" />}
               <Switch
                 id="leaderboard-locked-switch"
-                checked={settings.leaderboardLocked}
-                onCheckedChange={(locked) => handleToggleSetting('leaderboardLocked', locked, setIsSubmittingLeaderboard, "Impostazioni Classifiche Aggiornate", "Accesso classifiche utenti bloccato.", "Accesso classifiche utenti sbloccato.")}
+                checked={!settings.leaderboardLocked}
+                onCheckedChange={(enabled) => 
+                  handleToggleSetting(
+                    'leaderboardLocked', 
+                    !enabled, // If switch is ON (enabled=true), leaderboardLocked should be false.
+                    setIsSubmittingLeaderboard, 
+                    "Impostazioni Classifiche Aggiornate", 
+                    "Accesso classifiche utenti disabilitato.", // This is when !enabled is true (leaderboardLocked = true)
+                    "Accesso classifiche utenti abilitato."     // This is when !enabled is false (leaderboardLocked = false)
+                  )
+                }
                 disabled={isSubmittingLeaderboard}
-                aria-label="Blocca accesso classifiche utenti"
+                aria-label="Abilita accesso classifiche utenti"
               />
             </div>
           </div>
