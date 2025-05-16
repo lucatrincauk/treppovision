@@ -24,7 +24,7 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string; // Handled as string in form, converted to number | undefined for DB
+  ranking?: string; 
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -97,7 +97,7 @@ export interface AdminNationPayload {
 export interface TeamCoreFormData {
   name: string;
   founderChoices: string[]; // Array of 3 nation IDs
-  creatorDisplayName: string; // This is set by the system, not the user form directly
+  creatorDisplayName: string; 
 }
 
 // Team Final Answers (Category Predictions)
@@ -108,29 +108,23 @@ export interface TeamFinalAnswersFormData {
   worstSongNationId: string;
 }
 
-// This type is now only for the CreateTeamForm.
-export interface TeamFormData extends TeamCoreFormData {
-  // No longer includes bestSongNationId etc. here as they are handled by TeamFinalAnswersFormData
-}
-
 
 export interface Team {
-  id: string; // Firestore document ID
-  userId: string; // UID of the user who created the team
+  id: string; 
+  userId: string; 
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; // Array of 3 nation IDs
+  founderChoices: string[]; 
 
-  // These are now edited via a separate "Final Answers" modal
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
   worstSongNationId: string;
 
-  createdAt: number | null; // Milliseconds since epoch
-  updatedAt?: number | null; // Milliseconds since epoch or undefined
-  score?: number; // Optional score, typically calculated at runtime
-  rank?: number; // Optional rank for leaderboard display
+  createdAt: number | null; 
+  updatedAt?: number | null; 
+  score?: number; 
+  rank?: number; 
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
   categoryPicksDetails?: GlobalCategoryPickDetail[];
 }
@@ -159,19 +153,21 @@ export interface GlobalCategoryPickDetail {
 export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
+  finalPredictionsEnabled: boolean; // New setting
 }
 
 export interface NationGlobalCategorizedScores {
   averageSongScore: number | null;
   averagePerformanceScore: number | null;
   averageOutfitScore: number | null;
-  overallAverageScore: number | null; // This is the TreppoScore (avg of song, perf, outfit for that nation)
+  overallAverageScore: number | null; 
   voteCount: number;
 }
 
 
 export interface NationWithTreppoScore extends Nation {
-  globalTreppoScore: number | null; // Overall average TreppoScore
+  globalTreppoScore: number | null; 
   globalVoteCount: number;
-  userAverageScore?: number | null; // User's specific vote for this nation
+  userAverageScore?: number | null; 
 }
+

@@ -28,7 +28,7 @@ import type { Nation, TeamFinalAnswersFormData } from "@/types";
 import { getNations } from "@/lib/nation-service";
 import { updateTeamFinalAnswersAction, getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Lock, Users } from "lucide-react";
+import { Loader2, Save, Lock, Users, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
@@ -42,10 +42,10 @@ const finalAnswersFormZodSchema = z.object({
 interface FinalAnswersFormProps {
   initialData: TeamFinalAnswersFormData;
   teamId: string;
-  // onSuccess prop is no longer needed as navigation is handled internally
+  isReadOnly?: boolean; // New prop
 }
 
-export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps) {
+export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: FinalAnswersFormProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -104,8 +104,8 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login.", variant: "destructive" });
       return;
     }
-    if (teamsLocked) {
-      toast({ title: "Modifica Bloccata", description: "La modifica dei pronostici è temporaneamente bloccata.", variant: "destructive" });
+    if (teamsLocked || isReadOnly) {
+      toast({ title: "Modifica Bloccata", description: "La modifica dei pronostici è temporaneamente bloccata o i pronostici sono già stati inviati.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -116,7 +116,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
         title: "Pronostici Finali Aggiornati!",
         description: "I tuoi pronostici sono stati salvati.",
       });
-      router.push('/teams'); // Redirect to teams page on success
+      router.push('/teams'); 
     } else {
       toast({
         title: "Errore Aggiornamento Pronostici",
@@ -178,6 +178,74 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
       </div>
     </div>
   );
+  
+  if (isReadOnly) {
+    return (
+      <>
+        <Alert variant="default" className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Pronostici Inviati</AlertTitle>
+          <AlertDescription>
+            I tuoi pronostici finali sono stati inviati e non possono essere modificati.
+          </AlertDescription>
+        </Alert>
+        <Form {...form}>
+          <form className="space-y-6 py-4">
+             {/* Render disabled fields to show current selections */}
+            <FormField
+              control={form.control}
+              name="bestSongNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Migliore canzone</FormLabel>
+                  <Select value={field.value || ""} disabled={true}>
+                    <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="bestPerformanceNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Migliore performance</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="bestOutfitNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Migliore outfit</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="worstSongNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Peggiore canzone</FormLabel>
+                  <Select value={field.value || ""} disabled={true}>
+                    <FormControl><SelectTrigger><SelectValue>{field.value && nations.find(n => n.id === field.value) ? renderNationSelectItem(nations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </>
+    );
+  }
+
 
   return (
     <Form {...form}>
@@ -188,7 +256,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                      <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -216,7 +284,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore performance</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                      <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -244,7 +312,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
           render={({ field }) => (
             <FormItem>
               <FormLabel>Migliore outfit</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -272,7 +340,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
           render={({ field }) => (
             <FormItem>
               <FormLabel>Peggiore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
@@ -297,7 +365,7 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
         <Button
           type="submit"
           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-          disabled={isSubmitting || isLoadingNations || teamsLocked || nations.length === 0}
+          disabled={isSubmitting || isLoadingNations || teamsLocked || nations.length === 0 || isReadOnly}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
@@ -307,3 +375,4 @@ export function FinalAnswersForm({ initialData, teamId }: FinalAnswersFormProps)
     </Form>
   );
 }
+

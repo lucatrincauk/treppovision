@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import type { TeamCoreFormData, TeamFinalAnswersFormData, Team } from "@/types";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, updateDoc, getDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import { getAdminSettingsAction } from "./admin-actions"; 
+import { getAdminSettingsAction, getFinalPredictionsEnabledStatus } from "./admin-actions"; 
 
 const TEAMS_COLLECTION = "teams";
 
@@ -77,7 +77,7 @@ export async function createTeamAction(
 
 export async function updateTeamAction(
   teamId: string,
-  data: TeamCoreFormData,
+  data: TeamCoreFormData, // Now only core data
   userId: string | undefined
 ): Promise<{ success: boolean; message: string; teamId?: string }> {
   if (!userId) {
@@ -114,15 +114,10 @@ export async function updateTeamAction(
     if (new Set(data.founderChoices).size !== 3) {
       return { success: false, message: "Le tre nazioni per la squadra principale devono essere diverse." };
     }
-     // creatorDisplayName is not directly edited here, but should be part of TeamCoreFormData if ever needed to update.
-    // if (!data.creatorDisplayName) { 
-    //   return { success: false, message: "Nome dell'utente mancante per l'aggiornamento." };
-    // }
-
+    
     const teamPayloadToUpdate = {
       name: data.name,
       founderChoices: data.founderChoices,
-      // creatorDisplayName should be updated via updateUserProfileName -> updateTeamCreatorDisplayNameAction
       updatedAt: serverTimestamp(),
     };
 
@@ -156,6 +151,9 @@ export async function updateTeamFinalAnswersAction(
   if (adminSettings.teamsLocked) {
     return { success: false, message: "La modifica dei pronostici è temporaneamente bloccata dall'amministratore." };
   }
+  if (!adminSettings.finalPredictionsEnabled) {
+    return { success: false, message: "L'inserimento dei pronostici finali è attualmente disabilitato dall'amministratore." };
+  }
 
   try {
     const teamDocRef = doc(db, TEAMS_COLLECTION, teamId);
@@ -164,12 +162,11 @@ export async function updateTeamFinalAnswersAction(
     if (!teamSnap.exists()) {
       return { success: false, message: "Team non trovato." };
     }
-    const teamDataInDb = teamSnap.data() as Team; // Use a different name to avoid confusion
+    const teamDataInDb = teamSnap.data() as Team; 
     if (teamDataInDb.userId !== userId) {
       return { success: false, message: "Non sei autorizzato a modificare i pronostici di questo team." };
     }
-
-    // Validate incoming data
+    
     if (!data.bestSongNationId || !data.bestPerformanceNationId || !data.bestOutfitNationId || !data.worstSongNationId) {
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
@@ -186,6 +183,8 @@ export async function updateTeamFinalAnswersAction(
 
     revalidatePath("/teams");
     revalidatePath("/teams/leaderboard");
+    revalidatePath(`/teams/${teamId}/pronostici`);
+
 
     return { success: true, message: "Pronostici finali aggiornati con successo!", teamId: teamId };
   } catch (error) {
@@ -245,3 +244,4 @@ export async function getTeamsLockedStatus(): Promise<boolean> {
     const settings = await getAdminSettingsAction();
     return settings.teamsLocked;
 }
+

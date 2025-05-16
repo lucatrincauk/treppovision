@@ -15,6 +15,8 @@ const ADMIN_SETTINGS_DOC_ID = "config";
 
 async function verifyAdminServerSide(): Promise<boolean> {
   // TODO: Implement robust server-side admin verification
+  // For now, this relies on the client-side check, which is not secure for server actions.
+  // A proper implementation would involve Firebase Custom Claims or a server-side role check.
   return true;
 }
 
@@ -39,8 +41,6 @@ export async function addNationAction(
 
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
-    // No longer revalidating /admin/settings here to prevent race conditions
-    // revalidatePath("/admin/settings"); 
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
     revalidatePath("/nations/trepposcore-ranking");
@@ -73,8 +73,6 @@ export async function updateNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
-    // No longer revalidating /admin/settings here
-    // revalidatePath("/admin/settings"); 
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
     revalidatePath("/nations/trepposcore-ranking");
@@ -100,7 +98,6 @@ export async function deleteNationAction(
 
         revalidatePath("/nations");
         revalidatePath(`/nations/${nationId}`);
-        // revalidatePath("/admin/settings");
         revalidatePath("/teams/leaderboard");
         revalidatePath("/nations/ranking");
         revalidatePath("/nations/trepposcore-ranking");
@@ -122,12 +119,13 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
       return {
         teamsLocked: data.teamsLocked === undefined ? false : data.teamsLocked,
         leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked,
+        finalPredictionsEnabled: data.finalPredictionsEnabled === undefined ? false : data.finalPredictionsEnabled, // Default to false
       };
     }
-    return { teamsLocked: false, leaderboardLocked: false };
+    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
-    return { teamsLocked: false, leaderboardLocked: false };
+    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false };
   }
 }
 
@@ -146,6 +144,10 @@ export async function updateAdminSettingsAction(
     revalidatePath("/admin/settings");
     revalidatePath("/teams", "layout"); 
     revalidatePath("/nations", "layout"); 
+    if (payload.finalPredictionsEnabled !== undefined) {
+      revalidatePath("/teams/[teamId]/pronostici", "page");
+    }
+
 
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
@@ -159,7 +161,7 @@ export async function updateNationRankingAction(
   nationId: string,
   newRankingString?: string | null
 ): Promise<{ success: boolean; message: string; newRanking?: number }> {
-  noStore(); // Ensure this action always fetches fresh data if it reads before writing
+  noStore(); 
   const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato.", newRanking: undefined };
@@ -181,13 +183,11 @@ export async function updateNationRankingAction(
       ranking: rankingUpdate,
     });
 
-    // Revalidate paths that depend on nation rankings, but not /admin/settings itself
-    // to prevent immediate re-fetch that might cause race conditions with client state.
-    revalidatePath("/nations");
     revalidatePath(`/nations/${nationId}`);
-    revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
+    revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/trepposcore-ranking");
+
 
     return { success: true, message: `Ranking per ${nationId} aggiornato.`, newRanking: numericRanking };
   } catch (error) {
@@ -204,6 +204,12 @@ export async function getLeaderboardLockedStatus(): Promise<boolean> {
     return settings.leaderboardLocked;
 }
 
+export async function getFinalPredictionsEnabledStatus(): Promise<boolean> {
+  noStore();
+  const settings = await getAdminSettingsAction();
+  return settings.finalPredictionsEnabled;
+}
+
 export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
   noStore(); 
   try {
@@ -217,3 +223,4 @@ export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
     return false; 
   }
 }
+

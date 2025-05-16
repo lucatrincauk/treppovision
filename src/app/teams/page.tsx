@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail, GlobalCategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
@@ -19,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; 
+import { getLeaderboardLockedStatus, getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions"; 
 
 // Helper function to calculate points for a given rank (Eurovision rank)
 const getPointsForRank = (rank?: number): number => {
@@ -104,24 +104,28 @@ export default function TeamsPage() {
   const [isLoadingGlobalScores, setIsLoadingGlobalScores] = useState(true);
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
+  const [finalPredictionsEnabledAdmin, setFinalPredictionsEnabledAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     async function fetchInitialSettingsAndNations() {
       setIsLoadingNations(true);
       try {
-        const [teamsLock, leaderboardLock, nationsData] = await Promise.all([
+        const [teamsLock, leaderboardLock, finalPredictionsLock, nationsData] = await Promise.all([
           getTeamsLockedStatus(),
           getLeaderboardLockedStatus(),
+          getFinalPredictionsEnabledStatus(),
           getNations()
         ]);
         setTeamsLockedAdmin(teamsLock);
         setLeaderboardLockedAdmin(leaderboardLock);
+        setFinalPredictionsEnabledAdmin(finalPredictionsLock);
         setAllNations(nationsData);
         setNationsMap(new Map(nationsData.map(n => [n.id, n])));
       } catch (err) {
         console.error("Failed to fetch admin lock statuses or nations:", err);
         setTeamsLockedAdmin(false);
         setLeaderboardLockedAdmin(false);
+        setFinalPredictionsEnabledAdmin(false);
         setError(prev => prev ? `${prev}\nNazioni non caricate.` : "Nazioni non caricate.");
         setAllNations([]);
         setNationsMap(new Map());
@@ -174,7 +178,7 @@ export default function TeamsPage() {
         scoreValue = undefined;
       }
       
-      const primaSquadraDetails: PrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
+      const primaSquadraDetails: GlobalPrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
         if (scoreValue !== undefined && !leaderboardLockedAdmin) {
@@ -299,7 +303,7 @@ export default function TeamsPage() {
     </div>
   );
 
-  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: PrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
+  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: GlobalPrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
     const nation = nationsMap.get(detail.id);
     if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
     return (
@@ -323,7 +327,7 @@ export default function TeamsPage() {
   };
 
 
-  if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null) {
+  if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null || finalPredictionsEnabledAdmin === null) {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
@@ -386,7 +390,7 @@ export default function TeamsPage() {
         </div>
       ) : userTeam && allNations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
-          <div className="flex items-center justify-between mb-6">
+           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
@@ -413,18 +417,20 @@ export default function TeamsPage() {
             leaderboardLocked={leaderboardLockedAdmin}
           />
            <div className="mt-4 flex justify-center">
-            {userTeam && !teamsLockedAdmin && (
+            {userTeam && !teamsLockedAdmin && finalPredictionsEnabledAdmin && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="h-5 w-5 mr-2" />
-                        <span>Pronostici Finali</span>
+                        <span className="hidden sm:inline">Pronostici Finali</span>
+                         <span className="sm:hidden">Pronostici</span>
                     </Link>
                 </Button>
             )}
-            {userTeam && teamsLockedAdmin && (
+            {userTeam && (teamsLockedAdmin || !finalPredictionsEnabledAdmin) && (
                 <Button variant="outline" size="lg" disabled>
                     <Lock className="h-5 w-5 mr-2"/>
-                    <span>Pronostici Bloccati</span>
+                    <span className="hidden sm:inline">Pronostici Bloccati</span>
+                    <span className="sm:hidden">Pronostici Bloccati</span>
                 </Button>
             )}
             </div>
@@ -546,3 +552,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+

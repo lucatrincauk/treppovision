@@ -8,11 +8,12 @@ import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamFinalAnswersFormData } from "@/types";
 import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft } from "lucide-react";
+import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions"; 
+import { getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 
 export default function EditFinalAnswersPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -25,6 +26,8 @@ export default function EditFinalAnswersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
+  const [finalPredictionsEnabled, setFinalPredictionsEnabled] = useState<boolean | null>(null);
+  const [hasExistingPredictions, setHasExistingPredictions] = useState(false);
 
   useEffect(() => {
     async function fetchTeamAndSettings() {
@@ -36,14 +39,22 @@ export default function EditFinalAnswersPage() {
       setIsLoadingData(true);
       setError(null);
       try {
-        const [fetchedTeam, lockedStatus] = await Promise.all([
+        const [fetchedTeam, generalTeamsLockStatus, finalPredictionsEnableStatus] = await Promise.all([
           getTeamById(teamId),
-          getTeamsLockedStatus()
+          getTeamsLockedStatus(),
+          getFinalPredictionsEnabledStatus()
         ]);
-        setTeamsLocked(lockedStatus);
+        setTeamsLocked(generalTeamsLockStatus);
+        setFinalPredictionsEnabled(finalPredictionsEnableStatus);
 
         if (fetchedTeam) {
           setTeam(fetchedTeam);
+          setHasExistingPredictions(
+            !!fetchedTeam.bestSongNationId || 
+            !!fetchedTeam.bestPerformanceNationId || 
+            !!fetchedTeam.bestOutfitNationId || 
+            !!fetchedTeam.worstSongNationId
+          );
           if (user && fetchedTeam.userId === user.uid) {
             setIsAuthorized(true);
           } else {
@@ -66,7 +77,7 @@ export default function EditFinalAnswersPage() {
     fetchTeamAndSettings();
   }, [teamId, user, authLoading]);
 
-  if (authLoading || isLoadingData || teamsLocked === null) {
+  if (authLoading || isLoadingData || teamsLocked === null || finalPredictionsEnabled === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -104,6 +115,21 @@ export default function EditFinalAnswersPage() {
       </Alert>
     );
   }
+  
+  if (!finalPredictionsEnabled) {
+     return (
+      <Alert variant="destructive" className="max-w-lg mx-auto">
+        <Lock className="h-4 w-4" />
+        <AlertTitle>Inserimento Pronostici Bloccato</AlertTitle>
+        <AlertDescription>
+          L'amministratore ha temporaneamente disabilitato l'inserimento dei pronostici finali.
+          <Button variant="link" asChild className="p-0 ml-1">
+            <Link href="/teams">Torna alle Squadre</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (teamsLocked) {
     return (
@@ -111,7 +137,7 @@ export default function EditFinalAnswersPage() {
         <Lock className="h-4 w-4" />
         <AlertTitle>Modifica Pronostici Bloccata</AlertTitle>
         <AlertDescription>
-          L'amministratore ha temporaneamente bloccato la modifica dei pronostici. Riprova più tardi.
+          L'amministratore ha temporaneamente bloccato la modifica dei pronostici e delle squadre. Riprova più tardi.
           <Button variant="link" asChild className="p-0 ml-1">
             <Link href="/teams">Torna alle Squadre</Link>
           </Button>
@@ -152,17 +178,18 @@ export default function EditFinalAnswersPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
             <ListOrdered className="mr-2 h-6 w-6" />
-            Modifica Pronostici Finali per: {team.name}
+            Pronostici Finali per: {team.name}
           </CardTitle>
           <CardDescription>
             Inserisci o aggiorna i tuoi pronostici per le categorie basate sul voto degli utenti.
+            {hasExistingPredictions && <span className="block mt-2 font-semibold text-destructive">Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.</span>}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <FinalAnswersForm
             initialData={initialFinalAnswers}
             teamId={team.id}
-            // onSuccess prop removed as navigation handled by FinalAnswersForm itself
+            isReadOnly={hasExistingPredictions}
           />
         </CardContent>
       </Card>

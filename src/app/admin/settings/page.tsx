@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { getAdminSettingsAction, updateAdminSettingsAction, updateNationRankingAction } from "@/lib/actions/admin-actions";
+import { getAdminSettingsAction, updateAdminSettingsAction, updateNationRankingAction, getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 import { getNations } from "@/lib/nation-service";
 import type { AdminSettings, Nation } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2 } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from "next/image";
@@ -26,9 +26,11 @@ export default function AdminSettingsPage() {
   const [isLoadingSettings, setIsLoadingSettings] = React.useState(true);
   const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
+  const [isSubmittingFinalPredictions, setIsSubmittingFinalPredictions] = React.useState(false);
 
-  const [nations, setNations] = React.useState<Nation[]>([]); // For visual order
-  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); // For iteration
+
+  const [nations, setNations] = React.useState<Nation[]>([]); 
+  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); 
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [initialRankingsMap, setInitialRankingsMap] = React.useState<Map<string, string>>(new Map());
@@ -84,14 +86,21 @@ export default function AdminSettingsPage() {
     }
   }, [user, authLoading, toast]);
 
-  const handleToggleTeamsLocked = async (locked: boolean) => {
-    setIsSubmittingTeams(true);
-    const result = await updateAdminSettingsAction({ teamsLocked: locked });
+  const handleToggleSetting = async (
+    settingKey: keyof AdminSettings, 
+    locked: boolean, 
+    setSubmittingState: React.Dispatch<React.SetStateAction<boolean>>,
+    toastTitle: string,
+    toastDescriptionLocked: string,
+    toastDescriptionUnlocked: string
+  ) => {
+    setSubmittingState(true);
+    const result = await updateAdminSettingsAction({ [settingKey]: locked });
     if (result.success) {
-      setSettings(prev => prev ? { ...prev, teamsLocked: locked } : { teamsLocked: locked, leaderboardLocked: settings?.leaderboardLocked ?? false });
+      setSettings(prev => prev ? { ...prev, [settingKey]: locked } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, [settingKey]: locked });
       toast({
-        title: "Impostazioni Aggiornate",
-        description: `Modifica squadre ${locked ? 'bloccata' : 'sbloccata'}.`,
+        title: toastTitle,
+        description: locked ? toastDescriptionLocked : toastDescriptionUnlocked,
       });
     } else {
       toast({
@@ -100,27 +109,9 @@ export default function AdminSettingsPage() {
         variant: "destructive",
       });
     }
-    setIsSubmittingTeams(false);
+    setSubmittingState(false);
   };
 
-  const handleToggleLeaderboardLocked = async (locked: boolean) => {
-    setIsSubmittingLeaderboard(true);
-    const result = await updateAdminSettingsAction({ leaderboardLocked: locked });
-    if (result.success) {
-      setSettings(prev => prev ? { ...prev, leaderboardLocked: locked } : { leaderboardLocked: locked, teamsLocked: settings?.teamsLocked ?? false });
-      toast({
-        title: "Impostazioni Aggiornate",
-        description: `Classifica Squadre ${locked ? 'bloccata' : 'sbloccata'}.`,
-      });
-    } else {
-      toast({
-        title: "Errore Aggiornamento",
-        description: result.message,
-        variant: "destructive",
-      });
-    }
-    setIsSubmittingLeaderboard(false);
-  };
 
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
     setRankingsInput(prev => new Map(prev).set(nationId, value));
@@ -147,14 +138,14 @@ export default function AdminSettingsPage() {
         const newTargetRankString = String(idx + 1);
         const currentRankStringInInput = newRankingsInput.get(nation.id) ?? "";
         if (newTargetRankString !== currentRankStringInInput) {
-          newRankingsInput.set(nation.id, newTargetRankString);
+           newRankingsInput.set(nation.id, newTargetRankString);
         }
       });
-      setRankingsInput(newRankingsInput);
+      setRankingsInput(newRankingsInput); // This will visually update inputs
       
       return newNationsArray;
     });
-  }, [rankingsInput]); 
+  }, [rankingsInput, handleRankingInputChange]); 
 
   const handleSaveAllChangedRankings = async () => {
     setIsSavingAll(true);
@@ -162,7 +153,7 @@ export default function AdminSettingsPage() {
     let successfulSaves = 0;
     const promises = [];
 
-    for (const nation of allNationsStable) {
+    for (const nation of allNationsStable) { // Iterate over a stable list
       const currentInputValue = rankingsInput.get(nation.id) ?? "";
       const originalSavedRank = initialRankingsMap.get(nation.id) ?? "";
 
@@ -173,6 +164,7 @@ export default function AdminSettingsPage() {
             .then(result => {
               if (result.success) {
                 successfulSaves++;
+                // Optimistically update the local nations array's ranking for immediate UI consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
@@ -197,6 +189,7 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
+      // Update initialRankingsMap to reflect the new saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -279,7 +272,7 @@ export default function AdminSettingsPage() {
               <Switch
                 id="teams-locked-switch"
                 checked={settings.teamsLocked}
-                onCheckedChange={handleToggleTeamsLocked}
+                onCheckedChange={(locked) => handleToggleSetting('teamsLocked', locked, setIsSubmittingTeams, "Impostazioni Squadre Aggiornate", "Modifica squadre bloccata.", "Modifica squadre sbloccata.")}
                 disabled={isSubmittingTeams}
                 aria-label="Blocca modifica squadre"
               />
@@ -295,10 +288,10 @@ export default function AdminSettingsPage() {
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
                 <Label htmlFor="leaderboard-locked-switch" className="text-base font-medium">
-                    Blocca Classifica Squadre
+                    Blocca Accesso Classifiche Utenti
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                    Se attivo, la pagina "Classifica Squadre" e "Classifica TreppoScore" non saranno accessibili.
+                    Se attivo, "Classifica TreppoScore" e "Classifica Squadre" non saranno accessibili.
                 </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -306,16 +299,43 @@ export default function AdminSettingsPage() {
               <Switch
                 id="leaderboard-locked-switch"
                 checked={settings.leaderboardLocked}
-                onCheckedChange={handleToggleLeaderboardLocked}
+                onCheckedChange={(locked) => handleToggleSetting('leaderboardLocked', locked, setIsSubmittingLeaderboard, "Impostazioni Classifiche Aggiornate", "Accesso classifiche utenti bloccato.", "Accesso classifiche utenti sbloccato.")}
                 disabled={isSubmittingLeaderboard}
-                aria-label="Blocca classifica squadre"
+                aria-label="Blocca accesso classifiche utenti"
               />
             </div>
           </div>
            {isSubmittingLeaderboard && (
             <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvataggio modifiche classifica...
+                Salvataggio modifiche classifiche...
+            </div>
+            )}
+            
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+                <Label htmlFor="final-predictions-switch" className="text-base font-medium">
+                    Abilita Inserimento Pronostici Finali
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                    Se attivo, gli utenti potranno inserire i loro "Pronostici Finali" per la squadra.
+                </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              {settings.finalPredictionsEnabled ? <Edit className="text-primary" /> : <Lock className="text-muted-foreground" />}
+              <Switch
+                id="final-predictions-switch"
+                checked={settings.finalPredictionsEnabled}
+                onCheckedChange={(enabled) => handleToggleSetting('finalPredictionsEnabled', enabled, setIsSubmittingFinalPredictions, "Impostazioni Pronostici Finali Aggiornate", "Inserimento pronostici finali abilitato.", "Inserimento pronostici finali disabilitato.")}
+                disabled={isSubmittingFinalPredictions}
+                aria-label="Abilita inserimento pronostici finali"
+              />
+            </div>
+          </div>
+           {isSubmittingFinalPredictions && (
+            <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvataggio modifiche pronostici finali...
             </div>
             )}
         </CardContent>
@@ -328,7 +348,8 @@ export default function AdminSettingsPage() {
             Gestione Ranking Nazioni
           </CardTitle>
           <CardDescription>
-            Usa le frecce per riordinare visivamente le nazioni. Inserisci manualmente il ranking desiderato. 
+            Usa le frecce per riordinare visivamente le nazioni. Questo aggiornerà i campi input del ranking.
+            Inserisci manualmente il ranking desiderato se preferisci. 
             Poi clicca "Salva Ranking Modificati" per persistere le modifiche. 
             "Elimina Tutti i Ranking" rimuoverà il ranking da tutte le nazioni.
           </CardDescription>
@@ -441,3 +462,4 @@ export default function AdminSettingsPage() {
     
 
     
+
