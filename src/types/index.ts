@@ -79,20 +79,6 @@ export interface AuthContextType {
   updateUserProfileName: (newName: string) => Promise<boolean>;
 }
 
-export interface AdminNationPayload {
-  id: string;
-  name: string;
-  countryCode: string;
-  songTitle: string;
-  artistName: string;
-  youtubeVideoId: string;
-  category: NationCategory;
-  ranking?: number;
-  performingOrder: number;
-  songDescription?: string;
-  songLyrics?: string;
-}
-
 // Team Creation and Editing - Core Details
 export interface TeamCoreFormData {
   name: string;
@@ -123,11 +109,6 @@ export interface Team {
 
   createdAt: number | null;
   updatedAt?: number | null;
-  score?: number;
-  rank?: number;
-  isTied?: boolean;
-  primaSquadraDetails?: GlobalPrimaSquadraDetail[];
-  categoryPicksDetails?: GlobalCategoryPickDetail[];
 }
 
 export interface GlobalPrimaSquadraDetail {
@@ -155,7 +136,7 @@ export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean;
-  userRegistrationEnabled: boolean; // New setting
+  userRegistrationEnabled: boolean; 
 }
 
 export interface NationGlobalCategorizedScores {
@@ -171,4 +152,14 @@ export interface NationWithTreppoScore extends Nation {
   globalTreppoScore: number | null;
   globalVoteCount: number;
   userAverageScore?: number | null;
+}
+
+export interface TeamWithScore extends Team {
+  score?: number;
+  primaSquadraDetails?: GlobalPrimaSquadraDetail[];
+  categoryPicksDetails?: GlobalCategoryPickDetail[];
+  rank?: number;
+  isTied?: boolean;
+  bonusCampionePronostici?: boolean;
+  bonusEnPleinTop5?: boolean;
 }

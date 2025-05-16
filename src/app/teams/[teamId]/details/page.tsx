@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { listenToAllVotesForAllNationsCategorized, getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; // Added import
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
+import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore as TeamWithScoreType, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Loader2, AlertTriangle, Users, ChevronLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -71,6 +71,12 @@ const getCategoryPickPointsAndRank = (
   return { points, rank: actualRank, score: actualScore };
 };
 
+// Local interface for this page, including bonus flags
+interface TeamWithScore extends TeamWithScoreType {
+  bonusCampionePronostici?: boolean;
+  bonusEnPleinTop5?: boolean;
+}
+
 
 export default function TeamDetailsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -83,6 +89,8 @@ export default function TeamDetailsPage() {
   
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const nationGlobalCategorizedScoresArray = Array.from(nationGlobalCategorizedScoresMap.entries());
 
 
   useEffect(() => {
@@ -114,10 +122,15 @@ export default function TeamDetailsPage() {
         const nationsMap = new Map(fetchedNations.map(n => [n.id, n]));
         
         let score = 0;
+        let firstPlacePicksCount = 0;
+        let bonusCampionePronostici = false;
+        let bonusEnPleinTop5 = false;
+
         const primaSquadraDetails = (fetchedTeam.founderChoices || []).map(nationId => {
           const nation = nationsMap.get(nationId);
           const points = nation ? getPointsForRank(nation.ranking) : 0;
           score += points;
+          if(nation?.ranking === 1) firstPlacePicksCount++;
           return {
             id: nationId,
             name: nation?.name || 'Sconosciuto',
@@ -129,7 +142,12 @@ export default function TeamDetailsPage() {
           };
         });
 
-        const categoryPicksDetails = [];
+        if (primaSquadraDetails.length === 3 && primaSquadraDetails.every(detail => detail.actualRank && detail.actualRank >= 1 && detail.actualRank <= 5)) {
+          score += 30;
+          bonusEnPleinTop5 = true;
+        }
+
+        const categoryPicksDetails: GlobalCategoryPickDetailType[] = [];
         const topSongNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averageSongScore', 'desc');
         const bottomSongNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averageSongScore', 'asc');
         const topPerformanceNations = getTopNationsForCategory(fetchedGlobalScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
@@ -137,6 +155,7 @@ export default function TeamDetailsPage() {
 
         const bestSongPick = getCategoryPickPointsAndRank(fetchedTeam.bestSongNationId, topSongNations);
         score += bestSongPick.points;
+        if(bestSongPick.rank === 1) firstPlacePicksCount++;
         categoryPicksDetails.push({
             categoryName: "Miglior Canzone", pickedNationId: fetchedTeam.bestSongNationId, 
             pickedNationName: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.name : undefined,
@@ -146,6 +165,7 @@ export default function TeamDetailsPage() {
 
         const bestPerfPick = getCategoryPickPointsAndRank(fetchedTeam.bestPerformanceNationId, topPerformanceNations);
         score += bestPerfPick.points;
+        if(bestPerfPick.rank === 1) firstPlacePicksCount++;
         categoryPicksDetails.push({
             categoryName: "Miglior Performance", pickedNationId: fetchedTeam.bestPerformanceNationId,
             pickedNationName: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.name : undefined,
@@ -155,6 +175,7 @@ export default function TeamDetailsPage() {
         
         const bestOutfitPick = getCategoryPickPointsAndRank(fetchedTeam.bestOutfitNationId, topOutfitNations);
         score += bestOutfitPick.points;
+        if(bestOutfitPick.rank === 1) firstPlacePicksCount++;
         categoryPicksDetails.push({
             categoryName: "Miglior Outfit", pickedNationId: fetchedTeam.bestOutfitNationId,
             pickedNationName: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.name : undefined,
@@ -164,20 +185,26 @@ export default function TeamDetailsPage() {
 
         const worstSongPick = getCategoryPickPointsAndRank(fetchedTeam.worstSongNationId, bottomSongNations);
         score += worstSongPick.points;
+        if(worstSongPick.rank === 1) firstPlacePicksCount++;
         categoryPicksDetails.push({
             categoryName: "Peggior Canzone", pickedNationId: fetchedTeam.worstSongNationId,
             pickedNationName: fetchedTeam.worstSongNationId ? nationsMap.get(fetchedTeam.worstSongNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.worstSongNationId ? nationsMap.get(fetchedTeam.worstSongNationId)?.countryCode : undefined,
             actualCategoryRank: worstSongPick.rank, pointsAwarded: worstSongPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstSongPick.score
         });
+
+        if (firstPlacePicksCount >= 2) {
+          score += 5;
+          bonusCampionePronostici = true;
+        }
         
-        // Find rank based on all teams, this is a simplification, true rank needs all teams' scores
-        // For now, we just pass the calculated score. The TeamListItem for podium will use the rank prop if provided
         const processedTeam: TeamWithScore = {
           ...fetchedTeam,
           score: score,
           primaSquadraDetails: primaSquadraDetails,
           categoryPicksDetails: categoryPicksDetails,
+          bonusCampionePronostici,
+          bonusEnPleinTop5,
           rank: fetchedTeam.rank // If rank was pre-calculated from leaderboard, use it
         };
         setTeamWithDetails(processedTeam);
@@ -241,7 +268,6 @@ export default function TeamDetailsPage() {
     );
   }
   
-  const nationGlobalCategorizedScoresArray = Array.from(nationGlobalCategorizedScoresMap.entries());
 
   return (
     <div className="space-y-6">
@@ -249,13 +275,13 @@ export default function TeamDetailsPage() {
         <ChevronLeft className="w-4 h-4 mr-1" />
         Torna alla Classifica Squadre
       </Link>
-      <div className="max-w-xl mx-auto"> {/* Constrain width similar to podium cards */}
+      <div className="max-w-xl mx-auto"> 
         <TeamListItem
           team={teamWithDetails}
           allNations={allNations}
           nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray}
-          isLeaderboardPodiumDisplay={true} // To use the detailed card style
-          disableEdit={true} // No edit button on this detail page
+          isLeaderboardPodiumDisplay={true} 
+          disableEdit={true} 
           isOwnTeamCard={user?.uid === teamWithDetails.userId}
         />
       </div>

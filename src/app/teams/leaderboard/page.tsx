@@ -3,8 +3,8 @@
 
 import { getTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { getAllNationsGlobalCategorizedScores, listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType } from "@/types";
+import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, TeamWithScore as TeamWithScoreType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,12 +32,10 @@ interface CategoryPickDetail {
   iconName: 'Music2' | 'Star' | 'Shirt' | 'ThumbsDown' | 'Info';
 }
 
-interface TeamWithScore extends Team {
-  score: number;
-  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
-  categoryPicksDetails: CategoryPickDetail[];
-  rank?: number;
-  isTied?: boolean;
+// Local interface for this page, including bonus flags
+interface TeamWithScore extends TeamWithScoreType {
+  bonusCampionePronostici?: boolean;
+  bonusEnPleinTop5?: boolean;
 }
 
 const getPointsForRank = (rank?: number): number => {
@@ -177,9 +175,11 @@ export default function TeamsLeaderboardPage() {
 
         let calculatedTeams: TeamWithScore[] = fetchedTeams.map(team => {
           let score = 0;
-          const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
+          const primaSquadraDetails: GlobalPrimaSquadraDetail[] = [];
           const categoryPicksDetails: CategoryPickDetail[] = [];
           let firstPlacePicksCount = 0;
+          let bonusCampionePronostici = false;
+          let bonusEnPleinTop5 = false;
 
           (team.founderChoices || []).forEach(nationId => {
             const nation = nationsMap.get(nationId);
@@ -203,7 +203,8 @@ export default function TeamsLeaderboardPage() {
 
           // Bonus for all founder choices in top 5
           if (primaSquadraDetails.length === 3 && primaSquadraDetails.every(detail => detail.actualRank && detail.actualRank >= 1 && detail.actualRank <= 5)) {
-            score += 30; // New Top 5 Bonus
+            score += 30; 
+            bonusEnPleinTop5 = true;
           }
 
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
@@ -257,11 +258,18 @@ export default function TeamsLeaderboardPage() {
           }
           
           if (firstPlacePicksCount >= 2) {
-            score += 5; // Original Bonus for 2+ first place picks
+            score += 5; 
+            bonusCampionePronostici = true;
           }
 
-
-          return { ...team, score, primaSquadraDetails, categoryPicksDetails };
+          return { 
+            ...team, 
+            score, 
+            primaSquadraDetails, 
+            categoryPicksDetails,
+            bonusCampionePronostici,
+            bonusEnPleinTop5 
+          };
         });
 
         calculatedTeams.sort((a, b) => {
@@ -354,7 +362,7 @@ export default function TeamsLeaderboardPage() {
   });
   MedalIcon.displayName = 'MedalIcon';
 
-  const PrimaSquadraNationDisplay = React.memo(({ detail, allNations }: { detail: GlobalPrimaSquadraDetailType, allNations: Nation[] }) => {
+  const PrimaSquadraNationDisplay = React.memo(({ detail, allNations }: { detail: GlobalPrimaSquadraDetail, allNations: Nation[] }) => {
     const nationData = allNations.find(n => n.id === detail.id);
     const rankText = !adminSettings.leaderboardLocked && detail.actualRank && detail.actualRank > 0
       ? `(${detail.actualRank}°)`.trim()
@@ -476,8 +484,10 @@ const CategoryPickDisplay = React.memo(({ detail, allNations }: { detail: Catego
                             {pickedNationFullDetails.name}
                             </span>
                             {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                            {!adminSettings.leaderboardLocked && rankText && (
-                                <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                             {!adminSettings.leaderboardLocked && detail.actualCategoryRank && (
+                                <span className="text-muted-foreground text-xs ml-0.5">
+                                  ({detail.actualCategoryRank}°{rankSuffix})
+                                </span>
                             )}
                         </Link>
                     </div>
@@ -540,7 +550,7 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                   <Info className="h-4 w-4" />
-                  <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio.</span>
+                  <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio in una nuova pagina.</span>
                 </div>
                 <Card>
                   <CardContent className="p-0">
@@ -570,9 +580,7 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                               </div>
                             </TableCell>
                             <TableCell className="align-top pt-4">
-                               <DialogTrigger asChild>
-                                <button 
-                                  onClick={() => { setSelectedTeamDetail(team); setIsDetailModalOpen(true);}}
+                               <Link href={`/teams/${team.id}/details`}
                                   className="text-left hover:text-primary group w-full"
                                 >
                                   <div className="font-medium text-base group-hover:underline">
@@ -583,8 +591,7 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                                           <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                       </div>
                                   )}
-                                </button>
-                              </DialogTrigger>
+                                </Link>
                             </TableCell>
                             {!adminSettings.leaderboardLocked && 
                               <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">
