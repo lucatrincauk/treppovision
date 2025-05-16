@@ -9,13 +9,22 @@ import { NationsDisplayClient } from "@/components/nations/nations-display-clien
 
 export default async function NationsPage() {
   const nations = await getNations();
-  const listTitle = "Elenco Nazioni";
+  // The listTitle prop is no longer used by NationsDisplayClient for the main title
+  // const listTitle = "Elenco Nazioni";
 
   return (
     <div className="space-y-8">
       <NationsSubNavigation />
-      <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mb-8">
-        {/* Header removed */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+        <header className="text-center sm:text-left space-y-2">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <ListMusic className="mr-3 h-10 w-10" />
+            Incontra le Nazioni
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Esplora tutti i paesi partecipanti, i loro artisti e le loro canzoni.
+          </p>
+        </header>
         <AdminNationControls nationId={null}>
           <div className="flex-shrink-0">
               <Button asChild variant="outline" size="lg">
@@ -33,7 +42,8 @@ export default async function NationsPage() {
       )}
 
       {nations.length > 0 && (
-        <NationsDisplayClient initialNations={nations} listTitle={listTitle} />
+        // Pass a prop that indicates this is the main list to show the sort order description
+        <NationsDisplayClient initialNations={nations} showSortOrderDescription={true} />
       )}
     </div>
   );

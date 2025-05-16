@@ -13,12 +13,13 @@ import { getAllUserVotes } from "@/lib/voting-service";
 
 interface NationsDisplayClientProps {
   initialNations: Nation[];
-  listTitle: string;
+  listTitle?: string; // Made optional as it's no longer used for the main title here
+  showSortOrderDescription?: boolean; // New prop
 }
 
 const HIDE_VOTED_NATIONS_KEY = "treppoVision_hideVotedNations";
 
-export function NationsDisplayClient({ initialNations, listTitle }: NationsDisplayClientProps) {
+export function NationsDisplayClient({ initialNations, listTitle, showSortOrderDescription = false }: NationsDisplayClientProps) {
   const { user, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNations, setFilteredNations] = useState<Nation[]>(initialNations);
@@ -62,7 +63,7 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
   }, [user, authLoading]);
 
   useEffect(() => {
-    let results = [...initialNations]; // Create a copy to sort
+    let results = [...initialNations]; 
 
     // Sort by performingOrder, then by name
     results.sort((a, b) => {
@@ -105,10 +106,9 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold tracking-tight text-primary border-b-2 border-primary/30 pb-2">
-        {listTitle}
-      </h2>
-      {listTitle === "Elenco Nazioni" && (
+      {/* The main list title (e.g., "Elenco Nazioni") is removed from here */}
+      {/* The descriptive paragraph is now shown based on a prop */}
+      {showSortOrderDescription && (
          <p className="text-base text-muted-foreground/80 -mt-4 mb-4">
            Nazioni elencate per ordine di esibizione.
          </p>
