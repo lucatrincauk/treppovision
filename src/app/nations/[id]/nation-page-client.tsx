@@ -179,15 +179,15 @@ export default function NationPageClient({ initialNation, params: serverParams }
               alt={`Sfondo ${nation.name}`}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              style={{ objectFit: "cover" }}
-              className="opacity-40 blur-sm scale-110" // Increased opacity
+              style={{ objectFit: "cover", objectPosition: "top right" }}
+              className="opacity-40 blur-sm scale-110" 
               data-ai-hint={headerBgAIHint}
-              onError={handleHeaderBgError} // Handle error to switch to flag
-              priority // Consider making this conditional if many images are slow to load
+              onError={handleHeaderBgError} 
+              priority 
             />
           </div>
         )}
-        <div className="relative p-8 md:p-12 bg-gradient-to-t from-background/80 via-background/50 to-transparent"> {/* Adjusted gradient */}
+        <div className="relative p-8 md:p-12 bg-gradient-to-t from-background/80 via-background/50 to-transparent"> 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
             <div className="flex-grow"> 
               <div className="flex items-center gap-3 mb-2">
