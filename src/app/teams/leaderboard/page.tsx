@@ -4,7 +4,7 @@
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailTypeFromType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,18 @@ import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+
+interface TeamWithScore extends Team {
+  score: number;
+  rank?: number;
+  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
+  categoryPicksDetails: GlobalCategoryPickDetailType[];
+  isTied?: boolean;
+}
+
+interface GlobalCategoryPickDetail extends GlobalCategoryPickDetailTypeFromType {
+  iconName: 'Music2' | 'Star' | 'Shirt' | 'ThumbsDown' | 'Info';
+}
 
 
 const getPointsForRank = (rank?: number): number => {
@@ -57,13 +69,6 @@ const getRankText = (rank?: number): string => {
   return rankStr;
 };
 
-interface TeamWithScore extends Team {
-  score: number;
-  rank?: number;
-  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
-  categoryPicksDetails: GlobalCategoryPickDetailType[];
-  isTied?: boolean;
-}
 
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
@@ -167,7 +172,7 @@ export default function TeamsLeaderboardPage() {
         let calculatedTeams: TeamWithScore[] = fetchedTeams.map(team => {
           let score = 0;
           const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
-          const categoryPicksDetails: GlobalCategoryPickDetailType[] = [];
+          const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
 
           (team.founderChoices || []).forEach(nationId => {
             const nation = nationsMap.get(nationId);
@@ -241,14 +246,11 @@ export default function TeamsLeaderboardPage() {
           calculatedTeams[i].rank = currentRank;
         }
 
-        // Second pass to mark ties
         for (let i = 0; i < calculatedTeams.length; i++) {
           let isTiedValue = false;
-          // Check tie with previous
           if (i > 0 && calculatedTeams[i].rank === calculatedTeams[i - 1].rank) {
             isTiedValue = true;
           }
-          // Check tie with next
           if (i < calculatedTeams.length - 1 && calculatedTeams[i].rank === calculatedTeams[i + 1].rank) {
             isTiedValue = true;
           }
@@ -272,7 +274,6 @@ export default function TeamsLeaderboardPage() {
   }, []);
 
   const podiumTeams = useMemo(() => teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3), [teamsWithScores]);
-  const tableTeams = useMemo(() => teamsWithScores, [teamsWithScores]); // Table now shows all teams
 
 
   if (isLoadingSettings || isLoadingData || !adminSettings) {
@@ -319,28 +320,28 @@ export default function TeamsLeaderboardPage() {
     return <Award className={cn("w-3.5 h-3.5 flex-shrink-0", colorClass, className)} />;
   };
 
-  const PrimaSquadraNationDisplay = ({ detail, allNationsMap }: { detail: GlobalPrimaSquadraDetailType, allNationsMap: Map<string, Nation> }) => {
-    const nationData = allNationsMap.get(detail.id);
+  const PrimaSquadraNationDisplay = ({ detail }: { detail: GlobalPrimaSquadraDetailType }) => {
+    const nationData = allNations.find(n => n.id === detail.id);
     const rankText = !adminSettings.leaderboardLocked && detail.actualRank && detail.actualRank > 0
       ? `(${detail.actualRank}°)`.trim()
       : "";
     const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
-      <div className={cn("px-2 py-1 flex items-start", detail.id ? "justify-between" : "justify-start")}>
+      <div className="px-2 py-1 flex items-start">
         <div className="flex items-center gap-1.5">
           <BadgeCheck className="w-5 h-5 text-accent shrink-0 mr-1.5" />
-          {nationData?.countryCode ? (
+           {nationData?.countryCode ? (
             <Image
               src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
               alt={detail.name}
               width={20}
               height={13}
-              className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
+              className="rounded-sm border border-border/30 object-contain shrink-0"
               data-ai-hint={`${detail.name} flag icon`}
             />
           ) : (
-            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
+            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
           )}
           <div className="flex flex-col items-start">
              <Link
@@ -354,11 +355,7 @@ export default function TeamsLeaderboardPage() {
                   <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                 )}
               </Link>
-              {(nationData?.artistName || nationData?.songTitle) && (
-                <span className="text-xs text-muted-foreground/80 block">
-                  {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
-                </span>
-              )}
+              {/* Artist and Song Title removed from table display */}
           </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
@@ -370,7 +367,7 @@ export default function TeamsLeaderboardPage() {
     );
   };
 
-  const CategoryPickDisplay = ({ detail, allNationsMap }: { detail: GlobalCategoryPickDetailType, allNationsMap: Map<string, Nation> }) => {
+  const CategoryPickDisplay = ({ detail }: { detail: GlobalCategoryPickDetail }) => {
     let IconComponent: React.ElementType;
     const iconColorClass = "text-accent";
   
@@ -382,20 +379,17 @@ export default function TeamsLeaderboardPage() {
       default: IconComponent = Info;
     }
   
-    const pickedNationFullDetails = detail.pickedNationId ? allNationsMap.get(detail.pickedNationId) : undefined;
+    const pickedNationFullDetails = detail.pickedNationId ? allNations.find(n => n.id === detail.pickedNationId) : undefined;
     
     let rankSuffix = "";
-    if (detail.categoryName === "Miglior Canzone") {
-      rankSuffix = "";
-    } else if (detail.categoryName === "Peggior Canzone") {
+    if (detail.categoryName === "Peggior Canzone") {
       rankSuffix = " peggiore";
-    } else {
-      rankSuffix = " in cat.";
     }
     
     const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
-      ? `(${detail.actualCategoryRank}°${rankSuffix})`.trim()
+      ? `(${detail.actualCategoryRank}°${rankSuffix ? `${rankSuffix}` : ''})`.trim()
       : "";
+
     const titleText = `${detail.categoryName}: ${pickedNationFullDetails?.name || 'N/D'}${rankText}${!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' ? ` Punti: ${detail.pointsAwarded}`: ''}`;
   
     return (
@@ -414,18 +408,19 @@ export default function TeamsLeaderboardPage() {
 
         <div className="w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
           {pickedNationFullDetails ? (
-            <div className="flex items-center gap-1"> 
+            <div className="flex items-start">
+              <div className="flex items-center gap-1">
                 {pickedNationFullDetails.countryCode ? (
                 <Image
                     src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
                     alt={pickedNationFullDetails.name}
                     width={20}
                     height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
+                    className="rounded-sm border border-border/30 object-contain shrink-0"
                     data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
                 />
                 ) : (
-                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
+                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
                 )}
                 <div className="flex flex-col items-start"> 
                     <Link href={`/nations/${pickedNationFullDetails.id}`}
@@ -436,11 +431,13 @@ export default function TeamsLeaderboardPage() {
                           {pickedNationFullDetails.name}
                         </span>
                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                        {!adminSettings.leaderboardLocked && rankText && (
-                           <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                        )}
+                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && (
+                            <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                         )}
                     </Link>
+                     {/* Artist and Song Title removed from table display */}
                 </div>
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -490,7 +487,7 @@ export default function TeamsLeaderboardPage() {
             </section>
           )}
 
-          {tableTeams.length > 0 && ( 
+          {teamsWithScores.length > 0 && ( 
              <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
                 Classifica Completa
@@ -510,7 +507,7 @@ export default function TeamsLeaderboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tableTeams.map((team) => (
+                      {teamsWithScores.map((team) => (
                         <TableRow 
                             key={team.id}
                             className={cn(user && user.uid === team.userId && "bg-primary/10 hover:bg-primary/20 border-l-2 border-primary")}
@@ -537,7 +534,7 @@ export default function TeamsLeaderboardPage() {
                                 {team.name}
                               </div>
                               {team.creatorDisplayName && (
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={`Utente: ${team.creatorDisplayName}`}>
                                       <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                   </div>
                               )}
