@@ -330,7 +330,7 @@ export default function TreppoScoreRankingPage() {
           {nationsWithScores.length > 0 && (
             <section className="mt-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Classifica Completa - {categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}
+                Classifica - {categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}
               </h2>
               <Card>
                 <CardContent className="p-0">
@@ -362,7 +362,7 @@ export default function TreppoScoreRankingPage() {
                         <TableRow key={nation.id}>
                           <TableCell className="font-medium text-center align-middle">
                             <div className="flex items-center justify-center">
-                              <MedalIcon rank={nation.rank} />
+                              <MedalIcon rank={nation.rank} isTied={nation.isTied} />
                               <span className={cn(
                                 nation.rank && [1,2,3].includes(nation.rank) && 
                                 (nation.rank === 1 ? "text-yellow-400" : nation.rank === 2 ? "text-slate-400" : "text-amber-500"),
