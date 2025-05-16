@@ -3,7 +3,7 @@
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,25 +35,10 @@ const getPointsForRank = (rank?: number): number => {
   return 0; 
 };
 
-interface NationScoreDetail {
-  id: string;
-  name: string;
-  countryCode: string;
-  artistName?: string;
-  songTitle?: string;
-  actualRank?: number;
-  points: number;
-}
+interface NationScoreDetail extends GlobalPrimaSquadraDetail {}
 
-interface CategoryPickDetail {
-  categoryName: string;
-  pickedNationId?: string;
-  pickedNationName?: string;
-  pickedNationCountryCode?: string;
-  actualCategoryRank?: number; 
-  pickedNationScoreInCategory?: number | null; 
-  pointsAwarded: number;
-  iconName: string; 
+interface CategoryPickDetail extends GlobalCategoryPickDetailType {
+  // iconName is already part of GlobalCategoryPickDetailType
 }
 
 interface TeamWithScore extends Team {
@@ -91,7 +76,7 @@ const getCategoryPickPointsAndRank = (
   pickedNationId: string | undefined,
   sortedNationsForCategory: Array<{ id: string; score: number | null }> 
 ): { points: number; rank?: number; score?: number | null } => {
-  if (!pickedNationId) return { points: 0, rank: undefined, score: null };
+  if (!pickedNationId || sortedNationsForCategory.length === 0) return { points: 0, rank: undefined, score: null };
   
   const rankIndex = sortedNationsForCategory.findIndex(n => n.id === pickedNationId);
   const actualRank = rankIndex !== -1 ? rankIndex + 1 : undefined;
@@ -126,7 +111,7 @@ export default async function TeamsLeaderboardPage() {
 
   const allTeams = await getTeams();
   const allNations = await getNations();
-  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores();
+  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); // This is a Map
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
@@ -245,9 +230,13 @@ export default async function TeamsLeaderboardPage() {
   const top3Teams = teamsWithScores.slice(0, 3);
   const otherRankedTeams = teamsWithScores.slice(3);
 
+  // Convert Map to Array of entries for client component prop
+  const globalCategorizedScoresArray: [string, NationGlobalCategorizedScores][] = Array.from(globalCategorizedScoresMap.entries());
+
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => {
       const MedalIcon = ({ rank }: { rank?: number }) => {
+        if (rank === undefined || rank === null || rank === 0) return null;
         if (rank === 1) return <Award className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 ml-1" />;
         if (rank === 2) return <Award className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />;
         if (rank === 3) return <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 ml-1" />; 
@@ -336,7 +325,7 @@ export default async function TeamsLeaderboardPage() {
           </span>
         </div>
 
-        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> {/* Using Tailwind's theme() for spacing */}
+        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> 
             <div className="flex items-center gap-1">
                 {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
                 <Link href={`/nations/${detail.pickedNationId}`}
@@ -402,9 +391,8 @@ export default async function TeamsLeaderboardPage() {
               </h2>
               <TeamList
                 teams={top3Teams}
-                nations={allNations}
                 allNations={allNations}
-                nationGlobalCategorizedScoresMap={globalCategorizedScoresMap}
+                nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
                 disableListItemEdit={true} 
               />
             </section>
@@ -430,14 +418,14 @@ export default async function TeamsLeaderboardPage() {
                         <TableRow key={team.id}>
                           <TableCell className="font-medium text-center align-top pt-4">{team.rank}</TableCell>
                           <TableCell className="align-top pt-4">
-                              <div className="font-medium text-base mb-1">
+                              <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
-                              </div>
-                                 {team.creatorDisplayName && (
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                                        <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
-                                    </div>
+                                {team.creatorDisplayName && (
+                                    <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={`Utente: ${team.creatorDisplayName}`}>
+                                        (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
+                                    </span>
                                 )}
+                              </div>
                               
                               <div className="mb-2">
                                   <p className="text-xs font-semibold text-muted-foreground mb-0.5">Pronostici TreppoVision:</p>
@@ -493,4 +481,5 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 

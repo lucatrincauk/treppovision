@@ -1,19 +1,22 @@
 
-import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalCategoryPickDetail, GlobalPrimaSquadraDetail } from "@/types";
 import { TeamListItem } from "./team-list-item";
 
 interface TeamListProps {
-  teams: Team[];
-  nations: Nation[];
-  nationGlobalCategorizedScoresMap: Map<string, NationGlobalCategorizedScores>;
-  disableListItemEdit?: boolean; // New prop
+  teams: (Team & { 
+    primaSquadraDetails?: GlobalPrimaSquadraDetail[]; 
+    categoryPicksDetails?: GlobalCategoryPickDetail[];
+  })[];
+  allNations: Nation[];
+  nationGlobalCategorizedScoresArray: [string, NationGlobalCategorizedScores][]; // Changed from Map to Array
+  disableListItemEdit?: boolean;
 }
 
-export function TeamList({ teams, nations, nationGlobalCategorizedScoresMap, disableListItemEdit = false }: TeamListProps) {
+export function TeamList({ teams, allNations, nationGlobalCategorizedScoresArray, disableListItemEdit = false }: TeamListProps) {
   if (teams.length === 0) {
     return <p className="text-muted-foreground text-center py-10">Nessuna squadra trovata.</p>;
   }
-  if (nations.length === 0) {
+  if (allNations.length === 0) { // Changed prop name to allNations
      return <p className="text-muted-foreground text-center py-10">Dati delle nazioni non disponibili per visualizzare le squadre.</p>;
   }
 
@@ -23,11 +26,12 @@ export function TeamList({ teams, nations, nationGlobalCategorizedScoresMap, dis
         <TeamListItem 
           key={team.id} 
           team={team} 
-          nations={nations} 
-          nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
-          disableEdit={disableListItemEdit} // Pass it down
+          allNations={allNations} // Changed prop name to allNations
+          nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray} // Pass array
+          disableEdit={disableListItemEdit} 
         />
       ))}
     </div>
   );
 }
+
