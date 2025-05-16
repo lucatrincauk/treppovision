@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import { listenToAllVotesForNation } from '@/lib/voting-service';
+import { getLeaderboardLockedStatus } from '@/lib/actions/admin-actions';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, Users } from 'lucide-react'; // Using Users icon for vote count
+import { Loader2, TrendingUp, Users, Lock } from 'lucide-react';
 
 interface AllUsersAverageVoteBadgeProps {
   nationId: string;
@@ -14,8 +15,21 @@ export function AllUsersAverageVoteBadge({ nationId }: AllUsersAverageVoteBadgeP
   const [globalAverage, setGlobalAverage] = useState<number | null>(null);
   const [voteCount, setVoteCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
 
   useEffect(() => {
+    async function fetchLockStatus() {
+      const status = await getLeaderboardLockedStatus();
+      setLeaderboardLocked(status);
+    }
+    fetchLockStatus();
+  }, []);
+
+  useEffect(() => {
+    if (leaderboardLocked === null || leaderboardLocked) {
+      setIsLoading(false);
+      return;
+    }
     if (!nationId) {
       setIsLoading(false);
       return;
@@ -29,13 +43,22 @@ export function AllUsersAverageVoteBadge({ nationId }: AllUsersAverageVoteBadgeP
     });
 
     return () => unsubscribe(); // Cleanup listener on component unmount
-  }, [nationId]);
+  }, [nationId, leaderboardLocked]);
 
-  if (isLoading) {
+  if (isLoading || leaderboardLocked === null) {
     return (
       <Badge variant="outline" className="text-sm py-1 px-3 animate-pulse min-w-[160px] text-center justify-center">
         <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
         Caricamento Globale...
+      </Badge>
+    );
+  }
+
+  if (leaderboardLocked) {
+    return (
+      <Badge variant="outline" className="text-sm py-1 px-3 text-muted-foreground">
+        <Lock className="w-3 h-3 mr-1.5" />
+        Punteggi globali bloccati
       </Badge>
     );
   }
@@ -52,9 +75,9 @@ export function AllUsersAverageVoteBadge({ nationId }: AllUsersAverageVoteBadgeP
   return (
     <Badge variant="secondary" className="text-sm py-1 px-3">
       <TrendingUp className="w-3 h-3 mr-1.5" />
-      TreppoScore Globale: {globalAverage.toFixed(2)} 
+      TreppoScore Globale: {globalAverage.toFixed(2)}
       <span className="ml-1.5 flex items-center text-secondary-foreground/80">
-         <Users className="w-3 h-3 mr-0.5" /> 
+         <Users className="w-3 h-3 mr-0.5" />
          {voteCount}
       </span>
     </Badge>

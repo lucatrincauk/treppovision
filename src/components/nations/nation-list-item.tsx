@@ -1,19 +1,20 @@
 
 "use client";
 
-import type { Nation, Vote } from "@/types";
+import type { Nation } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Music2, UserSquare2, Award, Loader2, Star, TrendingUp } from "lucide-react";
+import { ArrowRight, Music2, UserSquare2, Award, Loader2, Star, TrendingUp, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserVoteForNationFromDB, listenToAllVotesForNation } from "@/lib/voting-service";
+import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; // Import lock status
 
 interface NationListItemProps {
-  nation: Nation & { userAverageScore?: number | null }; // userAverageScore can be pre-calculated by parent
+  nation: Nation & { userAverageScore?: number | null };
 }
 
 export function NationListItem({ nation }: NationListItemProps) {
@@ -25,16 +26,23 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
 
-  // State for user's specific average score if not passed in props
   const [fetchedUserAverageScore, setFetchedUserAverageScore] = useState<number | null>(null);
   const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
 
   const [globalAverageScore, setGlobalAverageScore] = useState<number | null>(null);
   const [globalVoteCount, setGlobalVoteCount] = useState<number>(0);
   const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
+  const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
 
-  // Determine the user's average score to use: either from props or fetched
   const userAverageScore = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
+
+  useEffect(() => {
+    async function fetchLockStatus() {
+      const status = await getLeaderboardLockedStatus();
+      setLeaderboardLocked(status);
+    }
+    fetchLockStatus();
+  }, []);
 
   useEffect(() => {
     setImageUrl(localThumbnailUrl);
@@ -48,9 +56,8 @@ export function NationListItem({ nation }: NationListItemProps) {
     }
   };
 
-  // Fetch user's vote if not passed in props and user is logged in
   useEffect(() => {
-    if (nation.userAverageScore !== undefined) { // Score is pre-calculated and passed
+    if (nation.userAverageScore !== undefined) {
       setIsLoadingUserVote(false);
       return;
     }
@@ -82,13 +89,15 @@ export function NationListItem({ nation }: NationListItemProps) {
       .finally(() => {
         if (isMounted) setIsLoadingUserVote(false);
       });
-    
+
     return () => { isMounted = false; };
   }, [nation.id, nation.userAverageScore, user, authLoading]);
 
-
-  // Listen to global votes
   useEffect(() => {
+    if (leaderboardLocked === null || leaderboardLocked) {
+      setIsLoadingGlobalVote(false);
+      return;
+    }
     setIsLoadingGlobalVote(true);
     const unsubscribe = listenToAllVotesForNation(nation.id, (avgScore, count) => {
       setGlobalAverageScore(avgScore);
@@ -97,8 +106,7 @@ export function NationListItem({ nation }: NationListItemProps) {
     });
 
     return () => unsubscribe();
-  }, [nation.id]);
-
+  }, [nation.id, leaderboardLocked]);
 
   const rankBorderClass =
     nation.ranking === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30" :
@@ -142,7 +150,6 @@ export function NationListItem({ nation }: NationListItemProps) {
             </CardTitle>
 
             <div className="absolute bottom-2 right-2 flex flex-col items-end">
-              {/* User's Vote on Thumbnail (if NOT contextually top 3 for TreppoScore and score exists) */}
               {(isLoadingUserVote && !nation.userAverageScore && user && !authLoading) && (
                  <div className={cn(
                     "flex items-center justify-start bg-accent/70 text-accent-foreground/70 rounded-sm animate-pulse min-w-[70px] mb-[2px]",
@@ -155,7 +162,7 @@ export function NationListItem({ nation }: NationListItemProps) {
               {displayUserScoreOnThumbnail && userAverageScore !== null && (
                 <div className={cn(
                   "flex items-center justify-start bg-accent text-accent-foreground rounded-sm min-w-[70px] mb-[2px]",
-                  "px-1.5 py-0.5" 
+                  "px-1.5 py-0.5"
                 )}>
                   <Star className={cn("mr-1 text-accent-foreground", "w-3 h-3")} />
                   <span className={cn("font-semibold", "text-xs")}>
@@ -164,8 +171,7 @@ export function NationListItem({ nation }: NationListItemProps) {
                 </div>
               )}
 
-              {/* Global Vote on Thumbnail */}
-              {isLoadingGlobalVote ? (
+              {leaderboardLocked === null || (isLoadingGlobalVote && !leaderboardLocked) ? (
                  <div className={cn(
                     "flex items-center justify-start bg-secondary/70 text-secondary-foreground/70 rounded-sm animate-pulse min-w-[70px]",
                     isTopRankedForScoreDisplay ? "px-2 py-1" : "px-1.5 py-0.5"
@@ -173,7 +179,7 @@ export function NationListItem({ nation }: NationListItemProps) {
                     <TrendingUp className={cn("mr-1", isTopRankedForScoreDisplay ? "w-3.5 h-3.5" : "w-3 h-3")} />
                     <span className={cn("w-6 bg-secondary-foreground/30 rounded", isTopRankedForScoreDisplay ? "h-3.5" : "h-3")}></span>
                  </div>
-              ) : globalAverageScore !== null && globalVoteCount > 0 && (
+              ) : leaderboardLocked === false && globalAverageScore !== null && globalVoteCount > 0 && (
                 <div className={cn(
                   "flex items-center justify-start bg-secondary text-secondary-foreground rounded-sm min-w-[70px]",
                   isTopRankedForScoreDisplay ? "px-2 py-1" : "px-1.5 py-0.5"
@@ -182,7 +188,7 @@ export function NationListItem({ nation }: NationListItemProps) {
                   <span className={cn("font-semibold", isTopRankedForScoreDisplay ? "text-sm" : "text-xs")}>
                     {globalAverageScore.toFixed(2)}
                   </span>
-                  <span className={cn("ml-1 font-semibold text-secondary-foreground/80", isTopRankedForScoreDisplay ? "text-xs" : "text-[0.7rem]")}> 
+                  <span className={cn("ml-1 font-semibold text-secondary-foreground/80", isTopRankedForScoreDisplay ? "text-xs" : "text-[0.7rem]")}>
                     ({globalVoteCount})
                   </span>
                 </div>
@@ -206,7 +212,6 @@ export function NationListItem({ nation }: NationListItemProps) {
                 <span className="font-medium text-foreground">Posizione: {nation.ranking}°</span>
               </p>
             )}
-            {/* Display User's Average Score in content if it's a top 3 ranked item context and score exists */}
             {displayUserScoreInContent && userAverageScore !== null && (
               <p className="flex items-center text-muted-foreground mt-1">
                 <Star className="w-4 h-4 mr-2 text-accent flex-shrink-0" />
@@ -214,11 +219,10 @@ export function NationListItem({ nation }: NationListItemProps) {
               </p>
             )}
           </div>
-          
+
           <div className="space-y-1 mt-auto">
-             {/* Placeholder for spacing if needed, or remove if card height is dynamic */}
-             <div className="h-5"></div> 
-             <div className="h-5"></div> 
+             <div className="h-5"></div>
+             <div className="h-5"></div>
           </div>
 
         </CardContent>
@@ -231,5 +235,3 @@ export function NationListItem({ nation }: NationListItemProps) {
     </Link>
   );
 }
-
-    
