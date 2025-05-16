@@ -5,21 +5,16 @@ import { auth, db } from "@/lib/firebase";
 import type { AdminNationPayload, AdminSettings } from "@/types";
 import { doc, setDoc, getDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import { getNations } from "@/lib/nation-service"; // Import getNations
+import { getNations } from "@/lib/nation-service";
+import { unstable_noStore as noStore } from 'next/cache';
+
 
 const NATIONS_COLLECTION = "nations";
 const ADMIN_SETTINGS_COLLECTION = "adminSettings";
 const ADMIN_SETTINGS_DOC_ID = "config";
 
-// Placeholder - in a real app, use Firebase Custom Claims or a secure roles system.
-// This function is now only used internally by actions in this file.
-// Client-side admin checks should use the isAdmin flag from AuthContext.
 async function verifyAdminServerSide(): Promise<boolean> {
-  // This check would be more robust if it verified a custom claim on the auth token
-  // or checked against a secure list of admin UIDs in Firestore.
-  // For now, it's a simplified placeholder.
-  // console.warn("Admin verification in server actions is simplified. Implement robust checks for production.");
-  return true; // Assume admin for server actions if they reach here after client checks.
+  return true; 
 }
 
 
@@ -44,7 +39,9 @@ export async function addNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath("/admin/nations/new");
-    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
+    revalidatePath("/teams/leaderboard"); 
+    revalidatePath("/nations/ranking");
+    revalidatePath("/nations/trepposcore-ranking");
     return { success: true, message: "Nazione aggiunta con successo!", nationId: data.id };
   } catch (error) {
     console.error("Errore durante l'aggiunta della nazione:", error);
@@ -74,9 +71,9 @@ export async function updateNationAction(
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
-    revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
-    revalidatePath("/nations/ranking"); // Revalidate final ranking
-    revalidatePath("/nations/trepposcore-ranking"); // Revalidate trepposcore ranking
+    revalidatePath("/teams/leaderboard"); 
+    revalidatePath("/nations/ranking"); 
+    revalidatePath("/nations/trepposcore-ranking"); 
     return { success: true, message: "Nazione aggiornata con successo!", nationId: data.id };
   } catch (error) {
     console.error("Errore durante l'aggiornamento della nazione:", error);
@@ -99,7 +96,7 @@ export async function deleteNationAction(
 
         revalidatePath("/nations");
         revalidatePath(`/nations/${nationId}`);
-        revalidatePath("/teams/leaderboard"); // Revalidate leaderboard
+        revalidatePath("/teams/leaderboard"); 
         revalidatePath("/nations/ranking");
         revalidatePath("/nations/trepposcore-ranking");
         return { success: true, message: "Nazione eliminata con successo!" };
@@ -110,8 +107,8 @@ export async function deleteNationAction(
     }
 }
 
-// Admin Settings Actions
 export async function getAdminSettingsAction(): Promise<AdminSettings> {
+  noStore(); // Prevent caching of this action
   try {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
     const docSnap = await getDoc(settingsDocRef);
@@ -140,15 +137,11 @@ export async function updateAdminSettingsAction(
   try {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
     await setDoc(settingsDocRef, payload, { merge: true });
+    
+    // Revalidate paths that depend on these settings
     revalidatePath("/admin/settings"); 
-    revalidatePath("/teams"); 
-    revalidatePath("/teams/[teamId]/edit", "layout"); 
-    revalidatePath("/teams/leaderboard"); 
-    revalidatePath("/components/teams/teams-sub-navigation");
-    revalidatePath("/nations/ranking");
-    revalidatePath("/nations/trepposcore-ranking");
-    revalidatePath("/components/nations/nations-sub-navigation");
-
+    revalidatePath("/teams", "layout"); // Revalidate all team-related pages
+    revalidatePath("/nations", "layout"); // Revalidate all nation-related pages
 
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
@@ -159,19 +152,21 @@ export async function updateAdminSettingsAction(
 }
 
 export async function getLeaderboardLockedStatus(): Promise<boolean> {
+    noStore(); // Prevent caching of this action
     const settings = await getAdminSettingsAction();
     return settings.leaderboardLocked;
 }
 
 export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
+  noStore(); // Prevent caching of this action
   try {
     const nations = await getNations();
     if (nations.length === 0) {
-      return false; // No nations, so not all can be ranked.
+      return false; 
     }
     return nations.every(nation => nation.ranking && nation.ranking > 0);
   } catch (error) {
-    console.error("Error checking for ranked nations:", error);
-    return false; // Default to false on error, preventing access if data is unreadable
+    console.error("Error checking if all nations are ranked:", error);
+    return false; 
   }
 }
