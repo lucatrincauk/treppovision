@@ -354,7 +354,7 @@ export default async function TeamsLeaderboardPage() {
                     alt={detail.pickedNationName}
                     width={20}
                     height={13}
-                    className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+                    className="rounded-sm border border-border/30 object-contain flex-shrink-0 mr-0.5"
                     data-ai-hint={`${detail.pickedNationName} flag`}
                     />
                     <span className="font-medium">
@@ -409,7 +409,7 @@ export default async function TeamsLeaderboardPage() {
               <TeamList
                 teams={podiumTeams}
                 allNations={allNations}
-                nationGlobalCategorizedScoresArray={globalCategorizedArray}
+                nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
                 disableListItemEdit={true} 
               />
             </section>
@@ -499,6 +499,7 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 
 
 
