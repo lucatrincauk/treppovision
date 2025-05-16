@@ -145,11 +145,7 @@ export default function TeamsPage() {
     if (authIsLoading) return;
 
     setIsLoadingUserTeams(true);
-    if (user) {
-      // Team data is now processed in processedAndScoredTeams effect
-    } else {
-      setUserTeam(null);
-    }
+    // User team data is now processed in processedAndScoredTeams effect
     setIsLoadingUserTeams(false); 
   }, [user, authIsLoading]);
 
@@ -451,20 +447,20 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
             <div className="flex items-center gap-2">
-              {userTeam && !teamsLockedAdmin && (
-                  <Button asChild variant="outline" size="sm">
-                      <Link href={`/teams/${userTeam.id}/edit`}>
-                          <Edit className="h-4 w-4 sm:mr-1.5" />
-                          <span className="hidden sm:inline">Modifica Squadra</span>
-                      </Link>
-                  </Button>
-              )}
-              {userTeam && teamsLockedAdmin && (
-                  <Button variant="outline" size="sm" disabled>
-                      <Lock className="h-4 w-4 sm:mr-1.5"/>
-                      <span className="hidden sm:inline">Modifica Bloccata</span>
-                  </Button>
-              )}
+                {userTeam && !teamsLockedAdmin && (
+                    <Button asChild variant="default" size="sm">
+                        <Link href={`/teams/${userTeam.id}/edit`}>
+                            <Edit className="h-4 w-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Modifica Dettagli</span>
+                        </Link>
+                    </Button>
+                )}
+                 {userTeam && teamsLockedAdmin && (
+                    <Button variant="outline" size="sm" disabled>
+                        <Lock className="h-4 w-4 sm:mr-1.5"/>
+                        <span className="hidden sm:inline">Modifica Bloccata</span>
+                    </Button>
+                )}
             </div>
           </div>
           <TeamListItem 
@@ -474,19 +470,19 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
             leaderboardLocked={leaderboardLockedAdmin}
           />
-            <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-center">
             {userTeam && !teamsLockedAdmin && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
-                        <ListOrdered className="h-5 w-5 sm:mr-2" />
-                        <span className="hidden sm:inline">Pronostici Finali</span>
+                        <ListOrdered className="h-5 w-5 mr-2" />
+                        <span>Pronostici Finali</span>
                     </Link>
                 </Button>
             )}
             {userTeam && teamsLockedAdmin && (
                 <Button variant="outline" size="lg" disabled>
-                    <Lock className="h-5 w-5 sm:mr-2"/>
-                    <span className="hidden sm:inline">Pronostici Bloccati</span>
+                    <Lock className="h-5 w-5 mr-2"/>
+                    <span>Pronostici Bloccati</span>
                 </Button>
             )}
             </div>
@@ -583,21 +579,24 @@ export default function TeamsPage() {
                        )}
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {(team.founderChoices || []).map(nationId => (
-                            <PrimaSquadraNationDisplay 
-                              key={`${team.id}-${nationId}-prima`} 
-                              detail={{
-                                id: nationId, 
-                                name: nationsMap.get(nationId)?.name || 'Sconosciuto',
-                                countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
-                                artistName: nationsMap.get(nationId)?.artistName,
-                                songTitle: nationsMap.get(nationId)?.songTitle,
-                                points: 0, 
-                                actualRank: nationsMap.get(nationId)?.ranking
-                              }}
-                              leaderboardLocked={leaderboardLockedAdmin}
-                            />
-                          ))}
+                          {(team.founderChoices || []).map(nationId => {
+                             const nationDetail = team.primaSquadraDetails?.find(d => d.id === nationId);
+                             return (
+                                <PrimaSquadraNationDisplay 
+                                key={`${team.id}-${nationId}-prima`} 
+                                detail={{
+                                    id: nationId, 
+                                    name: nationsMap.get(nationId)?.name || 'Sconosciuto',
+                                    countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
+                                    artistName: nationsMap.get(nationId)?.artistName,
+                                    songTitle: nationsMap.get(nationId)?.songTitle,
+                                    points: nationDetail?.points ?? 0, 
+                                    actualRank: nationsMap.get(nationId)?.ranking
+                                }}
+                                leaderboardLocked={leaderboardLockedAdmin}
+                                />
+                             );
+                          })}
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestSong', leaderboardLockedAdmin)}</TableCell>
