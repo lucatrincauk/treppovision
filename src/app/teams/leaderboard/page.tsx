@@ -4,7 +4,7 @@
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, GlobalCategoryPickDetail as GlobalCategoryPickDetailTypeFromType } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreTypeFromTypes } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,18 +20,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
-interface TeamWithScore extends Team {
-  score: number;
-  rank?: number;
-  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
-  categoryPicksDetails: GlobalCategoryPickDetailType[];
-  isTied?: boolean;
-}
-
-interface GlobalCategoryPickDetail extends GlobalCategoryPickDetailTypeFromType {
+interface GlobalCategoryPickDetail extends GlobalCategoryPickDetailTypeFromTypes {
   iconName: 'Music2' | 'Star' | 'Shirt' | 'ThumbsDown' | 'Info';
 }
 
+interface TeamWithScore extends TeamWithScoreTypeFromTypes {
+  primaSquadraDetails: GlobalPrimaSquadraDetailType[];
+  categoryPicksDetails: GlobalCategoryPickDetail[];
+}
 
 const getPointsForRank = (rank?: number): number => {
   if (rank === undefined || rank === null || rank === 0) return 0;
@@ -337,11 +333,11 @@ export default function TeamsLeaderboardPage() {
               alt={detail.name}
               width={20}
               height={13}
-              className="rounded-sm border border-border/30 object-contain shrink-0"
+              className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
               data-ai-hint={`${detail.name} flag icon`}
             />
           ) : (
-            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
+            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
           )}
           <div className="flex flex-col items-start">
              <Link
@@ -355,7 +351,6 @@ export default function TeamsLeaderboardPage() {
                   <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                 )}
               </Link>
-              {/* Artist and Song Title removed from table display */}
           </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
@@ -416,11 +411,11 @@ export default function TeamsLeaderboardPage() {
                     alt={pickedNationFullDetails.name}
                     width={20}
                     height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0"
+                    className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
                     data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
                 />
                 ) : (
-                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
+                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
                 )}
                 <div className="flex flex-col items-start"> 
                     <Link href={`/nations/${pickedNationFullDetails.id}`}
@@ -435,7 +430,6 @@ export default function TeamsLeaderboardPage() {
                             <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                          )}
                     </Link>
-                     {/* Artist and Song Title removed from table display */}
                 </div>
               </div>
             </div>
