@@ -47,6 +47,7 @@ export default async function NationPageServer({ params }: NationPageProps) {
     notFound(); // Triggers the not-found.tsx page
   }
 
-  // Render the Client Component, passing initial data as props.
-  return <NationPageClient initialNation={nation} params={params} />;
+  // Render the Client Component, passing initial data and a plain params object.
+  return <NationPageClient initialNation={nation} params={{ id: params.id }} />;
 }
+
