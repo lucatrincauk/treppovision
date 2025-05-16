@@ -4,18 +4,20 @@
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { getAdminSettingsAction, updateAdminSettingsAction, updateNationRankingAction } from "@/lib/actions/admin-actions";
-import { getNations } from "@/lib/nation-service"; // Import getNations
+import { getNations } from "@/lib/nation-service";
 import type { AdminSettings, Nation } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Import Input
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Import Table components
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, BarChartBig, Save, Edit2, ListOrdered } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUpDown, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Image from "next/image"; // For flags
+import Image from "next/image";
+
+const DEBOUNCE_DELAY = 1500; // 1.5 seconds
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -30,6 +32,7 @@ export default function AdminSettingsPage() {
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [savingStates, setSavingStates] = React.useState<Map<string, boolean>>(new Map());
+  const debounceTimers = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   React.useEffect(() => {
     async function fetchPageData() {
@@ -39,14 +42,14 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations()
+            getNations() // Fetches nations sorted by performingOrder
           ]);
           setSettings(currentSettings);
-          setNations(fetchedNations.sort((a, b) => a.performingOrder - b.performingOrder)); // Sort by performingOrder
+          setNations(fetchedNations); // This now represents the visual order, initially by performingOrder
 
           const initialRankings = new Map<string, string>();
           fetchedNations.forEach(nation => {
-            initialRankings.set(nation.id, nation.ranking ? String(nation.ranking) : "");
+            initialRankings.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
           setRankingsInput(initialRankings);
 
@@ -105,43 +108,69 @@ export default function AdminSettingsPage() {
     setIsSubmittingLeaderboard(false);
   };
 
-  const handleRankingInputChange = (nationId: string, value: string) => {
-    setRankingsInput(prev => new Map(prev).set(nationId, value));
-  };
-
-  const handleSaveRanking = async (nationId: string) => {
+  const handleSaveRanking = React.useCallback(async (nationId: string) => {
     setSavingStates(prev => new Map(prev).set(nationId, true));
     const rankingString = rankingsInput.get(nationId) ?? "";
-    let newRanking: number | undefined | null = undefined;
+    
+    const result = await updateNationRankingAction(nationId, rankingString);
 
-    if (rankingString.trim() === "") {
-      newRanking = null; // Intention to clear ranking
-    } else {
-      const parsedRanking = parseInt(rankingString, 10);
-      if (!isNaN(parsedRanking) && parsedRanking > 0) {
-        newRanking = parsedRanking;
-      } else if (!isNaN(parsedRanking) && parsedRanking <= 0) {
-        newRanking = null; // Treat 0 or negative as clearing
-      } else {
-        toast({ title: "Valore Non Valido", description: "Il ranking deve essere un numero intero positivo o vuoto.", variant: "destructive" });
-        setSavingStates(prev => new Map(prev).set(nationId, false));
-        return;
-      }
-    }
-
-    const result = await updateNationRankingAction(nationId, newRanking);
     if (result.success) {
       toast({ title: "Ranking Aggiornato", description: `Ranking per ${nations.find(n => n.id === nationId)?.name} aggiornato.` });
-      // Update local nations state to reflect the change immediately
       setNations(prevNations =>
         prevNations.map(n =>
-          n.id === nationId ? { ...n, ranking: newRanking === null ? undefined : newRanking } : n
-        ).sort((a,b) => a.performingOrder - b.performingOrder)
+          n.id === nationId ? { ...n, ranking: result.newRanking } : n
+        )
       );
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
+      // Optionally revert input if save failed, or let user correct it
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
+  }, [rankingsInput, nations, toast]);
+
+  const handleRankingInputChange = (nationId: string, value: string) => {
+    setRankingsInput(prev => new Map(prev).set(nationId, value));
+
+    if (debounceTimers.current.has(nationId)) {
+      clearTimeout(debounceTimers.current.get(nationId)!);
+    }
+    debounceTimers.current.set(nationId, setTimeout(() => {
+      handleSaveRanking(nationId);
+    }, DEBOUNCE_DELAY));
+  };
+
+  const handleMoveNation = (nationId: string, direction: 'up' | 'down') => {
+    setNations(prevNations => {
+      const index = prevNations.findIndex(n => n.id === nationId);
+      if (index === -1) return prevNations;
+
+      const newNations = [...prevNations];
+      const item = newNations.splice(index, 1)[0];
+
+      if (direction === 'up' && index > 0) {
+        newNations.splice(index - 1, 0, item);
+      } else if (direction === 'down' && index < newNations.length) {
+        newNations.splice(index + 1, 0, item);
+      } else {
+        // Cannot move further, re-insert at original position (effectively no change)
+        newNations.splice(index, 0, item); 
+      }
+      return newNations;
+    });
+  };
+
+  const applyVisualOrderToRankings = () => {
+    const newRankingsMap = new Map<string, string>();
+    nations.forEach((nation, index) => {
+      const newRankString = String(index + 1);
+      newRankingsMap.set(nation.id, newRankString);
+      // Trigger save for each, relying on existing handleRankingInputChange to debounce
+      // or directly call save if debounce is not desired here.
+      // For immediate effect and utilizing debounce:
+      handleRankingInputChange(nation.id, newRankString);
+    });
+    // No, setRankingsInput(newRankingsMap); will be handled by handleRankingInputChange calls
+    toast({ title: "Ordine Applicato", description: "I ranking sono stati aggiornati in base all'ordine visuale. Salvataggio in corso..." });
   };
 
 
@@ -251,10 +280,17 @@ export default function AdminSettingsPage() {
             Gestione Ranking Nazioni
           </CardTitle>
           <CardDescription>
-            Imposta o modifica la posizione in classifica per ogni nazione. Lascia vuoto per rimuovere il ranking.
+            Modifica l'ordine visuale con le frecce, quindi clicca "Applica Ordine Tabella ai Ranking" per aggiornare i campi Ranking.
+            I ranking verranno salvati automaticamente poco dopo la modifica. Il campo "Ordine Esibizione" non è affetto da questa tabella.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <Button onClick={applyVisualOrderToRankings} variant="outline">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              Applica Ordine Tabella ai Ranking
+            </Button>
+          </div>
           {isLoadingNations ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -267,18 +303,37 @@ export default function AdminSettingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px] text-center"># Ord.</TableHead>
+                    <TableHead className="w-[80px]">Sposta</TableHead>
                     <TableHead>Nazione</TableHead>
-                    <TableHead className="w-[100px] text-center">Ranking</TableHead>
-                    <TableHead className="w-[120px] text-right">Azione</TableHead>
+                    <TableHead className="w-[150px] text-center">Ranking</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {nations.map((nation) => (
+                  {nations.map((nation, index) => (
                     <TableRow key={nation.id}>
-                      <TableCell className="text-center text-muted-foreground">{nation.performingOrder}</TableCell>
+                      <TableCell className="space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleMoveNation(nation.id, 'up')}
+                          disabled={index === 0}
+                          aria-label={`Sposta ${nation.name} su`}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleMoveNation(nation.id, 'down')}
+                          disabled={index === nations.length - 1}
+                          aria-label={`Sposta ${nation.name} giù`}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                           <span className="text-sm text-muted-foreground mr-2 tabular-nums">({index + 1})</span>
                           <Image
                             src={`https://flagcdn.com/w40/${nation.countryCode.toLowerCase()}.png`}
                             alt={nation.name}
@@ -291,29 +346,19 @@ export default function AdminSettingsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Input
-                          type="text" // Using text to allow empty string for clearing
-                          value={rankingsInput.get(nation.id) ?? ""}
-                          onChange={(e) => handleRankingInputChange(nation.id, e.target.value)}
-                          className="w-16 text-center h-8 px-1"
-                          placeholder="N/D"
-                          disabled={savingStates.get(nation.id) || false}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSaveRanking(nation.id)}
-                          disabled={savingStates.get(nation.id) || false}
-                        >
-                          {savingStates.get(nation.id) ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
+                        <div className="flex items-center justify-center">
+                          <Input
+                            type="text"
+                            value={rankingsInput.get(nation.id) ?? ""}
+                            onChange={(e) => handleRankingInputChange(nation.id, e.target.value)}
+                            className="w-16 text-center h-8 px-1"
+                            placeholder="N/D"
+                            disabled={savingStates.get(nation.id) || false}
+                          />
+                          {savingStates.get(nation.id) && (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2 text-primary" />
                           )}
-                          <span className="ml-2 hidden sm:inline">Salva</span>
-                        </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -326,3 +371,4 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
