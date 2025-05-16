@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger as DialogUITrigger, 
+  DialogTrigger as DialogUITrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -31,7 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger, 
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,7 +83,7 @@ export function AuthButton() {
         setUserRegistrationEnabled(regStatus);
       } catch (error) {
         console.error("Failed to fetch user registration status:", error);
-        setUserRegistrationEnabled(false);
+        setUserRegistrationEnabled(false); // Default to disabled on error
       } finally {
         setIsLoadingRegStatus(false);
       }
@@ -91,13 +91,13 @@ export function AuthButton() {
       if (user) {
         setIsLoadingUserTeam(true);
         try {
-          const [teamsResult, lockedStatusResult] = await Promise.all([
+          const [teamsResult, currentTeamsLockedStatus] = await Promise.all([
             getTeamsByUserId(user.uid),
             getTeamsLockedStatus()
           ]);
 
           setUserTeam(teamsResult.length > 0 ? teamsResult[0] : null);
-          setTeamsLocked(lockedStatusResult);
+          setTeamsLocked(currentTeamsLockedStatus);
         } catch (error) {
           console.error("Failed to fetch initial user data/lock status:", error);
           setUserTeam(null);
@@ -112,15 +112,17 @@ export function AuthButton() {
       }
     };
 
-    fetchInitialData();
-  }, [user]);
+    if (!isLoading) { // Only fetch if auth state is resolved
+        fetchInitialData();
+    }
+  }, [user, isLoading]);
 
   React.useEffect(() => {
     const refreshLockStatusOnOpen = async () => {
       if (user && isDropdownOpen) {
         try {
-          const currentLockedStatus = await getTeamsLockedStatus();
-          setTeamsLocked(currentLockedStatus);
+          const currentTeamsLockedStatus = await getTeamsLockedStatus();
+          setTeamsLocked(currentTeamsLockedStatus);
         } catch (error) {
           console.error("Failed to refresh teams lock status:", error);
         }
@@ -131,8 +133,13 @@ export function AuthButton() {
   }, [user, isDropdownOpen]);
 
   React.useEffect(() => {
+    // If registration is disabled and current tab is signup, switch to login
     if (userRegistrationEnabled === false && activeTab === "signup") {
-      setActiveTab("login"); 
+      setActiveTab("login");
+    }
+    // If registration is disabled and current tab is emailLink, switch to login
+    if (userRegistrationEnabled === false && activeTab === "emailLink") {
+      setActiveTab("login");
     }
   }, [userRegistrationEnabled, activeTab]);
 
@@ -300,17 +307,21 @@ export function AuthButton() {
   }
 
   // Logged-out state
-  const buttonText = isLoadingRegStatus || userRegistrationEnabled ? "Accedi / Registrati" : "Accedi";
-  const dialogDescriptionText = isLoadingRegStatus || userRegistrationEnabled === null || userRegistrationEnabled
+  const showSignupAndEmailLinkOptions = isLoadingRegStatus || userRegistrationEnabled === true;
+  
+  const buttonText = showSignupAndEmailLinkOptions ? "Accedi / Registrati" : "Accedi";
+  const dialogDescriptionText = showSignupAndEmailLinkOptions
     ? "Scegli un metodo per accedere o creare un nuovo account."
-    : "Scegli un metodo per accedere.";
+    : "Accedi al tuo account.";
+  
+  const tabsListColsClass = showSignupAndEmailLinkOptions ? "grid-cols-3" : "grid-cols-1";
 
   return (
     <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
       <DialogUITrigger asChild>
         <Button variant="outline" size="sm" aria-label="Open authentication dialog">
-          <LogIn className={cn("h-4 w-4", (userRegistrationEnabled === false && !isLoadingRegStatus) ? "" : "sm:mr-2")} />
-          <span className={cn((userRegistrationEnabled === false && !isLoadingRegStatus) ? "hidden sm:inline" : "hidden sm:inline")}>
+          <LogIn className={cn("h-4 w-4", showSignupAndEmailLinkOptions ? "sm:mr-2" : "")} />
+          <span className={cn(showSignupAndEmailLinkOptions ? "hidden sm:inline" : "hidden sm:inline")}>
             {buttonText}
           </span>
         </Button>
@@ -323,29 +334,36 @@ export function AuthButton() {
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={cn(
-            "grid w-full",
-            (userRegistrationEnabled === true || userRegistrationEnabled === null || isLoadingRegStatus) ? "grid-cols-3" : "grid-cols-2"
-          )}>
+          <TabsList className={cn("grid w-full", tabsListColsClass)}>
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
-            {(userRegistrationEnabled === true || userRegistrationEnabled === null || isLoadingRegStatus) && (
+            {showSignupAndEmailLinkOptions && (
               <TabsTrigger value="signup" disabled={isLoadingRegStatus || userRegistrationEnabled === false}>
                 <UserPlus className="mr-1"/>{isLoadingRegStatus ? "Caricamento..." : "Registrati"}
               </TabsTrigger>
             )}
-            <TabsTrigger value="emailLink"><Link2 className="mr-1"/>Link Email</TabsTrigger>
+            {showSignupAndEmailLinkOptions && (
+              <TabsTrigger value="emailLink" disabled={isLoadingRegStatus || userRegistrationEnabled === false}>
+                <Link2 className="mr-1"/>Link Email
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="login">
             <LoginForm onSuccess={handleAuthSuccess} />
           </TabsContent>
-          <TabsContent value="signup">
-            <SignupForm onSuccess={handleAuthSuccess} />
-          </TabsContent>
-          <TabsContent value="emailLink">
-            <EmailLinkForm onSuccess={handleAuthSuccess} />
-          </TabsContent>
+          {showSignupAndEmailLinkOptions && (
+            <TabsContent value="signup">
+              <SignupForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+          )}
+          {showSignupAndEmailLinkOptions && (
+            <TabsContent value="emailLink">
+              <EmailLinkForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
