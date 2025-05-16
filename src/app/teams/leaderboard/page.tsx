@@ -55,7 +55,7 @@ const getRankText = (rank?: number): string => {
 interface NationScoreDetail extends GlobalPrimaSquadraDetail {}
 
 interface CategoryPickDetail extends GlobalCategoryPickDetailType {
-  // iconName is already part of GlobalCategoryPickDetailType
+  iconName: string; // Ensure iconName is part of the type
 }
 
 interface TeamWithScore extends Team {
@@ -71,6 +71,7 @@ const getTopNationsForCategory = (
   categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
   sortOrder: 'desc' | 'asc' = 'desc'
 ): Array<{ id: string; name: string; score: number | null }> => { 
+  if (!scoresMap || scoresMap.size === 0 || !nationsMap || nationsMap.size === 0) return [];
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
       id: nationId,
@@ -128,7 +129,7 @@ export default async function TeamsLeaderboardPage() {
 
   const allTeams = await getTeams();
   const allNations = await getNations();
-  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); // This is a Map
+  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); 
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
@@ -229,6 +230,8 @@ export default async function TeamsLeaderboardPage() {
     return { ...team, score, primaSquadraDetails, categoryPicksDetails };
   });
 
+  // Standard competition ranking (1224 ranking if scores are different, ties share rank and next rank is skipped)
+  // Secondary sort by team name for consistent tie-breaking
   teamsWithScores.sort((a, b) => {
     if (b.score === a.score) {
       return a.name.localeCompare(b.name);
@@ -247,7 +250,6 @@ export default async function TeamsLeaderboardPage() {
   const top3Teams = teamsWithScores.slice(0, 3);
   const otherRankedTeams = teamsWithScores.slice(3);
 
-  // Convert Map to Array of entries for client component prop
   const globalCategorizedScoresArray: [string, NationGlobalCategorizedScores][] = Array.from(globalCategorizedScoresMap.entries());
 
 
@@ -262,7 +264,7 @@ export default async function TeamsLeaderboardPage() {
       const nationData = nationsMap.get(detail.id);
       return (
         <div className="flex items-start gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
-          <BadgeCheck className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+          <BadgeCheck className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
            <Image
             src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
             alt={detail.name}
@@ -282,7 +284,11 @@ export default async function TeamsLeaderboardPage() {
                 <MedalIcon rank={detail.actualRank} />
                 <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
               </div>
-              
+              {nationData && (
+                 <span className="text-xs text-muted-foreground/80 truncate max-w-[180px] block">
+                    {nationData.artistName} - {nationData.songTitle}
+                </span>
+              )}
             </Link>
           </div>
           <span className={cn(
@@ -421,7 +427,6 @@ export default async function TeamsLeaderboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {/* Removed Pos. column */}
                         <TableHead>Squadra</TableHead>
                         <TableHead className="text-right">Punteggio Totale</TableHead>
                       </TableRow>
@@ -498,6 +503,7 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 
 
 
