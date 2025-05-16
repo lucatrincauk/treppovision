@@ -12,7 +12,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
 import { cn } from "@/lib/utils";
-// NationDetailImage component is no longer needed here
 import { UserVoteBadge } from "@/components/nations/user-vote-badge";
 import { AllUsersAverageVoteBadge } from "@/components/nations/all-users-average-vote-badge";
 import type { Nation } from "@/types";
@@ -36,20 +35,17 @@ export default function NationPageClient({ initialNation, params: serverParams }
   const clientParams = useParams();
   const currentNationId = typeof clientParams?.id === 'string' ? clientParams.id : serverParams.id;
 
-  // State for the header background image
   const [headerBgSrc, setHeaderBgSrc] = useState<string>('');
   const [headerBgAIHint, setHeaderBgAIHint] = useState<string>('');
 
   useEffect(() => {
     if (nation) {
-      // Initial attempt: local JPG
       setHeaderBgSrc(`/${nation.id}.jpg`);
       setHeaderBgAIHint(`${nation.name} photo`);
     }
   }, [nation]);
 
   const handleHeaderBgError = () => {
-    // Fallback to flag if local JPG fails
     if (nation) {
       setHeaderBgSrc(`https://flagcdn.com/w1280/${nation.countryCode.toLowerCase()}.png`);
       setHeaderBgAIHint(`${nation.name} flag`);
@@ -62,7 +58,8 @@ export default function NationPageClient({ initialNation, params: serverParams }
       setIsLoadingAllNations(true);
       try {
         const nationsList = await getNations(); 
-        setAllNations(nationsList);
+        const sortedNations = nationsList.sort((a, b) => (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity));
+        setAllNations(sortedNations);
       } catch (error) {
         console.error("Error fetching all nations for navigation:", error);
         setAllNations([]);
@@ -138,53 +135,24 @@ export default function NationPageClient({ initialNation, params: serverParams }
         </AdminNationControls>
       </div>
 
-      <div className="flex justify-between items-center">
-        {previousNation ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/nations/${previousNation.id}`} title={`Precedente: ${previousNation.name}`}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              {previousNation.name}
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" disabled>
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Precedente
-          </Button>
-        )}
-        {nextNation ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/nations/${nextNation.id}`} title={`Successiva: ${nextNation.name}`}>
-              {nextNation.name}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" disabled>
-            Successiva
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        )}
-      </div>
-
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
         {headerBgSrc && (
           <div className="absolute inset-0">
             <Image
-              key={headerBgSrc} // Add key to force re-render if src changes between same-sized images
+              key={headerBgSrc} 
               src={headerBgSrc}
               alt={`Sfondo ${nation.name}`}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              style={{ objectFit: "cover" }}
-              className="opacity-30 blur-sm scale-110"
+              style={{ objectFit: "cover", objectPosition: "top right" }}
+              className="opacity-40 blur-sm scale-110" 
               data-ai-hint={headerBgAIHint}
-              onError={handleHeaderBgError} // Handle error to switch to flag
-              priority // Consider making this conditional if many images are slow to load
+              onError={handleHeaderBgError} 
+              priority 
             />
           </div>
         )}
-        <div className="relative p-8 md:p-12 bg-gradient-to-tr from-background/90 via-background/70 to-transparent">
+        <div className="relative p-8 md:p-12 bg-gradient-to-t from-background/80 via-background/50 to-transparent"> 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
             <div className="flex-grow"> 
               <div className="flex items-center gap-3 mb-2">
@@ -209,7 +177,6 @@ export default function NationPageClient({ initialNation, params: serverParams }
                 <p className="text-lg text-foreground/80">{nation.artistName}</p>
               </div>
             </div>
-            {/* NationDetailImage removed from here */}
           </div>
           <div className="mt-4 flex flex-wrap gap-2 items-center">
             <UserVoteBadge nationId={nation.id} refreshTrigger={voteUpdateTrigger} />
@@ -237,6 +204,53 @@ export default function NationPageClient({ initialNation, params: serverParams }
         </div>
       </header>
       
+      <div className="flex justify-between items-center mb-6">
+        {previousNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${previousNation.id}`} title={`Precedente: ${previousNation.name}`} className="flex items-center">
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              <Image
+                src={`https://flagcdn.com/w20/${previousNation.countryCode.toLowerCase()}.png`}
+                alt={`Bandiera ${previousNation.name}`}
+                width={20}
+                height={13}
+                className="rounded-sm border border-border/50 object-contain mr-1.5"
+                data-ai-hint={`${previousNation.name} flag icon`}
+              />
+              {previousNation.name}
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled className="flex items-center">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+             <span className="w-5 h-[13px] mr-1.5"></span> {/* Placeholder for flag */}
+            Precedente
+          </Button>
+        )}
+        {nextNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${nextNation.id}`} title={`Successiva: ${nextNation.name}`} className="flex items-center">
+              {nextNation.name}
+              <Image
+                src={`https://flagcdn.com/w20/${nextNation.countryCode.toLowerCase()}.png`}
+                alt={`Bandiera ${nextNation.name}`}
+                width={20}
+                height={13}
+                className="rounded-sm border border-border/50 object-contain ml-1.5"
+                data-ai-hint={`${nextNation.name} flag icon`}
+              />
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled className="flex items-center">
+            Successiva
+            <span className="w-5 h-[13px] ml-1.5"></span> {/* Placeholder for flag */}
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        )}
+      </div>
+
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
           {nation.songDescription && (
