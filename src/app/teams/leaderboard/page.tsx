@@ -63,6 +63,7 @@ interface TeamWithScore extends Team {
   rank?: number;
   primaSquadraDetails: NationScoreDetail[];
   categoryPicksDetails: CategoryPickDetail[];
+  isTied?: boolean; // New property to indicate a tie
 }
 
 const getTopNationsForCategory = (
@@ -129,15 +130,15 @@ export default async function TeamsLeaderboardPage() {
 
   const allTeams = await getTeams();
   const allNations = await getNations();
-  const nationGlobalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); 
-  const globalCategorizedScoresArray = Array.from(nationGlobalCategorizedScoresMap.entries());
+  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); 
+  const globalCategorizedScoresArray = Array.from(globalCategorizedScoresMap.entries());
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
-  const topSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
-  const bottomSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); 
-  const topPerformanceNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
-  const topOutfitNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
+  const topSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+  const bottomSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); 
+  const topPerformanceNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+  const topOutfitNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
 
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
@@ -246,6 +247,19 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
+  // Second pass to determine ties
+  for (let i = 0; i < teamsWithScores.length; i++) {
+    let isTied = false;
+    if (i > 0 && teamsWithScores[i].rank === teamsWithScores[i-1].rank) {
+      isTied = true;
+    }
+    if (i < teamsWithScores.length - 1 && teamsWithScores[i].rank === teamsWithScores[i+1].rank) {
+      isTied = true;
+    }
+    teamsWithScores[i].isTied = isTied;
+  }
+
+
   const podiumTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank <= 3);
   const tableTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank > 3);
 
@@ -317,22 +331,19 @@ export default async function TeamsLeaderboardPage() {
     
     const iconColorClass = "text-accent";
     
-    let rankText = "";
-    let rankSuffix = "";
+    let rankTextSuffix = "";
     if (detail.actualCategoryRank && detail.actualCategoryRank > 0) {
-        if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
-        else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
-        else rankSuffix = " in cat.";
-        
-        rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
+        if (detail.categoryName === "Miglior Canzone") rankTextSuffix = "";
+        else if (detail.categoryName === "Peggior Canzone") rankTextSuffix = " peggiore";
+        else rankTextSuffix = " in cat.";
     }
     
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${rankText} - Punti: ${detail.pointsAwarded}`;
+    const titleText = `${detail.pickedNationName || 'N/D'}${pickedNationFullDetails ? ` - ${pickedNationFullDetails.artistName} - ${pickedNationFullDetails.songTitle}` : ''} ${detail.actualCategoryRank ? `(${detail.actualCategoryRank}°${rankTextSuffix})` : ''} - Punti: ${detail.pointsAwarded}`;
 
     return (
-      <div className="px-2 py-1.5">
-        <div className="flex items-center justify-between w-full">
+      <div className="px-2 py-1.5"> {/* Main container for each category pick */}
+        <div className="flex items-center justify-between w-full"> {/* Label line */}
           <div className="flex items-center gap-1.5">
             <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
             <span className="text-xs text-foreground/90 font-medium">{detail.categoryName}</span>
@@ -342,7 +353,7 @@ export default async function TeamsLeaderboardPage() {
           </span>
         </div>
 
-        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> 
+        <div className="mt-1 pl-[calc(1rem+theme(spacing.1.5))]">  {/* Nation details line, indented */}
             <div className="flex items-center gap-1">
                 {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
                 <Link href={`/nations/${detail.pickedNationId}`}
@@ -361,9 +372,9 @@ export default async function TeamsLeaderboardPage() {
                         {detail.pickedNationName}
                     </span>
                     <CategoryMedalIcon rank={detail.actualCategoryRank} />
-                    {rankText && (
+                    {detail.actualCategoryRank && (
                         <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                            {rankText}
+                           ({detail.actualCategoryRank}°{rankTextSuffix})
                         </span>
                     )}
                 </Link>
@@ -434,7 +445,7 @@ export default async function TeamsLeaderboardPage() {
                         <TableRow key={team.id}>
                           <TableCell className="align-top pt-4">
                               <div className="text-xs font-medium text-muted-foreground mb-0.5">
-                                {getRankText(team.rank)}
+                                {getRankText(team.rank)}{team.isTied ? " (Pari merito)" : ""}
                               </div>
                               <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
@@ -499,6 +510,7 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 
 
 
