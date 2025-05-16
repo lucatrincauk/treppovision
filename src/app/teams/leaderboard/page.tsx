@@ -35,6 +35,23 @@ const getPointsForRank = (rank?: number): number => {
   return 0; 
 };
 
+const getRankText = (rank?: number): string => {
+  if (rank === undefined || rank === null || rank <= 0) return "";
+  switch (rank) {
+    case 1: return "Primo Posto";
+    case 2: return "Secondo Posto";
+    case 3: return "Terzo Posto";
+    case 4: return "Quarto Posto";
+    case 5: return "Quinto Posto";
+    case 6: return "Sesto Posto";
+    case 7: return "Settimo Posto";
+    case 8: return "Ottavo Posto";
+    case 9: return "Nono Posto";
+    case 10: return "Decimo Posto";
+    default: return `${rank}° Posto`;
+  }
+};
+
 interface NationScoreDetail extends GlobalPrimaSquadraDetail {}
 
 interface CategoryPickDetail extends GlobalCategoryPickDetailType {
@@ -265,11 +282,7 @@ export default async function TeamsLeaderboardPage() {
                 <MedalIcon rank={detail.actualRank} />
                 <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
               </div>
-              {nationData?.artistName && nationData?.songTitle && (
-                <p className="text-[10px] text-muted-foreground" title={`${nationData.artistName} - ${nationData.songTitle}`}>
-                    {nationData.artistName} - {nationData.songTitle}
-                </p>
-              )}
+              
             </Link>
           </div>
           <span className={cn(
@@ -329,7 +342,7 @@ export default async function TeamsLeaderboardPage() {
             <div className="flex items-center gap-1">
                 {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
                 <Link href={`/nations/${detail.pickedNationId}`}
-                        className={cn("text-xs hover:underline hover:text-primary flex-grow flex items-center gap-1")}
+                        className={cn("text-xs hover:underline hover:text-primary flex items-center gap-1")}
                         title={titleText}
                 >
                     <Image
@@ -408,7 +421,7 @@ export default async function TeamsLeaderboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50px] text-center">Pos.</TableHead>
+                        {/* Removed Pos. column */}
                         <TableHead>Squadra</TableHead>
                         <TableHead className="text-right">Punteggio Totale</TableHead>
                       </TableRow>
@@ -416,8 +429,12 @@ export default async function TeamsLeaderboardPage() {
                     <TableBody>
                       {otherRankedTeams.map((team) => (
                         <TableRow key={team.id}>
-                          <TableCell className="font-medium text-center align-top pt-4">{team.rank}</TableCell>
                           <TableCell className="align-top pt-4">
+                              {team.rank && (
+                                <div className="text-xs font-medium text-muted-foreground mb-0.5">
+                                  {getRankText(team.rank)}
+                                </div>
+                              )}
                               <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
                                 {team.creatorDisplayName && (
@@ -481,5 +498,6 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 
 
