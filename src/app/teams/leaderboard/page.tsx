@@ -16,6 +16,7 @@ import { TeamList } from "@/components/teams/team-list";
 import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 
 const getPointsForRank = (rank?: number): number => {
@@ -79,7 +80,6 @@ const getTopNationsForCategory = (
       if (a.score === null) return 1; 
       if (b.score === null) return -1; 
       if (a.score === b.score) {
-        // Secondary sort by vote count if scores are equal, then by name
         const voteCountA = scoresMap.get(a.id)?.voteCount || 0;
         const voteCountB = scoresMap.get(b.id)?.voteCount || 0;
         if (voteCountA !== voteCountB) {
@@ -114,6 +114,7 @@ const getCategoryPickPointsAndRank = (
 
 
 export default function TeamsLeaderboardPage() {
+  const { user } = useAuth();
   const [adminSettings, setAdminSettings] = useState<Awaited<ReturnType<typeof getAdminSettingsAction>> | null>(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
@@ -122,7 +123,7 @@ export default function TeamsLeaderboardPage() {
 
   const [allNations, setAllNations] = useState<Nation[]>([]);
   const [globalCategorizedScoresMap, setGlobalCategorizedScoresMap] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
-
+  
   const globalCategorizedScoresArray = useMemo(() => Array.from(globalCategorizedScoresMap.entries()), [globalCategorizedScoresMap]);
 
   useEffect(() => {
@@ -135,6 +136,9 @@ export default function TeamsLeaderboardPage() {
         if (settings.leaderboardLocked) {
           setIsLoadingData(false);
           setIsLoadingSettings(false);
+          setTeamsWithScores([]);
+          setAllNations([]);
+          setGlobalCategorizedScoresMap(new Map());
           return;
         }
 
@@ -250,6 +254,9 @@ export default function TeamsLeaderboardPage() {
 
       } catch (error) {
         console.error("Error fetching leaderboard data:", error);
+        setTeamsWithScores([]);
+        setAllNations([]);
+        setGlobalCategorizedScoresMap(new Map());
       } finally {
         setIsLoadingData(false);
         setIsLoadingSettings(false);
@@ -295,8 +302,7 @@ export default function TeamsLeaderboardPage() {
   }
   
   const podiumTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3);
-  // The table will now show all teams.
-  // const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
+
 
   const MedalIcon = ({ rank, className }: { rank?: number, className?: string }) => {
     if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
@@ -313,7 +319,7 @@ export default function TeamsLeaderboardPage() {
     const rankText = !adminSettings.leaderboardLocked && detail.actualRank && detail.actualRank > 0
       ? `(${detail.actualRank}°)`.trim()
       : "";
-    const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
+    const titleText = `${nationData?.name || 'Sconosciuto'}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
       <div className={cn("px-2 py-1 flex items-start", detail.id ? "justify-between" : "justify-start")}>
@@ -322,11 +328,11 @@ export default function TeamsLeaderboardPage() {
           {nationData?.countryCode ? (
             <Image
               src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
-              alt={detail.name || "Bandiera"}
+              alt={nationData?.name || "Bandiera"}
               width={20}
               height={13}
               className="rounded-sm border border-border/30 object-contain shrink-0"
-              data-ai-hint={`${detail.name} flag icon`}
+              data-ai-hint={`${nationData?.name} flag icon`}
             />
           ) : (
             <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
@@ -337,7 +343,7 @@ export default function TeamsLeaderboardPage() {
                 className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
                 title={titleText}
               >
-                <span className="font-medium">{detail.name}</span>
+                <span className="font-medium">{nationData?.name || 'Sconosciuto'}</span>
                 {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
                 {!adminSettings.leaderboardLocked && rankText && (
                   <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
@@ -373,16 +379,10 @@ export default function TeamsLeaderboardPage() {
   
     const pickedNationFullDetails = detail.pickedNationId ? allNations.find(n => n.id === detail.pickedNationId) : undefined;
     
-    let rankSuffix = "";
-    if (detail.categoryName === "Miglior Performance" || detail.categoryName === "Miglior Outfit") {
-      rankSuffix = " in cat.";
-    } else if (detail.categoryName === "Peggior Canzone") {
-      rankSuffix = " peggiore";
-    } else if (detail.categoryName === "Miglior Canzone") {
-      rankSuffix = "";
-    }
-
-
+    let rankSuffix = " in cat.";
+    if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
+    else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
+    
     const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
       ? `(${detail.actualCategoryRank}°${rankSuffix})`.trim()
       : "";
@@ -390,8 +390,7 @@ export default function TeamsLeaderboardPage() {
   
     return (
       <div className={cn("px-2 py-1")}>
-        <div className="flex flex-col gap-0.5"> {/* Main container for this pick, always stacks lines */}
-            {/* Line 1: Icon, Label, Points */}
+        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-1.5">
                     <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
@@ -404,25 +403,24 @@ export default function TeamsLeaderboardPage() {
             )}
             </div>
 
-            {/* Line 2 (indented): Nation Details (Flag, Name, Rank, Artist/Song) */}
             <div className={cn(
                 "w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]" 
             )}>
             {pickedNationFullDetails ? (
-                <div className="flex items-center gap-1"> {/* Flag + Text Block, vertically centered */}
+                <div className="flex items-center gap-1"> 
                     {pickedNationFullDetails.countryCode ? (
                     <Image
                         src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
                         alt={pickedNationFullDetails.name}
                         width={20}
                         height={13}
-                        className="rounded-sm border border-border/30 object-contain shrink-0 mr-0.5"
+                        className="rounded-sm border border-border/30 object-contain shrink-0"
                         data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
                     />
                     ) : (
                     <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
                     )}
-                    <div className="flex flex-col items-start"> {/* Text block */}
+                    <div className="flex flex-col items-start"> 
                         <Link href={`/nations/${pickedNationFullDetails.id}`}
                             className={cn("group text-xs hover:underline hover:text-primary flex items-center gap-1")}
                             title={titleText}
@@ -431,7 +429,7 @@ export default function TeamsLeaderboardPage() {
                             {pickedNationFullDetails.name}
                             </span>
                             {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                            {rankText && !adminSettings.leaderboardLocked && (
+                            {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && (
                                 <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                             )}
                         </Link>
@@ -486,7 +484,7 @@ export default function TeamsLeaderboardPage() {
             </section>
           )}
 
-          {teamsWithScores.length > 0 && ( // Always show the table if there are any teams
+          {teamsWithScores.length > 0 && ( 
              <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
                 Classifica Completa
@@ -502,8 +500,11 @@ export default function TeamsLeaderboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {teamsWithScores.map((team) => ( // Iterate over all teams for the table
-                        <TableRow key={team.id}>
+                      {teamsWithScores.map((team) => (
+                        <TableRow 
+                            key={team.id}
+                            className={cn(user && user.uid === team.userId && "bg-primary/10 hover:bg-primary/20 border-l-2 border-primary")}
+                        >
                           <TableCell className="font-medium text-center align-top pt-4">
                             <div className="flex items-center justify-center">
                                 {!adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && <MedalIcon rank={team.rank} className="mr-1" />}
@@ -568,3 +569,4 @@ export default function TeamsLeaderboardPage() {
     </div>
   );
 }
+
