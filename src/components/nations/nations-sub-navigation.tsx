@@ -9,9 +9,9 @@ import React, { useState, useEffect } from "react";
 import { getLeaderboardLockedStatus, checkIfAnyNationIsRankedAction } from "@/lib/actions/admin-actions";
 
 const subNavItems = [
-  { href: "/nations", label: "Elenco Completo", icon: ListMusic, id: "all" },
-  { href: "/nations/ranking", label: "Classifica Finale", icon: Award, id: "final" },
-  { href: "/nations/trepposcore-ranking", label: "Classifica TreppoScore", icon: TrendingUp, id: "trepposcore" },
+  { href: "/nations", label: "Elenco Completo", mobileLabel: "Nazioni", icon: ListMusic, id: "all" },
+  { href: "/nations/ranking", label: "Classifica Finale", mobileLabel: "Finale", icon: Award, id: "final" },
+  { href: "/nations/trepposcore-ranking", label: "Classifica TreppoScore", mobileLabel: "TreppoScore", icon: TrendingUp, id: "trepposcore" },
 ];
 
 export function NationsSubNavigation() {
@@ -51,10 +51,7 @@ export function NationsSubNavigation() {
           >
             <item.icon className="h-4 w-4" />
             <span className="hidden sm:inline">{item.label}</span>
-             <span className="sm:hidden">{
-              item.href === "/nations" ? "Elenco" : 
-              item.href === "/nations/ranking" ? "Finale" : "TreppoScore"
-            }</span>
+             <span className="sm:hidden">{item.mobileLabel}</span>
           </div>
         ))}
       </nav>
@@ -68,7 +65,8 @@ export function NationsSubNavigation() {
         const isFinalRankingLink = item.id === "final";
         
         const isTreppoScoreLocked = isTreppoScoreLink && leaderboardLocked;
-        const isFinalRankingLocked = isFinalRankingLink && !isFinalRankingAvailable;
+        // Lock final ranking if NOT all nations are ranked
+        const isFinalRankingLocked = isFinalRankingLink && !isFinalRankingAvailable; 
 
         const isDisabled = isTreppoScoreLocked || isFinalRankingLocked;
 
@@ -85,14 +83,11 @@ export function NationsSubNavigation() {
             )}
             aria-disabled={isDisabled}
             onClick={(e) => { if (isDisabled) e.preventDefault(); }}
-            title={isDisabled ? (isFinalRankingLocked ? "La classifica finale non è disponibile finché almeno una nazione non ha un ranking." : "Questa classifica è temporaneamente bloccata dall'amministratore.") : item.label}
+            title={isDisabled ? (isFinalRankingLocked ? "La classifica finale non è disponibile finché tutte le nazioni non hanno un ranking." : "Questa classifica è temporaneamente bloccata dall'amministratore.") : item.label}
           >
             {isDisabled ? <LockIcon className="h-3 w-3 mr-1" /> : <item.icon className="h-4 w-4" />}
             <span className="hidden sm:inline">{item.label}</span>
-            <span className="sm:hidden">{
-              item.href === "/nations" ? "Elenco" : 
-              item.href === "/nations/ranking" ? "Finale" : "TreppoScore"
-            }</span>
+            <span className="sm:hidden">{item.mobileLabel}</span>
           </Link>
         );
       })}

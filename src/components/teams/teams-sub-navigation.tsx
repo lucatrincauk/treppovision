@@ -9,8 +9,8 @@ import React, { useState, useEffect } from "react";
 import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 
 const subNavItems = [
-  { href: "/teams", label: "Elenco Squadre", icon: Users },
-  { href: "/teams/leaderboard", label: "Classifica Squadre", icon: BarChartBig },
+  { href: "/teams", label: "Elenco Squadre", mobileLabel: "Squadre", icon: Users },
+  { href: "/teams/leaderboard", label: "Classifica Squadre", mobileLabel: "Classifica", icon: BarChartBig },
 ];
 
 export function TeamsSubNavigation() {
@@ -40,6 +40,7 @@ export function TeamsSubNavigation() {
           >
             <item.icon className="h-4 w-4" />
             <span className="hidden sm:inline">{item.label}</span>
+             <span className="sm:hidden">{item.mobileLabel}</span>
           </div>
         ))}
       </nav>
@@ -66,10 +67,11 @@ export function TeamsSubNavigation() {
             )}
             aria-disabled={isDisabled}
             onClick={(e) => { if (isDisabled) e.preventDefault(); }}
+            title={isDisabled ? "Questa classifica è temporaneamente bloccata dall'amministratore." : item.label}
           >
             {isLeaderboardLink && leaderboardLocked ? <Lock className="h-3 w-3 mr-1" /> : <item.icon className="h-4 w-4" />}
             <span className="hidden sm:inline">{item.label}</span>
-            <span className="sm:hidden">{item.href === "/teams" ? "Elenco" : "Classifica"}</span>
+            <span className="sm:hidden">{item.mobileLabel}</span>
           </Link>
         );
       })}
