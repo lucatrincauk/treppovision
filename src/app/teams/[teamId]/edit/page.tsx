@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamById } from "@/lib/team-service";
-import type { Team, TeamFormData } from "@/types";
+import type { Team, TeamCoreFormData } from "@/types";
 import { CreateTeamForm } from "@/components/teams/create-team-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertTriangle, Users, Edit, Lock } from "lucide-react";
@@ -135,14 +135,10 @@ export default function EditTeamPage() {
     );
   }
 
-  const initialFormData: TeamFormData = {
+  const initialCoreFormData: TeamCoreFormData = {
     name: team.name,
     founderChoices: team.founderChoices || [],
-    creatorDisplayName: team.creatorDisplayName,
-    bestSongNationId: team.bestSongNationId || "",
-    bestPerformanceNationId: team.bestPerformanceNationId || "",
-    bestOutfitNationId: team.bestOutfitNationId || "",
-    worstSongNationId: team.worstSongNationId || "",
+    creatorDisplayName: team.creatorDisplayName, // Needed for TeamCoreFormData type
   };
 
   return (
@@ -151,15 +147,16 @@ export default function EditTeamPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-primary">
             <Edit className="mr-2 h-6 w-6" />
-            Modifica la Tua Squadra: {team.name}
+            Modifica Dettagli Squadra: {team.name}
           </CardTitle>
           <CardDescription>
-            Aggiorna il nome della tua squadra e le tue scelte per ogni categoria.
+            Aggiorna il nome della tua squadra e le tue scelte per le nazioni principali.
+            I pronostici finali (miglior canzone, ecc.) si modificano dalla pagina Squadre, cliccando "Pronostici Finali".
           </CardDescription>
         </CardHeader>
         <CardContent>
           <CreateTeamForm
-            initialData={initialFormData}
+            initialData={initialCoreFormData}
             isEditMode={true}
             teamId={team.id}
             teamsLocked={teamsLocked} 

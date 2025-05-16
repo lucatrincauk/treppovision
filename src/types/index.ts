@@ -24,7 +24,7 @@ export interface NationFormData {
   artistName: string;
   youtubeVideoId: string;
   category: NationCategory;
-  ranking?: string;
+  ranking?: string; // Handled as string in form, converted to number | undefined for DB
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -48,14 +48,6 @@ export interface Vote {
   };
   timestamp: number; // Client-side timestamp
   serverTimestamp?: any; // Firestore server timestamp
-}
-
-export interface AggregatedScore extends Nation {
-  averageSong: number;
-  averagePerformance: number;
-  averageOutfit: number;
-  totalScore: number;
-  voteCount: number;
 }
 
 // Form data types
@@ -101,44 +93,72 @@ export interface AdminNationPayload {
   songLyrics?: string;
 }
 
-// Team Creation
-export interface TeamFormData {
+// Team Creation and Editing - Core Details
+export interface TeamCoreFormData {
   name: string;
   founderChoices: string[]; // Array of 3 nation IDs
-  creatorDisplayName: string;
+  creatorDisplayName: string; // This is set by the system, not the user form directly
+}
+
+// Team Final Answers (Category Predictions)
+export interface TeamFinalAnswersFormData {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
   worstSongNationId: string;
 }
+
+// This type is now only for the CreateTeamForm.
+export interface TeamFormData extends TeamCoreFormData {
+  // No longer includes bestSongNationId etc. here as they are handled by TeamFinalAnswersFormData
+}
+
 
 export interface Team {
   id: string; // Firestore document ID
   userId: string; // UID of the user who created the team
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[];
+  founderChoices: string[]; // Array of 3 nation IDs
+
+  // These are now edited via a separate "Final Answers" modal
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
   worstSongNationId: string;
+
   createdAt: number | null; // Milliseconds since epoch
   updatedAt?: number | null; // Milliseconds since epoch or undefined
   score?: number; // Optional score, typically calculated at runtime
   rank?: number; // Optional rank for leaderboard display
-  primaSquadraDetails?: Array<{ id: string; name: string; countryCode: string; actualRank?: number; points: number }>;
-  categoryPicksDetails?: Array<{ categoryName: string; pickedNationId?: string; pickedNationName?: string; pickedNationCountryCode?: string; actualCategoryRank?: number; pickedNationScoreInCategory?: number | null; pointsAwarded: number; iconName: string; }>;
+  primaSquadraDetails?: GlobalPrimaSquadraDetail[];
+  categoryPicksDetails?: GlobalCategoryPickDetail[];
+}
+
+export interface GlobalPrimaSquadraDetail {
+  id: string;
+  name: string;
+  countryCode: string;
+  artistName?: string;
+  songTitle?: string;
+  actualRank?: number;
+  points: number;
+}
+export interface GlobalCategoryPickDetail {
+  categoryName: string;
+  pickedNationId?: string;
+  pickedNationName?: string;
+  pickedNationCountryCode?: string;
+  actualCategoryRank?: number;
+  pickedNationScoreInCategory?: number | null;
+  pointsAwarded: number;
+  iconName: string;
 }
 
 
 export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
-}
-
-export interface NationGlobalScore { // Kept for compatibility if used elsewhere, but new type below is more specific
-  averageScore: number | null; // This is the overall TreppoScore
-  voteCount: number;
 }
 
 export interface NationGlobalCategorizedScores {

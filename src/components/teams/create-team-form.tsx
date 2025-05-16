@@ -2,18 +2,11 @@
 "use client";
 
 import * as React from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -28,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import type { Nation, TeamFormData, Team } from "@/types";
+import type { Nation, TeamCoreFormData } from "@/types";
 import { getNations } from "@/lib/nation-service";
 import { getTeamsByUserId } from "@/lib/team-service";
 import { createTeamAction, updateTeamAction, getTeamsLockedStatus } from "@/lib/actions/team-actions";
@@ -39,23 +32,21 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-const teamFormZodSchema = z.object({
+// This schema is now only for the core team details
+const teamCoreFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
   founderChoices: z.array(z.string())
     .length(3, "Devi selezionare esattamente 3 nazioni.")
     .refine(items => new Set(items).size === items.length, {
       message: "Le tre nazioni scelte devono essere diverse.",
     }),
-  bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
-  bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
-  bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
-  worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
 });
 
-type TeamFormValues = Omit<TeamFormData, 'creatorDisplayName'>;
+// This form now only handles TeamCoreFormValues
+type TeamCoreFormValues = Omit<TeamCoreFormData, 'creatorDisplayName'>;
 
 interface CreateTeamFormProps {
-  initialData?: TeamFormData;
+  initialData?: TeamCoreFormData; // Expects only core data now
   isEditMode?: boolean;
   teamId?: string;
   teamsLocked?: boolean | null;
@@ -80,11 +71,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       if (!isEditMode) {
         setIsLoadingUserTeamCheck(true);
       }
-      if (teamsLocked === null && propTeamsLocked === null) { // Only fetch if not passed as prop
+      if (teamsLocked === null && propTeamsLocked === null) {
         const lockStatus = await getTeamsLockedStatus();
         setTeamsLocked(lockStatus);
       }
-
 
       if (user || !authLoading) {
         try {
@@ -123,24 +113,16 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
     }
   }, [toast, user, authLoading, isEditMode, propTeamsLocked]);
 
-  const form = useForm<TeamFormValues>({
-    resolver: zodResolver(teamFormZodSchema),
+  const form = useForm<TeamCoreFormValues>({
+    resolver: zodResolver(teamCoreFormZodSchema),
     defaultValues: initialData
       ? {
           name: initialData.name,
           founderChoices: initialData.founderChoices || [],
-          bestSongNationId: initialData.bestSongNationId || "",
-          bestPerformanceNationId: initialData.bestPerformanceNationId || "",
-          bestOutfitNationId: initialData.bestOutfitNationId || "",
-          worstSongNationId: initialData.worstSongNationId || "",
         }
       : {
           name: "",
           founderChoices: [],
-          bestSongNationId: "",
-          bestPerformanceNationId: "",
-          bestOutfitNationId: "",
-          worstSongNationId: "",
         },
   });
 
@@ -149,15 +131,11 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       form.reset({
         name: initialData.name,
         founderChoices: initialData.founderChoices || [],
-        bestSongNationId: initialData.bestSongNationId || "",
-        bestPerformanceNationId: initialData.bestPerformanceNationId || "",
-        bestOutfitNationId: initialData.bestOutfitNationId || "",
-        worstSongNationId: initialData.worstSongNationId || "",
       });
     }
   }, [initialData, form]);
 
-  async function onSubmit(values: TeamFormValues) {
+  async function onSubmit(values: TeamCoreFormValues) {
     if (!user) {
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login per creare o modificare un team.", variant: "destructive" });
       return;
@@ -173,22 +151,22 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
 
     setIsSubmitting(true);
 
-    const fullTeamData: TeamFormData = {
+    const teamDataPayload: TeamCoreFormData = {
       ...values,
       creatorDisplayName: user.displayName || user.email || "Utente Anonimo",
     };
 
     let result;
     if (isEditMode && teamId) {
-      result = await updateTeamAction(teamId, fullTeamData, user.uid);
+      result = await updateTeamAction(teamId, teamDataPayload, user.uid);
     } else {
-      result = await createTeamAction(fullTeamData, user.uid);
+      result = await createTeamAction(teamDataPayload, user.uid);
     }
 
     if (result.success) {
       toast({
-        title: isEditMode ? "Team Aggiornato!" : "Team Creato!",
-        description: `Il team "${values.name}" è stato ${isEditMode ? 'aggiornato' : 'creato'} con successo.`,
+        title: isEditMode ? "Dettagli Team Aggiornati!" : "Team Creato!",
+        description: `Il team "${values.name}" è stato ${isEditMode ? 'aggiornato' : 'creato'} con successo. Puoi ora inserire i tuoi pronostici finali dalla pagina Squadre.`,
       });
       if (!isEditMode) setUserHasTeam(true);
       router.push("/teams");
@@ -224,7 +202,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                         if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
                         else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
                     }
-                }}>login</Link> per {isEditMode ? 'modificare' : 'creare'} una squadra.
+                }}>login</Link> per {isEditMode ? 'modificare i dettagli' : 'creare'} una squadra.
             </AlertDescription>
         </Alert>
     );
@@ -236,7 +214,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         <Lock className="h-4 w-4" />
         <AlertTitle>Modifica Squadre Bloccata</AlertTitle>
         <AlertDescription>
-          L'amministratore ha temporaneamente bloccato la {isEditMode ? 'modifica' : 'creazione'} delle squadre. Riprova più tardi.
+          L'amministratore ha temporaneamente bloccato la {isEditMode ? 'modifica dei dettagli' : 'creazione'} delle squadre. Riprova più tardi.
         </AlertDescription>
       </Alert>
     );
@@ -248,8 +226,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         <Info className="h-4 w-4" />
         <AlertTitle>Team Già Creato</AlertTitle>
         <AlertDescription>
-          Hai già creato un team. Puoi creare un solo team.
-          Visualizza o <Link href="/teams" className="font-bold hover:underline">modifica il tuo team qui</Link>.
+          Hai già creato un team. Puoi creare un solo team per account.
+          Puoi <Link href="/teams" className="font-bold hover:underline">modificare i dettagli del tuo team o inserire i pronostici finali qui</Link>.
         </AlertDescription>
       </Alert>
     );
@@ -278,27 +256,6 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
      )
    }
-
-  const renderNationSelectItem = (nation: Nation, type: 'song' | 'artist' | 'outfit') => (
-    <div className="flex items-center space-x-2 py-1 w-full">
-      <Image
-        src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
-        alt={`Bandiera ${nation.name}`}
-        width={20}
-        height={13}
-        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
-        data-ai-hint={`${nation.name} flag icon`}
-      />
-      <div className="flex flex-col text-left">
-        <span className="font-semibold">{nation.name}</span>
-        <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={type === 'song' ? `${nation.artistName} - ${nation.songTitle}` : type === 'artist' ? `${nation.artistName} - ${nation.songTitle}` : `${nation.artistName} - ${nation.songTitle}` }>
-          {/* For all types, display both artist and song for consistency in dropdown item height and info */}
-          {`${nation.artistName} - ${nation.songTitle}`}
-        </span>
-      </div>
-    </div>
-  );
-
 
   return (
     <Form {...form}>
@@ -369,7 +326,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                                 field.onChange(currentSelections.filter(id => id !== nation.id));
                               }
                             }}
-                             disabled={ (field.value || []).length >=3 && !(field.value || []).includes(nation.id) }
+                            disabled={(field.value || []).length >=3 && !(field.value || []).includes(nation.id)}
                           />
                           <label
                             htmlFor={`founder-${nation.id}`}
@@ -397,126 +354,13 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Scegli esattamente 3 nazioni per la tua prima squadra.
+                Scegli esattamente 3 nazioni per la tua squadra principale. Questi sono i tuoi pronostici per la classifica finale Eurovision.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <FormField
-          control={form.control}
-          name="bestSongNationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Migliore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
-                      {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'song') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {nations.map((nation) => (
-                    <SelectItem key={`${nation.id}-bestSong`} value={nation.id}>
-                       {renderNationSelectItem(nation, 'song')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>Scegli la migliore canzone secondo gli utenti di Treppovision.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bestPerformanceNationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Migliore performance</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                     <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
-                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'artist') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {nations.map((nation) => (
-                    <SelectItem key={`${nation.id}-bestPerf`} value={nation.id}>
-                      {renderNationSelectItem(nation, 'artist')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>Scegli la migliore performance secondo gli utenti di Treppovision.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bestOutfitNationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Migliore outfit</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
-                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'outfit') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {nations.map((nation) => (
-                    <SelectItem key={`${nation.id}-bestOutfit`} value={nation.id}>
-                      {renderNationSelectItem(nation, 'outfit')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>Scegli l'outfit migliore secondo gli utenti di Treppovision.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="worstSongNationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Peggiore canzone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || teamsLocked || nations.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione"}>
-                        {field.value ? renderNationSelectItem(nations.find(n => n.id === field.value)!, 'song') : (nations.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione")}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {nations.map((nation) => (
-                    <SelectItem key={`${nation.id}-worstSong`} value={nation.id}>
-                       {renderNationSelectItem(nation, 'song')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>La peggiore canzone secondo gli utenti di Treppovision.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-
+        {/* Category prediction fields (Migliore canzone, etc.) are removed from this form */}
         <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -524,11 +368,9 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}
-          {teamsLocked ? "Modifiche Bloccate" : (isEditMode ? "Salva Modifiche" : "Crea Team")}
+          {teamsLocked ? "Modifiche Bloccate" : (isEditMode ? "Salva Dettagli Team" : "Crea Team")}
         </Button>
       </form>
     </Form>
   );
 }
-
-    

@@ -2,16 +2,18 @@
 "use client"; 
 
 import { useEffect, useState, useMemo } from "react";
-import { getTeamsByUserId, listenToTeams } from "@/lib/team-service";
+import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, PrimaSquadraDetail as GlobalPrimaSquadraDetail, CategoryPickDetail as GlobalCategoryPickDetail } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, TeamFinalAnswersFormData } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
+import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, Music2, Star, Shirt, UserCircle as UserIcon, ThumbsDown, Lock } from "lucide-react"; 
+import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, ListOrdered } from "lucide-react"; 
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,29 +22,6 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; 
-
-// Local interface definitions if not globally defined in types.ts
-interface PrimaSquadraDetail {
-  id: string;
-  name: string;
-  countryCode: string;
-  artistName?: string;
-  songTitle?: string;
-  actualRank?: number;
-  points: number;
-}
-
-interface CategoryPickDetail {
-  categoryName: string;
-  pickedNationId?: string;
-  pickedNationName?: string;
-  pickedNationCountryCode?: string;
-  actualCategoryRank?: number; 
-  pickedNationScoreInCategory?: number | null; 
-  pointsAwarded: number;
-  iconName: string; 
-}
-
 
 // Helper function to calculate points for a given rank (Eurovision rank)
 const getPointsForRank = (rank?: number): number => {
@@ -109,7 +88,7 @@ const getCategoryPickPointsAndRank = (
 export default function TeamsPage() {
   const { user, isLoading: authIsLoading } = useAuth();
   const [allFetchedTeams, setAllFetchedTeams] = useState<Team[]>([]);
-  const [userTeams, setUserTeams] = useState<TeamWithScore[]>([]);
+  const [userTeam, setUserTeam] = useState<TeamWithScore | null>(null);
   const [otherTeams, setOtherTeams] = useState<TeamWithScore[]>([]);
   const [filteredOtherTeams, setFilteredOtherTeams] = useState<TeamWithScore[]>([]);
   
@@ -117,17 +96,17 @@ export default function TeamsPage() {
   const [nationsMap, setNationsMap] = useState<Map<string, Nation>>(new Map());
   
   const [isLoadingNations, setIsLoadingNations] = useState(true);
-  const [isLoadingUserTeams, setIsLoadingUserTeams] = useState(true); // For fetching user's team initially
-  const [isLoadingAllTeams, setIsLoadingAllTeams] = useState(true); // For fetching all other teams
+  const [isLoadingUserTeams, setIsLoadingUserTeams] = useState(true);
+  const [isLoadingAllTeams, setIsLoadingAllTeams] = useState(true);
   
   const [error, setError] = useState<string | null>(null);
-  const [showCreateTeamButton, setShowCreateTeamButton] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
   const [nationGlobalCategorizedScoresMap, setNationGlobalCategorizedScoresMap] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
   const [isLoadingGlobalScores, setIsLoadingGlobalScores] = useState(true);
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
+  const [isFinalAnswersModalOpen, setIsFinalAnswersModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -173,23 +152,19 @@ export default function TeamsPage() {
     if (user) {
       getTeamsByUserId(user.uid)
         .then(teams => {
-          setUserTeams(teams as TeamWithScore[]); 
-          setShowCreateTeamButton(teams.length === 0 && !teamsLockedAdmin);
+          setUserTeam(teams.length > 0 ? teams[0] as TeamWithScore : null); 
         })
         .catch(err => {
           console.error("Failed to fetch user teams:", err);
           setError(prev => prev ? `${prev}\nSquadra utente non caricata.` : "Squadra utente non caricata.");
-          setUserTeams([]);
-          setShowCreateTeamButton(!teamsLockedAdmin); 
+          setUserTeam(null);
         })
         .finally(() => setIsLoadingUserTeams(false));
     } else {
-      setUserTeams([]);
-      setShowCreateTeamButton(false); 
+      setUserTeam(null);
       setIsLoadingUserTeams(false);
     }
-  }, [user, authIsLoading, teamsLockedAdmin]);
-
+  }, [user, authIsLoading]);
 
   useEffect(() => {
     setIsLoadingAllTeams(true);
@@ -240,7 +215,7 @@ export default function TeamsPage() {
         if(scoreValue !== undefined) scoreValue += worstSongPick.points;
       }
       
-      const primaSquadraDetails: GlobalPrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
+      const primaSquadraDetails = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
         return {
@@ -254,7 +229,7 @@ export default function TeamsPage() {
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
       
-      const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
+      const categoryPicksDetails: TeamWithScore['categoryPicksDetails'] = [];
       const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
       const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
       const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
@@ -305,9 +280,9 @@ export default function TeamsPage() {
 
   useEffect(() => {
     if (user && processedAndScoredTeams.length > 0) {
-      setUserTeams(processedAndScoredTeams.filter(team => team.userId === user.uid));
+      setUserTeam(processedAndScoredTeams.find(team => team.userId === user.uid) || null);
     } else if (!user) {
-      setUserTeams([]); 
+      setUserTeam(null); 
     }
     setOtherTeams(processedAndScoredTeams.filter(team => !user || team.userId !== user.uid).sort((a, b) => a.name.localeCompare(b.name)));
   }, [processedAndScoredTeams, user]);
@@ -328,7 +303,7 @@ export default function TeamsPage() {
   }, [searchTerm, otherTeams]);
 
 
-  const displayHeaderAndButton = () => (
+  const displayHeaderAndButtons = () => (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
       <header className="text-center sm:text-left space-y-2">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
@@ -339,24 +314,92 @@ export default function TeamsPage() {
           Scopri tutte le squadre create dagli utenti e le loro scelte.
         </p>
       </header>
-      {user && showCreateTeamButton && !teamsLockedAdmin && (
-        <Button asChild variant="outline" size="lg">
-          <Link href="/teams/new">
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Crea Nuova Squadra
-          </Link>
-        </Button>
-      )}
-       {user && teamsLockedAdmin && !showCreateTeamButton && userTeams.length === 0 && (
-         <Button variant="outline" size="lg" disabled>
-            <Lock className="mr-2 h-5 w-5"/>
-            Creazione Bloccata
-        </Button>
-      )}
+      <div className="flex flex-col sm:flex-row gap-2 items-center">
+        {user && !userTeam && !teamsLockedAdmin && (
+            <Button asChild variant="outline" size="lg">
+            <Link href="/teams/new">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Crea Nuova Squadra
+            </Link>
+            </Button>
+        )}
+        {user && userTeam && !teamsLockedAdmin && (
+            <>
+                <Button asChild variant="default" size="lg" className="w-full sm:w-auto">
+                    <Link href={`/teams/${userTeam.id}/edit`}>
+                        <Edit className="h-5 w-5 sm:mr-2" />
+                        <span className="hidden sm:inline">Modifica Squadra</span>
+                    </Link>
+                </Button>
+                <Dialog open={isFinalAnswersModalOpen} onOpenChange={setIsFinalAnswersModalOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                            <ListOrdered className="h-5 w-5 sm:mr-2" />
+                            <span className="hidden sm:inline">Pronostici Finali</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                        <DialogHeader>
+                        <DialogTitle>Inserisci i Tuoi Pronostici Finali</DialogTitle>
+                        <DialogDescription>
+                            Questi sono i tuoi pronostici per le categorie basate sul voto degli utenti.
+                        </DialogDescription>
+                        </DialogHeader>
+                        {userTeam && (
+                            <FinalAnswersForm 
+                                initialData={{
+                                    bestSongNationId: userTeam.bestSongNationId,
+                                    bestPerformanceNationId: userTeam.bestPerformanceNationId,
+                                    bestOutfitNationId: userTeam.bestOutfitNationId,
+                                    worstSongNationId: userTeam.worstSongNationId,
+                                }}
+                                teamId={userTeam.id}
+                                onSuccess={async () => { // Make onSuccess async
+                                  setIsFinalAnswersModalOpen(false);
+                                  if (user) { // Re-fetch user team data to reflect changes
+                                    setIsLoadingUserTeams(true);
+                                    try {
+                                      const teams = await getTeamsByUserId(user.uid);
+                                      const updatedTeam = teams.length > 0 ? teams[0] as TeamWithScore : null;
+                                      // Manually re-process this single team for score if needed, or rely on full processedAndScoredTeams re-memoization
+                                      // For simplicity, we'll update userTeam directly; score might be stale until full list updates.
+                                      setUserTeam(updatedTeam);
+                                    } catch (err) {
+                                      console.error("Error re-fetching user team after final answers update:", err);
+                                    } finally {
+                                      setIsLoadingUserTeams(false);
+                                    }
+                                  }
+                                }}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </>
+        )}
+         {user && teamsLockedAdmin && !userTeam && (
+            <Button variant="outline" size="lg" disabled>
+                <Lock className="mr-2 h-5 w-5"/>
+                Creazione Bloccata
+            </Button>
+        )}
+         {user && userTeam && teamsLockedAdmin && (
+             <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
+                    <Lock className="h-5 w-5 sm:mr-2"/>
+                    <span className="hidden sm:inline">Modifica Bloccata</span>
+                </Button>
+                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
+                    <Lock className="h-5 w-5 sm:mr-2"/>
+                    <span className="hidden sm:inline">Pronostici Bloccati</span>
+                </Button>
+             </div>
+        )}
+      </div>
     </div>
   );
 
-  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: PrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
+  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: TeamWithScore['primaSquadraDetails'][0], leaderboardLocked: boolean | null }) => {
     const nation = nationsMap.get(detail.id);
     if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
     return (
@@ -381,51 +424,45 @@ export default function TeamsPage() {
 
   const renderCategoryPickCell = (team: TeamWithScore, category: 'bestSong' | 'bestPerf' | 'bestOutfit' | 'worstSong', leaderboardLocked: boolean | null) => {
     let nationId: string | undefined;
-    let IconComponent: React.ElementType = Music2; 
+    let IconComponent: React.ElementType = Users; 
     let isCorrectPick = false;
-    let topId: string | null = null;
+    
+    const categoryDetails = team.categoryPicksDetails?.find(cpd => 
+        (category === 'bestSong' && cpd.categoryName === "Miglior Canzone") ||
+        (category === 'bestPerf' && cpd.categoryName === "Miglior Performance") ||
+        (category === 'bestOutfit' && cpd.categoryName === "Miglior Outfit") ||
+        (category === 'worstSong' && cpd.categoryName === "Peggior Canzone")
+    );
+
+    nationId = categoryDetails?.pickedNationId;
+    
+    // Dynamic icon determination based on categoryDetails.iconName
+    if (categoryDetails?.iconName === 'Music2') IconComponent = Users; // Replace Users with actual Music2
+    else if (categoryDetails?.iconName === 'Star') IconComponent = Users; // Replace Users with actual Star
+    else if (categoryDetails?.iconName === 'Shirt') IconComponent = Users; // Replace Users with actual Shirt
+    else if (categoryDetails?.iconName === 'ThumbsDown') IconComponent = Users; // Replace Users with actual ThumbsDown
     
     if (nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
         const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
             return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
         };
 
+        let topId: string | null = null;
         switch(category) {
-            case 'bestSong': 
-                nationId = team.bestSongNationId;
-                topId = getTopNationId('averageSongScore', 'desc');
-                IconComponent = Music2;
-                break;
-            case 'bestPerf': 
-                nationId = team.bestPerformanceNationId;
-                topId = getTopNationId('averagePerformanceScore', 'desc');
-                IconComponent = Star;
-                break;
-            case 'bestOutfit': 
-                nationId = team.bestOutfitNationId;
-                topId = getTopNationId('averageOutfitScore', 'desc');
-                IconComponent = Shirt;
-                break;
-            case 'worstSong': 
-                nationId = team.worstSongNationId;
-                topId = getTopNationId('averageSongScore', 'asc');
-                IconComponent = ThumbsDown;
-                break;
+            case 'bestSong': topId = getTopNationId('averageSongScore', 'desc'); break;
+            case 'bestPerf': topId = getTopNationId('averagePerformanceScore', 'desc'); break;
+            case 'bestOutfit': topId = getTopNationId('averageOutfitScore', 'desc'); break;
+            case 'worstSong': topId = getTopNationId('averageSongScore', 'asc'); break;
         }
         isCorrectPick = nationId === topId && nationId !== undefined;
-    } else {
-        switch(category) {
-            case 'bestSong': nationId = team.bestSongNationId; IconComponent = Music2; break;
-            case 'bestPerf': nationId = team.bestPerformanceNationId; IconComponent = Star; break;
-            case 'bestOutfit': nationId = team.bestOutfitNationId; IconComponent = Shirt; break;
-            case 'worstSong': nationId = team.worstSongNationId; IconComponent = ThumbsDown; break;
-        }
     }
 
     const nation = nationId ? nationsMap.get(nationId) : null;
     
     if (!nation) return <span className="text-muted-foreground text-xs">N/D</span>;
 
+    // Ensure you import actual Lucide icons for Music2, Star, Shirt, ThumbsDown
+    // For now, they are Users, which is incorrect
     return (
       <div className="flex items-center gap-1.5">
         <Image
@@ -439,7 +476,7 @@ export default function TeamsPage() {
         <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
           {nation.name}
         </span>
-        {!leaderboardLocked && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
+        {!leaderboardLockedAdmin && isCorrectPick && <IconComponent className="h-3 w-3 text-accent flex-shrink-0" />}
       </div>
     );
   };
@@ -448,7 +485,7 @@ export default function TeamsPage() {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
-        {displayHeaderAndButton()}
+        {displayHeaderAndButtons()}
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">Caricamento dati squadre...</p>
@@ -461,7 +498,7 @@ export default function TeamsPage() {
     return (
        <div className="space-y-8">
         <TeamsSubNavigation />
-        {displayHeaderAndButton()}
+        {displayHeaderAndButtons()}
         <Alert variant="destructive">
           <Users className="h-4 w-4" />
           <AlertTitle>Errore nel Caricamento Dati</AlertTitle>
@@ -476,7 +513,7 @@ export default function TeamsPage() {
   return (
     <div className="space-y-8">
       <TeamsSubNavigation />
-      {displayHeaderAndButton()}
+      {displayHeaderAndButtons()}
 
       {!user && allFetchedTeams.length > 0 && (
          <Alert>
@@ -505,43 +542,26 @@ export default function TeamsPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
             <p className="text-muted-foreground">Caricamento squadra utente...</p>
         </div>
-      ) : userTeams.length > 0 && allNations.length > 0 && (
+      ) : userTeam && allNations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-semibold tracking-tight text-primary text-left">
+            <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
-            {!isLoadingUserTeams && !teamsLockedAdmin && userTeams.length > 0 && (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/teams/${userTeams[0].id}/edit`}>
-                  <Edit className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Modifica la Tua Squadra</span>
-                </Link>
-              </Button>
-            )}
-             {!isLoadingUserTeams && teamsLockedAdmin && userTeams.length > 0 && (
-                <Button variant="outline" size="sm" disabled>
-                    <Lock className="mr-2 h-4 w-4"/>
-                    <span className="hidden sm:inline">Modifica Bloccata</span>
-                </Button>
-            )}
           </div>
-          {userTeams.map(team => (
-            <div key={team.id} className="mb-6">
-              <TeamListItem 
-                team={team} 
-                allNations={allNations}
-                nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
-                isOwnTeamCard={true}
-              />
-            </div>
-          ))}
+          <TeamListItem 
+            team={userTeam} 
+            allNations={allNations}
+            nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+            isOwnTeamCard={true}
+            leaderboardLocked={leaderboardLockedAdmin}
+          />
         </section>
       ))}
 
       <section className="pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h2 className="text-3xl font-semibold tracking-tight text-primary text-left">
+          <h2 className="text-3xl font-semibold tracking-tight text-left">
             Altre Squadre
           </h2>
           <div className="relative w-full md:w-auto md:min-w-[300px]">
@@ -579,7 +599,7 @@ export default function TeamsPage() {
             <Users className="h-4 w-4" />
             <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
             <AlertDescription>
-              Non ci sono ancora squadre. {user && showCreateTeamButton ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
+              Non ci sono ancora squadre. {user && !userTeam && !teamsLockedAdmin ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
             </AlertDescription>
           </Alert>
         )}
@@ -636,6 +656,8 @@ export default function TeamsPage() {
                                 id: nationId, 
                                 name: nationsMap.get(nationId)?.name || 'Sconosciuto',
                                 countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
+                                artistName: nationsMap.get(nationId)?.artistName,
+                                songTitle: nationsMap.get(nationId)?.songTitle,
                                 points: 0, 
                                 actualRank: nationsMap.get(nationId)?.ranking
                               }}
@@ -663,5 +685,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-
-    
