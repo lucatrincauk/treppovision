@@ -8,7 +8,7 @@ import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamCoreFormData } from "@/types";
 import { CreateTeamForm } from "@/components/teams/create-team-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, AlertTriangle, Users, Edit, Lock } from "lucide-react";
+import { Loader2, AlertTriangle, Users, Edit, Lock, ChevronLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -138,11 +138,15 @@ export default function EditTeamPage() {
   const initialCoreFormData: TeamCoreFormData = {
     name: team.name,
     founderChoices: team.founderChoices || [],
-    creatorDisplayName: team.creatorDisplayName, // Needed for TeamCoreFormData type
+    // creatorDisplayName is handled by the server action using the authenticated user
   };
 
   return (
     <div className="space-y-6">
+      <Link href="/teams" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
+        <ChevronLeft className="w-4 h-4 mr-1" />
+        Torna alle Squadre
+      </Link>
       <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-primary">
