@@ -3,7 +3,7 @@
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail as GlobalCategoryPickDetailType, TeamWithScore } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail as GlobalCategoryPickDetailType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -249,16 +249,15 @@ export default async function TeamsLeaderboardPage() {
   }
 
   for (let i = 0; i < teamsWithScores.length; i++) {
-    let isTied = false;
+    let isTiedValue = false;
     if (i > 0 && teamsWithScores[i].rank === teamsWithScores[i-1].rank) {
-      isTied = true;
+      isTiedValue = true;
     }
     if (i < teamsWithScores.length - 1 && teamsWithScores[i].rank === teamsWithScores[i+1].rank) {
-      isTied = true;
+      isTiedValue = true;
     }
-    teamsWithScores[i].isTied = isTied;
+    teamsWithScores[i].isTied = isTiedValue;
   }
-
 
   const podiumTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3);
   const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
@@ -269,22 +268,20 @@ export default async function TeamsLeaderboardPage() {
     if (rank === 1) colorClass = "text-yellow-400";
     else if (rank === 2) colorClass = "text-slate-400";
     else if (rank === 3) colorClass = "text-amber-500";
-    return <Award className={cn("w-4 h-4 flex-shrink-0", colorClass, className)} />;
+    return <Award className={cn("w-3.5 h-3.5 flex-shrink-0", colorClass, className)} />;
   };
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => {
       const nationData = nationsMap.get(detail.id);
+      const rankText = detail.actualRank && detail.actualRank > 0 ? `(${detail.actualRank}°)` : "";
+      const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
+
       return (
-        <div className="px-2 py-1.5 hover:bg-muted/30 rounded-md"> 
+        <div className="px-2 py-1 flex items-start"> 
           <div className="flex items-center gap-1.5">
-            <BadgeCheck className="w-5 h-5 text-accent flex-shrink-0" />
-            <div className="flex-grow flex flex-col items-start">
-              <Link 
-                href={`/nations/${detail.id}`} 
-                className="text-xs hover:underline hover:text-primary flex items-center gap-1" 
-                title={`${detail.name}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
-              >
-                 {nationData?.countryCode && (
+            <BadgeCheck className="w-5 h-5 text-accent flex-shrink-0 mr-1.5" />
+            <div className="flex items-center gap-1.5">
+                {nationData?.countryCode ? (
                     <Image
                     src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
                     alt={detail.name}
@@ -293,24 +290,37 @@ export default async function TeamsLeaderboardPage() {
                     className="rounded-sm border border-border/30 object-contain flex-shrink-0"
                     data-ai-hint={`${detail.name} flag`}
                     />
+                ) : (
+                  <div className="w-5 h-[13px] flex-shrink-0 bg-muted/20 rounded-sm"></div>
                 )}
-                <span className="font-medium">{detail.name}</span>
-                <MedalIcon rank={detail.actualRank} className="ml-1"/>
-                <span className="text-muted-foreground ml-0.5 text-xs">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
-              </Link>
-              {nationData && (nationData.artistName || nationData.songTitle) && (
-                <span className="text-xs text-muted-foreground/80 block">
-                    {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
-                </span>
-              )}
+                <div className="flex flex-col items-start">
+                <Link 
+                    href={`/nations/${detail.id}`} 
+                    className="group text-xs hover:underline hover:text-primary flex items-center gap-1" 
+                    title={titleText}
+                >
+                    <span className="font-medium">{detail.name}</span>
+                    {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5"/>}
+                    {!adminSettings.leaderboardLocked && rankText && (
+                        <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                    )}
+                </Link>
+                {nationData && (nationData.artistName || nationData.songTitle) && !adminSettings.leaderboardLocked && (
+                    <span className="text-xs text-muted-foreground/80 block">
+                        {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                    </span>
+                )}
+                </div>
             </div>
+          </div>
+          {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
             <span className={cn(
               "text-xs ml-auto pl-1", 
               detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
             )}>
               {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
             </span>
-          </div>
+          )}
         </div>
       );
   };
@@ -327,59 +337,65 @@ export default async function TeamsLeaderboardPage() {
         default: IconComponent = Info; 
     }
     
-    let rankTextSuffix = "";
-    if (detail.actualCategoryRank && detail.actualCategoryRank > 0) {
-        if (detail.categoryName === "Miglior Canzone") rankTextSuffix = "";
-        else if (detail.categoryName === "Peggior Canzone") rankTextSuffix = " peggiore";
-        else rankTextSuffix = " in cat.";
-    }
+    let rankSuffix = "in cat.";
+    if (detail.categoryName === "Miglior Canzone") rankSuffix = "";
+    else if (detail.categoryName === "Peggior Canzone") rankSuffix = "peggiore";
     
+    const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
+    ? `(${detail.actualCategoryRank}°${detail.categoryName !== "Miglior Canzone" ? ` ${rankSuffix}` : ''})`.trim()
+    : "";
+
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
-    const titleText = `${detail.pickedNationName || 'N/D'}${detail.actualCategoryRank ? ` (${detail.actualCategoryRank}°${rankTextSuffix})` : ''} - Punti: ${detail.pointsAwarded}`;
+    const titleText = `${detail.categoryName}: ${pickedNationFullDetails?.name || 'N/D'}${rankText}${!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' ? ` Punti: ${detail.pointsAwarded}`: ''}`;
 
     return (
-    <div className="px-2 py-1.5">
-      <div className="flex items-center justify-between w-full"> {/* Label and points on one line */}
-        <div className="flex items-center gap-1.5">
-          <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
-          <span className="text-xs text-foreground/90 font-medium">{detail.categoryName}</span>
+    <div className="px-2 py-1">
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-1.5">
+                <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
+                <span className="text-xs text-foreground/90 min-w-[120px] flex-shrink-0 font-medium">{detail.categoryName}</span>
+            </div>
+            {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && (
+                <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+                {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+                </span>
+            )}
         </div>
-        <span className={cn("text-xs", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-          {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
-        </span>
-      </div>
 
-      <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> {/* Indented nation details */}
-        <div className="flex flex-col items-start gap-0">
+        <div className={cn(
+            "w-full mt-1",
+            "pl-[calc(1rem+theme(spacing.1_5))]" 
+        )}>
           {pickedNationFullDetails ? (
-            <>
-              <Link href={`/nations/${pickedNationFullDetails.id}`}
-                className={cn("text-xs hover:underline hover:text-primary flex items-center gap-1")}
-                title={titleText}
-              >
-                {pickedNationFullDetails.countryCode && (
-                  <Image
+            <div className="flex items-center gap-1.5"> 
+                {pickedNationFullDetails.countryCode ? (
+                <Image
                     src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
                     alt={pickedNationFullDetails.name}
                     width={20}
                     height={13}
                     className="rounded-sm border border-border/30 object-contain flex-shrink-0 mr-0"
                     data-ai-hint={`${pickedNationFullDetails.name} flag`}
-                  />
+                />
+                ) : (
+                  <div className="w-5 h-[13px] flex-shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
                 )}
-                <span className="font-medium">
-                  {pickedNationFullDetails.name}
-                </span>
-                {detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && (
-                    <MedalIcon rank={detail.actualCategoryRank} className="ml-1"/>
-                )}
-                {detail.actualCategoryRank && (
-                  <span className="text-muted-foreground ml-0.5 text-xs flex items-center">
-                    ({detail.actualCategoryRank}°{rankTextSuffix})
-                  </span>
-                )}
-              </Link>
-            </>
+                <div className="flex flex-col items-start">
+                    <Link href={`/nations/${pickedNationFullDetails.id}`}
+                        className={cn("group text-xs hover:underline hover:text-primary flex items-center gap-1")}
+                        title={titleText}
+                    >
+                        <span className="font-medium">
+                        {pickedNationFullDetails.name}
+                        </span>
+                        {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
+                        {!adminSettings.leaderboardLocked && rankText && (
+                        <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                        )}
+                    </Link>
+                </div>
+            </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <UserCircle className="h-4 w-4 flex-shrink-0" />
@@ -447,17 +463,16 @@ export default async function TeamsLeaderboardPage() {
                       {tableTeams.map((team) => (
                         <TableRow key={team.id}>
                           <TableCell className="align-top pt-4">
-                              {team.rank && (
-                                <div className={cn(
-                                  "text-sm font-medium mb-0.5 flex items-center",
-                                   "text-muted-foreground" 
-                                  )}>
-                                  <MedalIcon rank={team.rank} className="mr-1.5" />
-                                  {getRankText(team.rank)}
-                                  {team.isTied && <span className="ml-1.5 text-muted-foreground">(Pari merito)</span>}
-                                </div>
-                              )}
-                              <div className="font-medium text-base mb-1">
+                              <div className={cn("text-sm font-semibold flex items-center mb-1", 
+                                !adminSettings.leaderboardLocked && team.rank === 1 ? "text-yellow-400" :
+                                !adminSettings.leaderboardLocked && team.rank === 2 ? "text-slate-400" :
+                                !adminSettings.leaderboardLocked && team.rank === 3 ? "text-amber-500" :
+                                "text-muted-foreground"
+                                )}>
+                                  {!adminSettings.leaderboardLocked && <MedalIcon rank={team.rank} className="mr-1" />}
+                                  {!adminSettings.leaderboardLocked && getRankText(team.rank)}{!adminSettings.leaderboardLocked && team.isTied ? "*" : ""}
+                              </div>
+                              <div className="font-medium text-base mb-0.5">
                                 {team.name}
                               </div>
                               {team.creatorDisplayName && (
@@ -479,7 +494,7 @@ export default async function TeamsLeaderboardPage() {
                                   ))}
                               </div>
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">{team.score}</TableCell>
+                          {!adminSettings.leaderboardLocked && <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">{team.score}</TableCell>}
                         </TableRow>
                       ))}
                     </TableBody>
