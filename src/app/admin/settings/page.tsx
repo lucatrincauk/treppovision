@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUpDown, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
@@ -42,12 +42,11 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations() // Fetches nations sorted by performingOrder
+            getNations()
           ]);
           setSettings(currentSettings);
-          // Initialize nations state based on performingOrder for initial visual order
           const sortedNations = [...fetchedNations].sort((a, b) => (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity));
-          setNations(sortedNations); 
+          setNations(sortedNations);
 
           const initialRankings = new Map<string, string>();
           fetchedNations.forEach(nation => {
@@ -118,24 +117,20 @@ export default function AdminSettingsPage() {
 
     if (result.success) {
       toast({ title: "Ranking Aggiornato", description: `Ranking per ${nations.find(n => n.id === nationId)?.name} aggiornato.` });
-      // Update local nations state to reflect saved ranking (or its absence)
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
         )
       );
-      // Update rankingsInput to reflect the actual saved value (e.g., "" if ranking was cleared)
       setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
-      // Optionally revert input if save failed, or let user correct it
-      // For now, we keep the user's input in the field
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
   }, [rankingsInput, nations, toast]);
 
 
-  const handleRankingInputChange = (nationId: string, value: string) => {
+  const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
     setRankingsInput(prev => new Map(prev).set(nationId, value));
 
     if (debounceTimers.current.has(nationId)) {
@@ -144,37 +139,34 @@ export default function AdminSettingsPage() {
     debounceTimers.current.set(nationId, setTimeout(() => {
       handleSaveRanking(nationId);
     }, DEBOUNCE_DELAY));
-  };
+  }, [handleSaveRanking]);
 
   const handleMoveNation = (nationId: string, direction: 'up' | 'down') => {
     setNations(prevNations => {
       const index = prevNations.findIndex(n => n.id === nationId);
       if (index === -1) return prevNations;
 
-      const newNations = [...prevNations];
-      const item = newNations.splice(index, 1)[0];
+      const newNationsArray = [...prevNations];
+      const item = newNationsArray.splice(index, 1)[0];
 
+      let newIndex = index;
       if (direction === 'up' && index > 0) {
-        newNations.splice(index - 1, 0, item);
-      } else if (direction === 'down' && index < newNations.length) {
-        newNations.splice(index + 1, 0, item);
-      } else {
-        // Cannot move further, re-insert at original position (effectively no change)
-        newNations.splice(index, 0, item); 
+        newIndex = index - 1;
+      } else if (direction === 'down' && index < newNationsArray.length) {
+        newIndex = index + 1;
       }
-      return newNations;
-    });
-  };
+      
+      newNationsArray.splice(newIndex, 0, item);
 
-  const applyVisualOrderToRankings = () => {
-    nations.forEach((nation, index) => {
-      const newRankString = String(index + 1);
-      // This directly updates the rankingsInput state via handleRankingInputChange,
-      // which should trigger re-renders of the Input components.
-      // It also queues the debounced save.
-      handleRankingInputChange(nation.id, newRankString); 
+      // After updating the visual order, update all ranking inputs
+      newNationsArray.forEach((nation, idx) => {
+        const newRankString = String(idx + 1);
+        // Call handleRankingInputChange to update the input and trigger debounced save
+        handleRankingInputChange(nation.id, newRankString);
+      });
+      
+      return newNationsArray;
     });
-    toast({ title: "Ordine Applicato", description: "I ranking sono stati aggiornati in base all'ordine visuale. Salvataggio in corso..." });
   };
 
 
@@ -284,17 +276,11 @@ export default function AdminSettingsPage() {
             Gestione Ranking Nazioni
           </CardTitle>
           <CardDescription>
-            Modifica l'ordine visuale con le frecce, quindi clicca "Applica Ordine Tabella ai Ranking" per aggiornare i campi Ranking.
-            I ranking verranno salvati automaticamente poco dopo la modifica. Il campo "Ordine Esibizione" non è affetto da questa tabella.
+            Modifica l'ordine visuale con le frecce. Il ranking di tutte le nazioni si aggiornerà automaticamente per riflettere il nuovo ordine e verrà salvato.
+            Il campo "Ordine Esibizione" non è affetto da questa tabella.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Button onClick={applyVisualOrderToRankings} variant="outline">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              Applica Ordine Tabella ai Ranking
-            </Button>
-          </div>
           {isLoadingNations ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
