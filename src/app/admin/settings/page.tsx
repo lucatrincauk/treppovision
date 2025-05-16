@@ -28,8 +28,8 @@ export default function AdminSettingsPage() {
   const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
 
-  const [nations, setNations] = React.useState<Nation[]>([]); // This state holds the visually ordered list of nations
-  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); // For stable lookups like name for toast
+  const [nations, setNations] = React.useState<Nation[]>([]);
+  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [savingStates, setSavingStates] = React.useState<Map<string, boolean>>(new Map());
@@ -43,7 +43,7 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations()
+            getNations() // This uses noStore due to previous changes
           ]);
           setSettings(currentSettings);
           
@@ -56,11 +56,9 @@ export default function AdminSettingsPage() {
             return orderA - orderB;
           });
           setNations(sortedNations);
-          setAllNationsStable(fetchedNations); // Store a stable copy
+          setAllNationsStable(fetchedNations);
 
           const initialRankings = new Map<string, string>();
-          // Initialize rankingsInput based on the visually sorted nations (which are initially sorted by performingOrder)
-          // or by their actual ranking if available. For this table, initial display relies on actual ranks.
           fetchedNations.forEach(nation => { 
             initialRankings.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
@@ -126,33 +124,37 @@ export default function AdminSettingsPage() {
     
     const nationNameForToast = allNationsStable.find(n => n.id === nationId)?.name || nationId;
 
+    // rankingToSave is now the string from the input, or what was set by move
     const result = await updateNationRankingAction(nationId, rankingToSave);
 
     if (result.success) {
       toast({ title: "Ranking Aggiornato", description: `Ranking per ${nationNameForToast} aggiornato.` });
+      // Update local nations state to reflect the saved ranking
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
         )
       );
+      // Ensure rankingsInput map reflects the saved state (string or empty string)
       setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
-      // Optionally revert rankingsInput to its state before this save attempt if needed
-      // For now, it will keep the user's typed value.
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
-  }, [toast, setNations, setRankingsInput, allNationsStable]);
+  }, [toast, allNationsStable, setNations, setRankingsInput]);
 
 
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
+    // Value is always a string from input or from String(idx + 1)
     setRankingsInput(prev => new Map(prev).set(nationId, value));
 
     if (debounceTimers.current.has(nationId)) {
       clearTimeout(debounceTimers.current.get(nationId)!);
     }
     debounceTimers.current.set(nationId, setTimeout(() => {
-      handleSaveRanking(nationId, value); // Pass the current value from the input
+      // Pass the 'value' that this specific call to handleRankingInputChange received.
+      // This 'value' is closed over by the setTimeout callback.
+      handleSaveRanking(nationId, value);
     }, DEBOUNCE_DELAY));
   }, [handleSaveRanking]);
 
@@ -161,7 +163,7 @@ export default function AdminSettingsPage() {
       const index = prevNations.findIndex(n => n.id === nationId);
       if (index === -1) return prevNations;
 
-      const newNationsArray = [...prevNations];
+      const newNationsArray = [...prevNations]; // Create a new array for the new visual order
       const item = newNationsArray.splice(index, 1)[0];
 
       let newIndex = index;
@@ -172,19 +174,27 @@ export default function AdminSettingsPage() {
       }
       newNationsArray.splice(newIndex, 0, item);
 
+      // Iterate through the new visual order and update ranking inputs if they differ
       newNationsArray.forEach((nation, idx) => {
         const newTargetRankString = String(idx + 1);
-        // Get current value from the rankingsInput state for comparison
+        // Read from the 'rankingsInput' state as it was when handleMoveNation was invoked
         const currentRankStringInInput = rankingsInput.get(nation.id) ?? ""; 
+        
+        // console.log(
+        //   `Comparing for ${nation.name} (ID: ${nation.id}): 
+        //   New Target Rank String: '${newTargetRankString}', 
+        //   Current Input String: '${currentRankStringInInput}',
+        //   Are they different? ${newTargetRankString !== currentRankStringInInput}`
+        // );
 
         if (newTargetRankString !== currentRankStringInInput) {
           handleRankingInputChange(nation.id, newTargetRankString);
         }
       });
       
-      return newNationsArray;
+      return newNationsArray; // This updates the 'nations' state, causing a re-render
     });
-  }, [rankingsInput, handleRankingInputChange, setNations]);
+  }, [nations, setNations, handleRankingInputChange, rankingsInput]);
 
 
   if (authLoading || isLoadingSettings || (user?.isAdmin && isLoadingNations)) {
@@ -353,8 +363,8 @@ export default function AdminSettingsPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center">
-                          <Input
-                            type="text"
+                           <Input
+                            type="text" // Keep as text for flexible input and empty string handling
                             value={rankingsInput.get(nation.id) ?? ""}
                             onChange={(e) => handleRankingInputChange(nation.id, e.target.value)}
                             className="w-16 text-center h-8 px-1"
