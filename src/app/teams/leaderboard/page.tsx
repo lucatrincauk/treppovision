@@ -1,4 +1,5 @@
 
+
 import { getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
@@ -267,12 +268,19 @@ export default async function TeamsLeaderboardPage() {
           <div className="flex-grow">
             <Link 
               href={`/nations/${detail.id}`} 
-              className="text-xs hover:underline hover:text-primary flex items-center" 
+              className="text-xs hover:underline hover:text-primary flex flex-col items-start" 
               title={`${detail.name}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
             >
-              <span className="font-medium">{detail.name}</span>
-              <MedalIcon rank={detail.actualRank} />
-              <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+              <div className="flex items-center">
+                <span className="font-medium">{detail.name}</span>
+                <MedalIcon rank={detail.actualRank} />
+                <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+              </div>
+              {nationData?.artistName && nationData?.songTitle && (
+                <p className="text-[10px] text-muted-foreground" title={`${nationData.artistName} - ${nationData.songTitle}`}>
+                    {nationData.artistName} - {nationData.songTitle}
+                </p>
+              )}
             </Link>
           </div>
           <span className={cn(
@@ -310,9 +318,7 @@ export default async function TeamsLeaderboardPage() {
         else if (detail.categoryName === "Peggior Canzone") rankSuffix = " peggiore";
         else rankSuffix = " in cat.";
         
-        if (!(detail.categoryName === "Miglior Canzone" && detail.actualCategoryRank > 3)){
-             rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
-        }
+        rankText = `(${detail.actualCategoryRank}°${rankSuffix})`;
     }
     
     const pickedNationFullDetails = detail.pickedNationId ? nationsMap.get(detail.pickedNationId) : undefined;
@@ -330,7 +336,7 @@ export default async function TeamsLeaderboardPage() {
           </span>
         </div>
 
-        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]">
+        <div className="mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> {/* Using Tailwind's theme() for spacing */}
             <div className="flex items-center gap-1">
                 {detail.pickedNationId && detail.pickedNationCountryCode && detail.pickedNationName ? (
                 <Link href={`/nations/${detail.pickedNationId}`}
@@ -397,6 +403,7 @@ export default async function TeamsLeaderboardPage() {
               <TeamList
                 teams={top3Teams}
                 nations={allNations}
+                allNations={allNations}
                 nationGlobalCategorizedScoresMap={globalCategorizedScoresMap}
                 disableListItemEdit={true} 
               />
@@ -486,3 +493,4 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+

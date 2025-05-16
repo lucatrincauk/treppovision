@@ -57,7 +57,7 @@ export async function createTeamAction(
     return { success: false, message: "Devi selezionare la peggiore canzone." };
   }
   if (!data.creatorDisplayName) {
-    return { success: false, message: "Nome del creatore mancante." };
+    return { success: false, message: "Nome dell'utente mancante." };
   }
 
   try {
@@ -141,7 +141,7 @@ export async function updateTeamAction(
         return { success: false, message: "Devi selezionare la peggiore canzone." };
     }
     if (!data.creatorDisplayName) {
-      return { success: false, message: "Nome del creatore mancante per l'aggiornamento." };
+      return { success: false, message: "Nome dell'utente mancante per l'aggiornamento." };
     }
 
 
@@ -194,7 +194,7 @@ export async function updateTeamCreatorDisplayNameAction(
     const teamSnap = await getDoc(teamDocRef);
 
     if (!teamSnap.exists()) {
-      console.warn(`Team con ID ${teamId} non trovato durante l'aggiornamento del nome del creatore.`);
+      console.warn(`Team con ID ${teamId} non trovato durante l'aggiornamento del nome dell'utente.`);
       return { success: false, message: "Team non trovato." };
     }
 
@@ -213,9 +213,9 @@ export async function updateTeamCreatorDisplayNameAction(
     revalidatePath("/teams/leaderboard");
 
 
-    return { success: true, message: "Nome del creatore del team aggiornato." };
+    return { success: true, message: "Nome utente del team aggiornato." };
   } catch (error) {
-    console.error(`Errore durante l'aggiornamento del nome del creatore per il team ${teamId}:`, error);
+    console.error(`Errore durante l'aggiornamento del nome dell'utente per il team ${teamId}:`, error);
     const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore sconosciuto.";
     return { success: false, message: `Errore del server: ${errorMessage}` };
   }
@@ -225,3 +225,4 @@ export async function getTeamsLockedStatus(): Promise<boolean> {
     const settings = await getAdminSettingsAction();
     return settings.teamsLocked;
 }
+
