@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger as DialogUITrigger, // Renamed to avoid conflict if we had AlertDialogTrigger here
+  DialogTrigger as DialogUITrigger, 
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -31,7 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger, // Added missing import
+  AlertDialogTrigger, 
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -292,12 +292,15 @@ export function AuthButton() {
     );
   }
 
+  // Logged-out state
+  const buttonText = isLoadingRegStatus || userRegistrationEnabled ? "Accedi / Registrati" : "Accedi";
+
   return (
     <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
       <DialogUITrigger asChild>
         <Button variant="outline" size="sm" aria-label="Open authentication dialog">
           <LogIn className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Accedi / Registrati</span>
+          <span className="hidden sm:inline">{buttonText}</span>
         </Button>
       </DialogUITrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -311,7 +314,7 @@ export function AuthButton() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
             <TabsTrigger value="signup" disabled={userRegistrationEnabled === false || isLoadingRegStatus}>
-              <UserPlus className="mr-1"/>Registrati
+              <UserPlus className="mr-1"/>{userRegistrationEnabled === false ? "Registrazione Chiusa" : "Registrati"}
             </TabsTrigger>
             <TabsTrigger value="emailLink"><Link2 className="mr-1"/>Link Email</TabsTrigger>
           </TabsList>
