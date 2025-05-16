@@ -4,8 +4,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
-import { listenToAllVotesForAllNationsCategorized, getAllNationsGlobalCategorizedScores } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores } from "@/types";
+import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
@@ -19,13 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; // Import leaderboard lock status
-
-interface TeamWithScore extends Team {
-  score?: number; // Score is now optional
-  primaSquadraDetails?: Array<{ id: string; name: string; countryCode: string; actualRank?: number; points: number; artistName?: string; songTitle?: string; }>;
-  categoryPicksDetails?: Array<{ categoryName: string; pickedNationId?: string; pickedNationName?: string; pickedNationCountryCode?: string; actualCategoryRank?: number; pointsAwarded: number; iconName: string; pickedNationScoreInCategory?: number | null; }>;
-}
+import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; 
 
 // Helper function to calculate points for a given rank (Eurovision rank)
 const getPointsForRank = (rank?: number): number => {
@@ -50,8 +44,7 @@ const getTopNationsForCategory = (
   currentNationsMap: Map<string, Nation>,
   categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore',
   sortOrder: 'desc' | 'asc' = 'desc',
-  count: number = 3 
-): Array<{ id: string; name: string; score: number | null }> => {
+): Array<{ id: string; name: string; score: number | null }> => { // Removed count, will return full sorted list
   if (!scoresMap || scoresMap.size === 0 || !currentNationsMap || currentNationsMap.size === 0) return [];
   return Array.from(scoresMap.entries())
     .map(([nationId, scores]) => ({
@@ -67,8 +60,7 @@ const getTopNationsForCategory = (
         return (b.score as number) - (a.score as number);
       }
       return (a.score as number) - (b.score as number);
-    })
-    .slice(0, count);
+    });
 };
 
 // Helper to get points and rank for a category pick
@@ -180,6 +172,7 @@ export default function TeamsPage() {
 
     return allFetchedTeams.map(team => {
       let scoreValue: number | undefined = 0;
+      
       const primaSquadraDetails: TeamWithScore['primaSquadraDetails'] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
@@ -195,10 +188,10 @@ export default function TeamsPage() {
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
 
-      const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc', 3);
-      const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc', 3);
-      const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc', 3);
-      const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc', 3);
+      const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+      const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
+      const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+      const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
       
       const categoryPicksDetails: TeamWithScore['categoryPicksDetails'] = [];
 
@@ -296,7 +289,7 @@ export default function TeamsPage() {
         </Button>
       )}
        {user && !showCreateTeamButton && userTeams.length > 0 && !teamsLockedAdmin && (
-        <Button asChild variant="outline" size="lg">
+        <Button asChild variant="default" size="lg">
             <Link href={`/teams/${userTeams[0].id}/edit`}>
                 <Edit className="mr-2 h-5 w-5"/>
                 Modifica la Tua Squadra
@@ -316,44 +309,45 @@ export default function TeamsPage() {
     let nationId: string | undefined;
     let IconComponent: React.ElementType = Music2;
     let isCorrectPick = false;
+    let topId: string | null = null;
     
-    let topNationForCategory: string | null = null;
-
     if (nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
-        const getTopNation = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
-            return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order, 1)[0]?.id || null;
+        const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
+            return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
         };
+
         switch(category) {
-            case 'bestSong': topNationForCategory = getTopNation('averageSongScore', 'desc'); break;
-            case 'worstSong': topNationForCategory = getTopNation('averageSongScore', 'asc'); break;
-            case 'bestPerf': topNationForCategory = getTopNation('averagePerformanceScore', 'desc'); break;
-            case 'bestOutfit': topNationForCategory = getTopNation('averageOutfitScore', 'desc'); break;
+            case 'bestSong': 
+                nationId = team.bestSongNationId;
+                topId = getTopNationId('averageSongScore', 'desc');
+                IconComponent = Music2;
+                break;
+            case 'bestPerf': 
+                nationId = team.bestPerformanceNationId;
+                topId = getTopNationId('averagePerformanceScore', 'desc');
+                IconComponent = Star;
+                break;
+            case 'bestOutfit': 
+                nationId = team.bestOutfitNationId;
+                topId = getTopNationId('averageOutfitScore', 'desc');
+                IconComponent = Shirt;
+                break;
+            case 'worstSong': 
+                nationId = team.worstSongNationId;
+                topId = getTopNationId('averageSongScore', 'asc');
+                IconComponent = ThumbsDown;
+                break;
+        }
+        isCorrectPick = nationId === topId && nationId !== undefined;
+    } else {
+        switch(category) {
+            case 'bestSong': nationId = team.bestSongNationId; IconComponent = Music2; break;
+            case 'bestPerf': nationId = team.bestPerformanceNationId; IconComponent = Star; break;
+            case 'bestOutfit': nationId = team.bestOutfitNationId; IconComponent = Shirt; break;
+            case 'worstSong': nationId = team.worstSongNationId; IconComponent = ThumbsDown; break;
         }
     }
 
-
-    switch (category) {
-      case 'bestSong':
-        nationId = team.bestSongNationId;
-        IconComponent = Music2;
-        isCorrectPick = nationId === topNationForCategory;
-        break;
-      case 'bestPerf':
-        nationId = team.bestPerformanceNationId;
-        IconComponent = Star;
-        isCorrectPick = nationId === topNationForCategory;
-        break;
-      case 'bestOutfit':
-        nationId = team.bestOutfitNationId;
-        IconComponent = Shirt;
-        isCorrectPick = nationId === topNationForCategory;
-        break;
-      case 'worstSong':
-        nationId = team.worstSongNationId;
-        IconComponent = ThumbsDown;
-        isCorrectPick = nationId === topNationForCategory;
-        break;
-    }
     const nation = nationId ? nationsMap.get(nationId) : null;
     
     if (!nation) return <span className="text-muted-foreground text-xs">N/D</span>;
@@ -505,11 +499,11 @@ export default function TeamsPage() {
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
                     {!leaderboardLockedAdmin && <TableHead className="w-[80px] text-right">Punti</TableHead>}
-                    <TableHead className="hidden sm:table-cell">Pronostici TreppoVision</TableHead>
+                    <TableHead>Pronostici TreppoVision</TableHead>
                     <TableHead className="hidden md:table-cell">Miglior Canzone</TableHead>
-                    <TableHead className="hidden lg:table-cell">Miglior Performance</TableHead>
-                    <TableHead className="hidden xl:table-cell">Miglior Outfit</TableHead>
-                    <TableHead className="hidden xl:table-cell">Peggior Canzone</TableHead>
+                    <TableHead className="hidden md:table-cell">Miglior Performance</TableHead>
+                    <TableHead className="hidden lg:table-cell">Miglior Outfit</TableHead>
+                    <TableHead className="hidden lg:table-cell">Peggior Canzone</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -529,7 +523,7 @@ export default function TeamsPage() {
                           {typeof team.score === 'number' ? team.score : 'N/D'}
                         </TableCell>
                        )}
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
                             const nation = nationsMap.get(nationId);
@@ -551,9 +545,9 @@ export default function TeamsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestSong')}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{renderCategoryPickCell(team, 'bestPerf')}</TableCell>
-                      <TableCell className="hidden xl:table-cell">{renderCategoryPickCell(team, 'bestOutfit')}</TableCell>
-                      <TableCell className="hidden xl:table-cell">{renderCategoryPickCell(team, 'worstSong')}</TableCell>
+                      <TableCell className="hidden md:table-cell">{renderCategoryPickCell(team, 'bestPerf')}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{renderCategoryPickCell(team, 'bestOutfit')}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{renderCategoryPickCell(team, 'worstSong')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -569,3 +563,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+
