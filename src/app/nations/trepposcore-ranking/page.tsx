@@ -251,8 +251,7 @@ export default function TreppoScoreRankingPage() {
     );
   }
 
-  const top3Nations = nationsWithScores.slice(0, 3);
-  const otherRankedNations = nationsWithScores.slice(3);
+  const top3Nations = nationsWithScores.filter(n => n.rank !== undefined && n.rank <=3);
 
   return (
     <div className="space-y-8">
@@ -311,10 +310,10 @@ export default function TreppoScoreRankingPage() {
             />
           )}
 
-          {otherRankedNations.length > 0 && (
+          {nationsWithScores.length > 0 && (
             <section className="mt-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Classifica Completa (dal 4° posto) - {categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}
+                Classifica Completa - {categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}
               </h2>
               <Card>
                 <CardContent className="p-0">
@@ -331,7 +330,7 @@ export default function TreppoScoreRankingPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {otherRankedNations.map((nation) => (
+                      {nationsWithScores.map((nation) => (
                         <TableRow key={nation.id}>
                           <TableCell className="font-medium text-center">{nation.rank}</TableCell>
                           <TableCell>
@@ -383,3 +382,4 @@ export default function TreppoScoreRankingPage() {
     </div>
   );
 }
+
