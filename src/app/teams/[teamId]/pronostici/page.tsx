@@ -30,9 +30,9 @@ export default function EditFinalAnswersPage() {
   useEffect(() => {
     async function fetchPageData() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authLoading); 
+        setIsLoadingData(authLoading);
         setIsLoadingSettings(authLoading);
-        if (!teamId && !authLoading) { 
+        if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
           setIsLoadingData(false);
           setIsLoadingSettings(false);
@@ -41,7 +41,7 @@ export default function EditFinalAnswersPage() {
       }
 
       setIsLoadingSettings(true);
-      setError(null); 
+      setError(null);
 
       let predictionsEnabledStatus = false;
       try {
@@ -50,9 +50,9 @@ export default function EditFinalAnswersPage() {
       } catch (settingsError: any) {
         console.error("Failed to fetch final predictions enabled status:", settingsError);
         setError("Impossibile caricare le impostazioni dei pronostici.");
-        setFinalPredictionsEnabled(false); 
+        setFinalPredictionsEnabled(false);
         setIsLoadingSettings(false);
-        setIsLoadingData(false); 
+        setIsLoadingData(false);
         return;
       }
       setIsLoadingSettings(false);
@@ -222,6 +222,15 @@ export default function EditFinalAnswersPage() {
             <ChevronLeft className="w-4 h-4 mr-1" />
             Torna alle Squadre
         </Link>
+        {!hasExistingPredictions && (
+           <Alert variant="default" className="max-w-2xl mx-auto">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Attenzione</AlertTitle>
+                <AlertDescription>
+                    I pronostici finali, una volta inviati, non possono essere modificati.
+                </AlertDescription>
+            </Alert>
+        )}
       <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
@@ -230,11 +239,6 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
-             {!hasExistingPredictions && (
-                <span className="block mt-1 text-destructive font-medium">
-                    Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.
-                </span>
-            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
