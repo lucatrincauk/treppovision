@@ -325,7 +325,7 @@ export default function TeamsLeaderboardPage() {
     const rankText = !adminSettings.leaderboardLocked && detail.actualRank && detail.actualRank > 0
       ? `(${detail.actualRank}°)`.trim()
       : "";
-    const titleText = `${nationData?.name || 'Sconosciuto'}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
+    const titleText = `${nationData?.name || 'Sconosciuto'}${rankText ? ` ${rankText}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
       <div className={cn("px-2 py-1 flex items-start", detail.id ? "justify-between" : "justify-start")}>
@@ -394,12 +394,12 @@ export default function TeamsLeaderboardPage() {
   
     return (
       <div className={cn(
-        "px-2 py-1",
+        "px-2 py-1.5",
       )}>
-      <div className="flex flex-col gap-0.5">
+      <div className="mt-1">
         <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5">
-                <IconComponent className={cn("w-5 h-5 flex-shrink-0", iconColorClass)} />
+                <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
                 <span className="text-xs text-foreground/90 min-w-[120px] shrink-0 font-medium">{detail.categoryName}</span>
             </div>
             {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && detail.pointsAwarded !== 0 && (
@@ -410,7 +410,7 @@ export default function TeamsLeaderboardPage() {
         </div>
 
         <div className={cn(
-            "w-full mt-1 pl-[calc(1.25rem+theme(spacing.1_5))]" 
+            "w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]" 
         )}>
           {pickedNationFullDetails ? (
             <div className="flex items-center gap-1"> 
@@ -420,11 +420,11 @@ export default function TeamsLeaderboardPage() {
                     alt={pickedNationFullDetails.name || "Bandiera"}
                     width={20}
                     height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
+                    className="rounded-sm border border-border/30 object-contain shrink-0"
                     data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
                 />
                 ) : (
-                <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
+                <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
                 )}
                 <div className="flex flex-col items-start"> 
                     <Link href={`/nations/${pickedNationFullDetails.id}`}
@@ -495,6 +495,10 @@ export default function TeamsLeaderboardPage() {
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
                 Classifica Completa
               </h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                <Info className="h-4 w-4" />
+                <span>Clicca sul nome di una squadra per vedere il dettaglio del punteggio.</span>
+              </div>
               <Card>
                 <CardContent className="p-0">
                   <Table>
@@ -533,7 +537,7 @@ export default function TeamsLeaderboardPage() {
                                 {team.name}
                               </div>
                               {team.creatorDisplayName && (
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                       <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
                                   </div>
                               )}
