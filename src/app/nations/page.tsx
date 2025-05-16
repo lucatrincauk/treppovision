@@ -9,8 +9,6 @@ import { NationsDisplayClient } from "@/components/nations/nations-display-clien
 
 export default async function NationsPage() {
   const nations = await getNations();
-  // The listTitle prop is no longer used by NationsDisplayClient for the main title
-  // const listTitle = "Elenco Nazioni";
 
   return (
     <div className="space-y-8">
@@ -22,7 +20,7 @@ export default async function NationsPage() {
             Incontra le Nazioni
           </h1>
           <p className="text-xl text-muted-foreground">
-            Esplora tutti i paesi partecipanti, i loro artisti e le loro canzoni.
+            Esplora tutti i paesi partecipanti, i loro artisti e le loro canzoni, elencate per ordine di esibizione.
           </p>
         </header>
         <AdminNationControls nationId={null}>
@@ -42,8 +40,7 @@ export default async function NationsPage() {
       )}
 
       {nations.length > 0 && (
-        // Pass a prop that indicates this is the main list to show the sort order description
-        <NationsDisplayClient initialNations={nations} showSortOrderDescription={true} />
+        <NationsDisplayClient initialNations={nations} showSortOrderDescription={false} />
       )}
     </div>
   );

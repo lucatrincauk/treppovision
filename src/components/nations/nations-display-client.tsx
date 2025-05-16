@@ -13,13 +13,12 @@ import { getAllUserVotes } from "@/lib/voting-service";
 
 interface NationsDisplayClientProps {
   initialNations: Nation[];
-  listTitle?: string; // Made optional as it's no longer used for the main title here
-  showSortOrderDescription?: boolean; // New prop
+  showSortOrderDescription?: boolean; 
 }
 
 const HIDE_VOTED_NATIONS_KEY = "treppoVision_hideVotedNations";
 
-export function NationsDisplayClient({ initialNations, listTitle, showSortOrderDescription = false }: NationsDisplayClientProps) {
+export function NationsDisplayClient({ initialNations, showSortOrderDescription = false }: NationsDisplayClientProps) {
   const { user, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNations, setFilteredNations] = useState<Nation[]>(initialNations);
@@ -34,7 +33,6 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
   const [isLoadingUserVotes, setIsLoadingUserVotes] = useState(false);
 
   useEffect(() => {
-    // Ensure initialNations are set when the component mounts or initialNations prop changes
     setFilteredNations(initialNations);
   }, [initialNations]);
 
@@ -51,13 +49,13 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
         })
         .catch(error => {
           console.error("Error fetching user votes for filtering:", error);
-          setUserVotesMap(new Map()); // Clear on error
+          setUserVotesMap(new Map()); 
         })
         .finally(() => {
           setIsLoadingUserVotes(false);
         });
     } else {
-      setUserVotesMap(new Map()); // Clear votes if user logs out
+      setUserVotesMap(new Map()); 
       setIsLoadingUserVotes(false);
     }
   }, [user, authLoading]);
@@ -65,7 +63,6 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
   useEffect(() => {
     let results = [...initialNations]; 
 
-    // Sort by performingOrder, then by name
     results.sort((a, b) => {
       const orderA = a.performingOrder ?? Infinity;
       const orderB = b.performingOrder ?? Infinity;
@@ -75,7 +72,6 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
       return a.name.localeCompare(b.name);
     });
     
-    // Apply search filter
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       results = results.filter(
@@ -86,7 +82,6 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
       );
     }
 
-    // Apply hide voted nations filter
     if (user && hideVotedNations && !isLoadingUserVotes) {
       results = results.filter(nation => !userVotesMap.has(nation.id));
     }
@@ -106,13 +101,8 @@ export function NationsDisplayClient({ initialNations, listTitle, showSortOrderD
 
   return (
     <div className="space-y-6">
-      {/* The main list title (e.g., "Elenco Nazioni") is removed from here */}
-      {/* The descriptive paragraph is now shown based on a prop */}
-      {showSortOrderDescription && (
-         <p className="text-base text-muted-foreground/80 -mt-4 mb-4">
-           Nazioni elencate per ordine di esibizione.
-         </p>
-      )}
+      {/* The descriptive paragraph "Nazioni elencate per ordine di esibizione." is removed from here */}
+      {/* showSortOrderDescription prop is kept in case it's needed for other future descriptive texts */}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 my-4">
         <div className="relative w-full sm:max-w-lg">
