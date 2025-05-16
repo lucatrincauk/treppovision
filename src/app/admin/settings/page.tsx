@@ -42,14 +42,22 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations()
+            getNations() // This now uses noStore()
           ]);
           setSettings(currentSettings);
-          const sortedNations = [...fetchedNations].sort((a, b) => (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity));
+          // Sort initially by performingOrder, then by name for consistent initial display
+          const sortedNations = [...fetchedNations].sort((a, b) => {
+            const orderA = a.performingOrder ?? Infinity;
+            const orderB = b.performingOrder ?? Infinity;
+            if (orderA === orderB) {
+              return a.name.localeCompare(b.name);
+            }
+            return orderA - orderB;
+          });
           setNations(sortedNations);
 
           const initialRankings = new Map<string, string>();
-          fetchedNations.forEach(nation => {
+          sortedNations.forEach(nation => { // Use sortedNations to initialize inputs based on initial sort
             initialRankings.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
           setRankingsInput(initialRankings);
@@ -111,17 +119,21 @@ export default function AdminSettingsPage() {
 
   const handleSaveRanking = React.useCallback(async (nationId: string) => {
     setSavingStates(prev => new Map(prev).set(nationId, true));
-    const rankingString = rankingsInput.get(nationId) ?? "";
+    const rankingString = rankingsInput.get(nationId) ?? ""; // Get the latest value from input state
     
+    // The server action will parse the string
     const result = await updateNationRankingAction(nationId, rankingString);
 
     if (result.success) {
       toast({ title: "Ranking Aggiornato", description: `Ranking per ${nations.find(n => n.id === nationId)?.name} aggiornato.` });
+      // Update the main 'nations' state to reflect the saved ranking for optimistic UI updates
+      // and to keep the 'originalRankString' comparison accurate for future direct edits
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
         )
       );
+      // Also ensure rankingsInput reflects the canonical value from the server (e.g., empty string if rank was cleared)
       setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
     } else {
       toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
@@ -141,7 +153,7 @@ export default function AdminSettingsPage() {
     }, DEBOUNCE_DELAY));
   }, [handleSaveRanking]);
 
-  const handleMoveNation = (nationId: string, direction: 'up' | 'down') => {
+  const handleMoveNation = React.useCallback((nationId: string, direction: 'up' | 'down') => {
     setNations(prevNations => {
       const index = prevNations.findIndex(n => n.id === nationId);
       if (index === -1) return prevNations;
@@ -155,19 +167,23 @@ export default function AdminSettingsPage() {
       } else if (direction === 'down' && index < newNationsArray.length) {
         newIndex = index + 1;
       }
-      
       newNationsArray.splice(newIndex, 0, item);
 
-      // After updating the visual order, update all ranking inputs
+      // After updating the visual order, update and trigger save ONLY for modified ranking inputs
       newNationsArray.forEach((nation, idx) => {
-        const newRankString = String(idx + 1);
-        // Call handleRankingInputChange to update the input and trigger debounced save
-        handleRankingInputChange(nation.id, newRankString);
+        const newTargetRankString = String(idx + 1);
+        // Get current value from the rankingsInput state for comparison
+        const currentRankStringInInput = rankingsInput.get(nation.id) ?? ""; 
+
+        if (newTargetRankString !== currentRankStringInInput) {
+          // This will update the input field's value and trigger the debounced save
+          handleRankingInputChange(nation.id, newTargetRankString);
+        }
       });
       
       return newNationsArray;
     });
-  };
+  }, [rankingsInput, handleRankingInputChange]);
 
 
   if (authLoading || isLoadingSettings || (user?.isAdmin && isLoadingNations)) {
@@ -360,5 +376,6 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+    
 
     
