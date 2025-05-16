@@ -5,12 +5,12 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, TeamFinalAnswersFormData } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, TeamFinalAnswersFormData, PrimaSquadraDetail, CategoryPickDetail } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, ListOrdered } from "lucide-react"; 
+import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, Music2, Star, Shirt, ThumbsDown, ListOrdered } from "lucide-react"; 
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -188,36 +188,14 @@ export default function TeamsPage() {
     return allFetchedTeams.map(team => {
       let scoreValue: number | undefined = 0;
       
-      if (leaderboardLockedAdmin) {
-        scoreValue = undefined;
-      } else {
-        (team.founderChoices || []).forEach(nationId => {
-          const nation = nationsMap.get(nationId);
-          const points = nation ? getPointsForRank(nation.ranking) : 0;
-          if(scoreValue !== undefined) scoreValue += points;
-        });
-
-        const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
-        const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
-        const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
-        const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
-        
-        const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
-        if(scoreValue !== undefined) scoreValue += bestSongPick.points;
-
-        const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerfNationsList);
-        if(scoreValue !== undefined) scoreValue += bestPerfPick.points;
-        
-        const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNationsList);
-        if(scoreValue !== undefined) scoreValue += bestOutfitPick.points;
-
-        const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
-        if(scoreValue !== undefined) scoreValue += worstSongPick.points;
-      }
-      
-      const primaSquadraDetails = (team.founderChoices || []).map(nationId => {
+      const primaSquadraDetails: PrimaSquadraDetail[] = (team.founderChoices || []).map(nationId => {
         const nation = nationsMap.get(nationId);
         const points = nation ? getPointsForRank(nation.ranking) : 0;
+        if (leaderboardLockedAdmin) {
+          scoreValue = undefined; // Score hidden if leaderboard locked
+        } else if(scoreValue !== undefined) {
+            scoreValue += points;
+        }
         return {
           id: nationId,
           name: nation?.name || 'Sconosciuto',
@@ -225,51 +203,55 @@ export default function TeamsPage() {
           artistName: nation?.artistName,
           songTitle: nation?.songTitle,
           actualRank: nation?.ranking,
-          points: points,
+          points: leaderboardLockedAdmin ? 0 : points, // Points are 0 if leaderboard locked
         };
       }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
       
-      const categoryPicksDetails: TeamWithScore['categoryPicksDetails'] = [];
+      const categoryPicksDetails: CategoryPickDetail[] = [];
       const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
       const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc');
       const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
       const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
       
       const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
+      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Canzone", pickedNationId: team.bestSongNationId, 
         pickedNationName: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.name : undefined,
         pickedNationCountryCode: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.countryCode : undefined,
-        actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score,
+        actualCategoryRank: bestSongPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score,
       });
 
       const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerfNationsList);
+      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestPerfPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId,
         pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined,
         pickedNationCountryCode: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.countryCode : undefined,
-        actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score,
+        actualCategoryRank: bestPerfPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score,
       });
       
       const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNationsList);
+      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += bestOutfitPick.points;
       categoryPicksDetails.push({
         categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId,
         pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined,
         pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined,
-        actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score,
+        actualCategoryRank: bestOutfitPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score,
       });
 
       const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
+      if (!leaderboardLockedAdmin && scoreValue !== undefined) scoreValue += worstSongPick.points;
       categoryPicksDetails.push({
         categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId,
         pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined,
         pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined,
-        actualCategoryRank: worstSongPick.rank, pointsAwarded: worstSongPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstSongPick.score,
+        actualCategoryRank: worstSongPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : worstSongPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstSongPick.score,
       });
       
       const teamWithDetails: TeamWithScore = {
         ...team,
-        score: scoreValue,
+        score: leaderboardLockedAdmin ? undefined : scoreValue,
         primaSquadraDetails: primaSquadraDetails,
         categoryPicksDetails: categoryPicksDetails,
       };
@@ -323,59 +305,13 @@ export default function TeamsPage() {
             </Link>
             </Button>
         )}
-        {user && userTeam && !teamsLockedAdmin && (
-            <>
-                <Button asChild variant="default" size="lg" className="w-full sm:w-auto">
-                    <Link href={`/teams/${userTeam.id}/edit`}>
-                        <Edit className="h-5 w-5 sm:mr-2" />
-                        <span className="hidden sm:inline">Modifica Squadra</span>
-                    </Link>
-                </Button>
-                <Dialog open={isFinalAnswersModalOpen} onOpenChange={setIsFinalAnswersModalOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                            <ListOrdered className="h-5 w-5 sm:mr-2" />
-                            <span className="hidden sm:inline">Pronostici Finali</span>
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[450px]">
-                        <DialogHeader>
-                        <DialogTitle>Inserisci i Tuoi Pronostici Finali</DialogTitle>
-                        <DialogDescription>
-                            Questi sono i tuoi pronostici per le categorie basate sul voto degli utenti.
-                        </DialogDescription>
-                        </DialogHeader>
-                        {userTeam && (
-                            <FinalAnswersForm 
-                                initialData={{
-                                    bestSongNationId: userTeam.bestSongNationId,
-                                    bestPerformanceNationId: userTeam.bestPerformanceNationId,
-                                    bestOutfitNationId: userTeam.bestOutfitNationId,
-                                    worstSongNationId: userTeam.worstSongNationId,
-                                }}
-                                teamId={userTeam.id}
-                                onSuccess={async () => { // Make onSuccess async
-                                  setIsFinalAnswersModalOpen(false);
-                                  if (user) { // Re-fetch user team data to reflect changes
-                                    setIsLoadingUserTeams(true);
-                                    try {
-                                      const teams = await getTeamsByUserId(user.uid);
-                                      const updatedTeam = teams.length > 0 ? teams[0] as TeamWithScore : null;
-                                      // Manually re-process this single team for score if needed, or rely on full processedAndScoredTeams re-memoization
-                                      // For simplicity, we'll update userTeam directly; score might be stale until full list updates.
-                                      setUserTeam(updatedTeam);
-                                    } catch (err) {
-                                      console.error("Error re-fetching user team after final answers update:", err);
-                                    } finally {
-                                      setIsLoadingUserTeams(false);
-                                    }
-                                  }
-                                }}
-                            />
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </>
+         {user && userTeam && !teamsLockedAdmin && (
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                <Link href={`/teams/${userTeam.id}/edit`}>
+                    <Edit className="h-5 w-5 sm:mr-2" />
+                    <span className="hidden sm:inline">Modifica Squadra</span>
+                </Link>
+            </Button>
         )}
          {user && teamsLockedAdmin && !userTeam && (
             <Button variant="outline" size="lg" disabled>
@@ -384,16 +320,10 @@ export default function TeamsPage() {
             </Button>
         )}
          {user && userTeam && teamsLockedAdmin && (
-             <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
-                    <Lock className="h-5 w-5 sm:mr-2"/>
-                    <span className="hidden sm:inline">Modifica Bloccata</span>
-                </Button>
-                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
-                    <Lock className="h-5 w-5 sm:mr-2"/>
-                    <span className="hidden sm:inline">Pronostici Bloccati</span>
-                </Button>
-             </div>
+             <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
+                <Lock className="h-5 w-5 sm:mr-2"/>
+                <span className="hidden sm:inline">Modifica Bloccata</span>
+            </Button>
         )}
       </div>
     </div>
@@ -414,8 +344,8 @@ export default function TeamsPage() {
         />
         <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
           {nation.name}
-          {!leaderboardLocked && nation.ranking && nation.ranking > 0 && (
-            <span className="text-muted-foreground/80 ml-0.5">({nation.ranking}°)</span>
+          {!leaderboardLocked && detail.actualRank && detail.actualRank > 0 && (
+            <span className="text-muted-foreground/80 ml-0.5">({detail.actualRank}°)</span>
           )}
         </span>
       </div>
@@ -425,7 +355,6 @@ export default function TeamsPage() {
   const renderCategoryPickCell = (team: TeamWithScore, category: 'bestSong' | 'bestPerf' | 'bestOutfit' | 'worstSong', leaderboardLocked: boolean | null) => {
     let nationId: string | undefined;
     let IconComponent: React.ElementType = Users; 
-    let isCorrectPick = false;
     
     const categoryDetails = team.categoryPicksDetails?.find(cpd => 
         (category === 'bestSong' && cpd.categoryName === "Miglior Canzone") ||
@@ -436,13 +365,13 @@ export default function TeamsPage() {
 
     nationId = categoryDetails?.pickedNationId;
     
-    // Dynamic icon determination based on categoryDetails.iconName
-    if (categoryDetails?.iconName === 'Music2') IconComponent = Users; // Replace Users with actual Music2
-    else if (categoryDetails?.iconName === 'Star') IconComponent = Users; // Replace Users with actual Star
-    else if (categoryDetails?.iconName === 'Shirt') IconComponent = Users; // Replace Users with actual Shirt
-    else if (categoryDetails?.iconName === 'ThumbsDown') IconComponent = Users; // Replace Users with actual ThumbsDown
+    if (categoryDetails?.iconName === 'Music2') IconComponent = Music2;
+    else if (categoryDetails?.iconName === 'Star') IconComponent = Star;
+    else if (categoryDetails?.iconName === 'Shirt') IconComponent = Shirt;
+    else if (categoryDetails?.iconName === 'ThumbsDown') IconComponent = ThumbsDown;
     
-    if (nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
+    let isCorrectPick = false;
+    if (!leaderboardLocked && nationGlobalCategorizedScoresMap.size > 0 && nationsMap.size > 0) {
         const getTopNationId = (catKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore', order: 'asc' | 'desc') => {
             return getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, catKey, order)[0]?.id || null;
         };
@@ -461,8 +390,6 @@ export default function TeamsPage() {
     
     if (!nation) return <span className="text-muted-foreground text-xs">N/D</span>;
 
-    // Ensure you import actual Lucide icons for Music2, Star, Shirt, ThumbsDown
-    // For now, they are Users, which is incorrect
     return (
       <div className="flex items-center gap-1.5">
         <Image
@@ -548,6 +475,7 @@ export default function TeamsPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
+            {/* "Modifica la Tua Squadra" button was here, now moved to header section */}
           </div>
           <TeamListItem 
             team={userTeam} 
@@ -556,12 +484,67 @@ export default function TeamsPage() {
             isOwnTeamCard={true}
             leaderboardLocked={leaderboardLockedAdmin}
           />
+          {/* "Pronostici Finali" button moved here */}
+          {userTeam && !teamsLockedAdmin && (
+            <div className="mt-4 flex justify-end">
+                <Dialog open={isFinalAnswersModalOpen} onOpenChange={setIsFinalAnswersModalOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="lg">
+                            <ListOrdered className="h-5 w-5 sm:mr-2" />
+                            <span className="hidden sm:inline">Pronostici Finali</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                        <DialogHeader>
+                        <DialogTitle>Inserisci i Tuoi Pronostici Finali</DialogTitle>
+                        <DialogDescription>
+                            Questi sono i tuoi pronostici per le categorie basate sul voto degli utenti.
+                        </DialogDescription>
+                        </DialogHeader>
+                        {userTeam && (
+                            <FinalAnswersForm 
+                                initialData={{
+                                    bestSongNationId: userTeam.bestSongNationId,
+                                    bestPerformanceNationId: userTeam.bestPerformanceNationId,
+                                    bestOutfitNationId: userTeam.bestOutfitNationId,
+                                    worstSongNationId: userTeam.worstSongNationId,
+                                }}
+                                teamId={userTeam.id}
+                                onSuccess={async () => {
+                                  setIsFinalAnswersModalOpen(false);
+                                  if (user) { 
+                                    setIsLoadingUserTeams(true);
+                                    try {
+                                      const teams = await getTeamsByUserId(user.uid);
+                                      const updatedTeam = teams.length > 0 ? teams[0] as TeamWithScore : null;
+                                      setUserTeam(updatedTeam);
+                                    } catch (err) {
+                                      console.error("Error re-fetching user team after final answers update:", err);
+                                    } finally {
+                                      setIsLoadingUserTeams(false);
+                                    }
+                                  }
+                                }}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </div>
+            )}
+            {userTeam && teamsLockedAdmin && (
+                <div className="mt-4 flex justify-end">
+                    <Button variant="outline" size="lg" disabled>
+                        <Lock className="h-5 w-5 sm:mr-2"/>
+                        <span className="hidden sm:inline">Pronostici Bloccati</span>
+                    </Button>
+                </div>
+            )}
         </section>
       ))}
 
       <section className="pt-6 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h2 className="text-3xl font-semibold tracking-tight text-left">
+          <h2 className="text-3xl font-semibold tracking-tight text-left text-primary">
             Altre Squadre
           </h2>
           <div className="relative w-full md:w-auto md:min-w-[300px]">
@@ -685,3 +668,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+
