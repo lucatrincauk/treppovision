@@ -356,6 +356,8 @@ export default function TeamsPage() {
     )
   }
   
+  const hasUserSubmittedFinalPredictions = userTeam && userTeam.bestSongNationId !== "";
+
   return (
     <div className="space-y-8">
       <TeamsSubNavigation />
@@ -417,20 +419,24 @@ export default function TeamsPage() {
             leaderboardLocked={leaderboardLockedAdmin}
           />
            <div className="mt-4 flex justify-center">
-            {userTeam && !teamsLockedAdmin && finalPredictionsEnabledAdmin && (
+            {userTeam && !teamsLockedAdmin && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="h-5 w-5 mr-2" />
-                        <span className="hidden sm:inline">Pronostici Finali</span>
-                         <span className="sm:hidden">Pronostici</span>
+                        <span className="mr-2">Pronostici Finali</span>
                     </Link>
                 </Button>
             )}
             {userTeam && (teamsLockedAdmin || !finalPredictionsEnabledAdmin) && (
                 <Button variant="outline" size="lg" disabled>
                     <Lock className="h-5 w-5 mr-2"/>
-                    <span className="hidden sm:inline">Pronostici Bloccati</span>
-                    <span className="sm:hidden">Pronostici Bloccati</span>
+                    <span className="mr-2">Pronostici Bloccati</span>
+                </Button>
+            )}
+            {userTeam && hasUserSubmittedFinalPredictions && (
+                 <Button variant="outline" size="lg" disabled>
+                    <ListOrdered className="h-5 w-5 mr-2"/>
+                    <span className="mr-2">Pronostici Inviati</span>
                 </Button>
             )}
             </div>
@@ -552,4 +558,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-

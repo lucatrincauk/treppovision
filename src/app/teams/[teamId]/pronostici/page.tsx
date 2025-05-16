@@ -49,14 +49,18 @@ export default function EditFinalAnswersPage() {
 
         if (fetchedTeam) {
           setTeam(fetchedTeam);
-          setHasExistingPredictions(
-            !!fetchedTeam.bestSongNationId ||
-            !!fetchedTeam.bestPerformanceNationId ||
-            !!fetchedTeam.bestOutfitNationId ||
-            !!fetchedTeam.worstSongNationId
-          );
+          const existingPreds = !!fetchedTeam.bestSongNationId ||
+                               !!fetchedTeam.bestPerformanceNationId ||
+                               !!fetchedTeam.bestOutfitNationId ||
+                               !!fetchedTeam.worstSongNationId;
+          setHasExistingPredictions(existingPreds);
+
           if (user && fetchedTeam.userId === user.uid) {
             setIsAuthorized(true);
+            if (existingPreds) {
+              // If predictions exist, and user is authorized, redirect or show message.
+              // For now, we'll let the form handle read-only, but page logic can redirect.
+            }
           } else {
             setIsAuthorized(false);
             setError("Non sei autorizzato a modificare i pronostici di questa squadra.");
@@ -75,7 +79,7 @@ export default function EditFinalAnswersPage() {
     }
 
     fetchTeamAndSettings();
-  }, [teamId, user, authLoading]);
+  }, [teamId, user, authLoading, router]); // Added router to dependencies for potential redirect
 
   if (authLoading || isLoadingData || teamsLocked === null || finalPredictionsEnabled === null) {
     return (
@@ -161,6 +165,25 @@ export default function EditFinalAnswersPage() {
     );
   }
 
+  if (hasExistingPredictions) {
+    return (
+      <div className="space-y-6">
+        <Link href="/teams" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Torna alle Squadre
+        </Link>
+        <Alert variant="default" className="max-w-lg mx-auto">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Pronostici Già Inviati</AlertTitle>
+          <AlertDescription>
+            Hai già inviato i tuoi pronostici finali per la squadra "{team.name}". Non possono essere modificati.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+
   const initialFinalAnswers: TeamFinalAnswersFormData = {
     bestSongNationId: team.bestSongNationId || "",
     bestPerformanceNationId: team.bestPerformanceNationId || "",
@@ -182,18 +205,16 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
-            {!hasExistingPredictions && (
-              <span className="block mt-1 text-destructive font-medium">
+            <span className="block mt-1 text-destructive font-medium">
                 Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.
-              </span>
-            )}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
           <FinalAnswersForm
             initialData={initialFinalAnswers}
             teamId={team.id}
-            isReadOnly={hasExistingPredictions}
+            isReadOnly={hasExistingPredictions} 
           />
         </CardContent>
       </Card>
