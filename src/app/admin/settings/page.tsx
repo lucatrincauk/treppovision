@@ -13,11 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from "next/image";
-
-const DEBOUNCE_DELAY = 1500; // 1.5 seconds
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -28,12 +27,14 @@ export default function AdminSettingsPage() {
   const [isSubmittingTeams, setIsSubmittingTeams] = React.useState(false);
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
 
-  const [nations, setNations] = React.useState<Nation[]>([]);
-  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]);
+  const [nations, setNations] = React.useState<Nation[]>([]); // For visual order
+  const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]); // For iteration
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
-  const [savingStates, setSavingStates] = React.useState<Map<string, boolean>>(new Map());
-  const debounceTimers = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const [initialRankingsMap, setInitialRankingsMap] = React.useState<Map<string, string>>(new Map());
+  const [isSavingAll, setIsSavingAll] = React.useState(false);
+  const [isDeletingAll, setIsDeletingAll] = React.useState(false);
+
 
   React.useEffect(() => {
     async function fetchPageData() {
@@ -43,26 +44,28 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations() // This uses noStore due to previous changes
+            getNations()
           ]);
           setSettings(currentSettings);
           
           const sortedNations = [...fetchedNations].sort((a, b) => {
-            const orderA = a.performingOrder ?? Infinity;
-            const orderB = b.performingOrder ?? Infinity;
-            if (orderA === orderB) {
-              return a.name.localeCompare(b.name);
+            const rankA = a.ranking ?? Infinity;
+            const rankB = b.ranking ?? Infinity;
+            if (rankA === rankB) {
+                return (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity);
             }
-            return orderA - orderB;
+            return rankA - rankB;
           });
-          setNations(sortedNations);
-          setAllNationsStable(fetchedNations);
 
-          const initialRankings = new Map<string, string>();
+          setNations(sortedNations); // Initially sort by existing rank, then performing order
+          setAllNationsStable(fetchedNations); // Keep a stable list for reference
+
+          const initialRanks = new Map<string, string>();
           fetchedNations.forEach(nation => { 
-            initialRankings.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
+            initialRanks.set(nation.id, (nation.ranking && nation.ranking > 0) ? String(nation.ranking) : "");
           });
-          setRankingsInput(initialRankings);
+          setRankingsInput(new Map(initialRanks));
+          setInitialRankingsMap(new Map(initialRanks));
 
         } catch (error) {
           console.error("Error fetching admin page data:", error);
@@ -119,51 +122,16 @@ export default function AdminSettingsPage() {
     setIsSubmittingLeaderboard(false);
   };
 
-  const handleSaveRanking = React.useCallback(async (nationId: string, rankingToSave: string) => {
-    setSavingStates(prev => new Map(prev).set(nationId, true));
-    
-    const nationNameForToast = allNationsStable.find(n => n.id === nationId)?.name || nationId;
-
-    // rankingToSave is now the string from the input, or what was set by move
-    const result = await updateNationRankingAction(nationId, rankingToSave);
-
-    if (result.success) {
-      toast({ title: "Ranking Aggiornato", description: `Ranking per ${nationNameForToast} aggiornato.` });
-      // Update local nations state to reflect the saved ranking
-      setNations(prevNations =>
-        prevNations.map(n =>
-          n.id === nationId ? { ...n, ranking: result.newRanking } : n
-        )
-      );
-      // Ensure rankingsInput map reflects the saved state (string or empty string)
-      setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking ? String(result.newRanking) : ""));
-    } else {
-      toast({ title: "Errore Aggiornamento Ranking", description: result.message, variant: "destructive" });
-    }
-    setSavingStates(prev => new Map(prev).set(nationId, false));
-  }, [toast, allNationsStable, setNations, setRankingsInput]);
-
-
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
-    // Value is always a string from input or from String(idx + 1)
     setRankingsInput(prev => new Map(prev).set(nationId, value));
-
-    if (debounceTimers.current.has(nationId)) {
-      clearTimeout(debounceTimers.current.get(nationId)!);
-    }
-    debounceTimers.current.set(nationId, setTimeout(() => {
-      // Pass the 'value' that this specific call to handleRankingInputChange received.
-      // This 'value' is closed over by the setTimeout callback.
-      handleSaveRanking(nationId, value);
-    }, DEBOUNCE_DELAY));
-  }, [handleSaveRanking]);
+  }, []);
 
   const handleMoveNation = React.useCallback((nationId: string, direction: 'up' | 'down') => {
     setNations(prevNations => {
       const index = prevNations.findIndex(n => n.id === nationId);
       if (index === -1) return prevNations;
 
-      const newNationsArray = [...prevNations]; // Create a new array for the new visual order
+      const newNationsArray = [...prevNations];
       const item = newNationsArray.splice(index, 1)[0];
 
       let newIndex = index;
@@ -173,28 +141,86 @@ export default function AdminSettingsPage() {
         newIndex = index + 1;
       }
       newNationsArray.splice(newIndex, 0, item);
-
-      // Iterate through the new visual order and update ranking inputs if they differ
-      newNationsArray.forEach((nation, idx) => {
-        const newTargetRankString = String(idx + 1);
-        // Read from the 'rankingsInput' state as it was when handleMoveNation was invoked
-        const currentRankStringInInput = rankingsInput.get(nation.id) ?? ""; 
-        
-        // console.log(
-        //   `Comparing for ${nation.name} (ID: ${nation.id}): 
-        //   New Target Rank String: '${newTargetRankString}', 
-        //   Current Input String: '${currentRankStringInInput}',
-        //   Are they different? ${newTargetRankString !== currentRankStringInInput}`
-        // );
-
-        if (newTargetRankString !== currentRankStringInInput) {
-          handleRankingInputChange(nation.id, newTargetRankString);
-        }
-      });
       
-      return newNationsArray; // This updates the 'nations' state, causing a re-render
+      // Update rankingsInput to reflect new visual order immediately
+      const newRankingsInput = new Map(rankingsInput);
+      newNationsArray.forEach((nation, idx) => {
+        newRankingsInput.set(nation.id, String(idx + 1));
+      });
+      setRankingsInput(newRankingsInput);
+      
+      return newNationsArray;
     });
-  }, [nations, setNations, handleRankingInputChange, rankingsInput]);
+  }, [rankingsInput]); // Removed handleRankingInputChange from dependencies as it's not called directly
+
+  const handleSaveAllChangedRankings = async () => {
+    setIsSavingAll(true);
+    let changesMade = 0;
+    let successfulSaves = 0;
+    const promises = [];
+
+    for (const nation of allNationsStable) {
+      const currentInputValue = rankingsInput.get(nation.id) ?? "";
+      const originalSavedRank = initialRankingsMap.get(nation.id) ?? "";
+
+      if (currentInputValue !== originalSavedRank) {
+        changesMade++;
+        promises.push(
+          updateNationRankingAction(nation.id, currentInputValue)
+            .then(result => {
+              if (result.success) {
+                successfulSaves++;
+                // Update the nation's rank in the local 'nations' state for UI consistency
+                setNations(prevNations =>
+                  prevNations.map(n =>
+                    n.id === nation.id ? { ...n, ranking: result.newRanking } : n
+                  )
+                );
+              } else {
+                toast({ title: `Errore salvataggio ${nation.name}`, description: result.message, variant: "destructive" });
+              }
+              return result;
+            })
+        );
+      }
+    }
+
+    if (changesMade === 0) {
+      toast({ title: "Nessuna Modifica", description: "Nessun ranking è stato modificato." });
+      setIsSavingAll(false);
+      return;
+    }
+
+    await Promise.all(promises);
+
+    if (successfulSaves > 0) {
+      toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
+      // Update initialRankingsMap to reflect the new saved state
+      setInitialRankingsMap(new Map(rankingsInput));
+    }
+    setIsSavingAll(false);
+  };
+
+  const handleDeleteAllRankings = async () => {
+    setIsDeletingAll(true);
+    const promises = [];
+    for (const nation of allNationsStable) {
+      promises.push(updateNationRankingAction(nation.id, "")); // Pass empty string to clear
+    }
+    await Promise.all(promises);
+
+    // Clear all input fields and initial map
+    const newEmptyRankings = new Map<string, string>();
+    allNationsStable.forEach(n => newEmptyRankings.set(n.id, ""));
+    setRankingsInput(newEmptyRankings);
+    setInitialRankingsMap(newEmptyRankings);
+
+    // Update local nations state to remove rankings
+    setNations(prevNations => prevNations.map(n => ({ ...n, ranking: undefined })));
+
+    toast({ title: "Ranking Eliminati", description: "Tutti i ranking sono stati eliminati." });
+    setIsDeletingAll(false);
+  };
 
 
   if (authLoading || isLoadingSettings || (user?.isAdmin && isLoadingNations)) {
@@ -303,11 +329,40 @@ export default function AdminSettingsPage() {
             Gestione Ranking Nazioni
           </CardTitle>
           <CardDescription>
-            Modifica l'ordine visuale con le frecce. Il ranking di tutte le nazioni modificate si aggiornerà automaticamente per riflettere il nuovo ordine e verrà salvato.
-            Il campo "Ordine Esibizione" non è affetto da questa tabella.
+            Usa le frecce per riordinare visivamente le nazioni. Inserisci manualmente il ranking desiderato. 
+            Poi clicca "Salva Ranking Modificati" per persistere le modifiche. 
+            "Elimina Tutti i Ranking" rimuoverà il ranking da tutte le nazioni.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex justify-end gap-2 mb-4">
+            <Button onClick={handleSaveAllChangedRankings} disabled={isSavingAll || isDeletingAll}>
+              {isSavingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Salva Ranking Modificati
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isSavingAll || isDeletingAll}>
+                  {isDeletingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                  Elimina Tutti i Ranking
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Sei sicuro di voler eliminare tutti i ranking? Questa azione non può essere annullata.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annulla</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllRankings}>
+                    Elimina Tutti
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
           {isLoadingNations ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -333,7 +388,7 @@ export default function AdminSettingsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleMoveNation(nation.id, 'up')}
-                          disabled={index === 0}
+                          disabled={index === 0 || isSavingAll || isDeletingAll}
                           aria-label={`Sposta ${nation.name} su`}
                         >
                           <ArrowUp className="h-4 w-4" />
@@ -342,7 +397,7 @@ export default function AdminSettingsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleMoveNation(nation.id, 'down')}
-                          disabled={index === nations.length - 1}
+                          disabled={index === nations.length - 1 || isSavingAll || isDeletingAll}
                           aria-label={`Sposta ${nation.name} giù`}
                         >
                           <ArrowDown className="h-4 w-4" />
@@ -364,16 +419,13 @@ export default function AdminSettingsPage() {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center">
                            <Input
-                            type="text" // Keep as text for flexible input and empty string handling
+                            type="text"
                             value={rankingsInput.get(nation.id) ?? ""}
                             onChange={(e) => handleRankingInputChange(nation.id, e.target.value)}
                             className="w-16 text-center h-8 px-1"
                             placeholder="N/D"
-                            disabled={savingStates.get(nation.id) || false}
+                            disabled={isSavingAll || isDeletingAll}
                           />
-                          {savingStates.get(nation.id) && (
-                            <Loader2 className="h-4 w-4 animate-spin ml-2 text-primary" />
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
