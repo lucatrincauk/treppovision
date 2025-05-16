@@ -9,7 +9,7 @@ import { NationsDisplayClient } from "@/components/nations/nations-display-clien
 
 export default async function NationsPage() {
   const nations = await getNations();
-  const listTitle = "Elenco Nazioni Partecipanti";
+  const listTitle = "Elenco Nazioni (per Ordine di Esibizione)";
 
   return (
     <div className="space-y-8">
