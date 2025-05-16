@@ -370,7 +370,7 @@ export default function TreppoScoreRankingPage() {
                               )}>
                                 {nation.rank}{nation.isTied && "*"}
                               </span>
-                              {rankDiffText && (
+                              {selectedCategoryKey === 'overallAverageScore' && rankDiffText && (
                                 <span className={cn("ml-1 text-xs", rankDiffColor)}>
                                     {rankDiffText}
                                 </span>
