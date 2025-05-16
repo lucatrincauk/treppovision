@@ -14,16 +14,8 @@ export default async function NationsPage() {
   return (
     <div className="space-y-8">
       <NationsSubNavigation />
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-        <header className="text-center sm:text-left space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-            <ListMusic className="mr-3 h-10 w-10" />
-            Incontra le Nazioni
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Esplora tutti i paesi partecipanti a TreppoVision.
-          </p>
-        </header>
+      <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mb-8">
+        {/* Header removed */}
         <AdminNationControls nationId={null}>
           <div className="flex-shrink-0">
               <Button asChild variant="outline" size="lg">
@@ -46,4 +38,3 @@ export default async function NationsPage() {
     </div>
   );
 }
-
