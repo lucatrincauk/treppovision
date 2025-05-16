@@ -18,8 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import { getLeaderboardLockedStatus, getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions"; 
+import { getTeamsLockedStatus, getFinalPredictionsEnabledStatus } from "@/lib/actions/team-actions";
+import { getLeaderboardLockedStatus, getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; 
 
 // Helper function to calculate points for a given rank (Eurovision rank)
 const getPointsForRank = (rank?: number): number => {
@@ -105,28 +105,32 @@ export default function TeamsPage() {
   const [teamsLockedAdmin, setTeamsLockedAdmin] = useState<boolean | null>(null);
   const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
   const [finalPredictionsEnabledAdmin, setFinalPredictionsEnabledAdmin] = useState<boolean | null>(null);
+  const [userRegistrationEnabled, setUserRegistrationEnabled] = useState<boolean | null>(null);
   const [hasUserSubmittedFinalPredictions, setHasUserSubmittedFinalPredictions] = useState(false);
 
   useEffect(() => {
     async function fetchInitialSettingsAndNations() {
       setIsLoadingNations(true);
       try {
-        const [teamsLock, leaderboardLock, finalPredictionsLock, nationsData] = await Promise.all([
+        const [teamsLock, leaderboardLock, finalPredictionsLock, nationsData, regStatus] = await Promise.all([
           getTeamsLockedStatus(),
           getLeaderboardLockedStatus(),
           getFinalPredictionsEnabledStatus(),
-          getNations()
+          getNations(),
+          getUserRegistrationEnabledStatus()
         ]);
         setTeamsLockedAdmin(teamsLock);
         setLeaderboardLockedAdmin(leaderboardLock);
         setFinalPredictionsEnabledAdmin(finalPredictionsLock);
         setAllNations(nationsData);
         setNationsMap(new Map(nationsData.map(n => [n.id, n])));
+        setUserRegistrationEnabled(regStatus);
       } catch (err) {
         console.error("Failed to fetch admin lock statuses or nations:", err);
         setTeamsLockedAdmin(false);
         setLeaderboardLockedAdmin(false);
         setFinalPredictionsEnabledAdmin(false);
+        setUserRegistrationEnabled(true); // Default to true on error
         setError(prev => prev ? `${prev}\nNazioni non caricate.` : "Nazioni non caricate.");
         setAllNations([]);
         setNationsMap(new Map());
@@ -149,7 +153,6 @@ export default function TeamsPage() {
   useEffect(() => {
     if (authIsLoading) return;
     setIsLoadingUserTeams(true);
-    // User team data is now processed in processedAndScoredTeams effect
     setIsLoadingUserTeams(false); 
   }, [user, authIsLoading]);
 
@@ -283,7 +286,7 @@ export default function TeamsPage() {
     setFilteredOtherTeams(filtered);
   }, [searchTerm, otherTeams]);
 
-  const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: GlobalPrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
+  const PrimaSquadraNationDisplay = ({ detail }: { detail: GlobalPrimaSquadraDetail }) => {
     const nation = nationsMap.get(detail.id);
     if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
     return (
@@ -298,7 +301,7 @@ export default function TeamsPage() {
         />
         <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>
           {nation.name}
-          {!leaderboardLocked && detail.actualRank && detail.actualRank > 0 && (
+          {!leaderboardLockedAdmin && detail.actualRank && detail.actualRank > 0 && (
             <span className="text-muted-foreground/80 ml-0.5">({detail.actualRank}°)</span>
           )}
         </span>
@@ -307,11 +310,11 @@ export default function TeamsPage() {
   };
 
 
-  if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null || finalPredictionsEnabledAdmin === null) {
+  if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null || finalPredictionsEnabledAdmin === null || userRegistrationEnabled === null) {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
-         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+         <div className="flex items-center justify-between gap-4 mb-8">
           <header className="text-center sm:text-left space-y-2">
             <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
               <Users className="mr-3 h-10 w-10" />
@@ -334,7 +337,7 @@ export default function TeamsPage() {
     return (
        <div className="space-y-8">
         <TeamsSubNavigation />
-         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+         <div className="flex items-center justify-between gap-4 mb-8">
             <header className="text-center sm:text-left space-y-2">
                 <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
                 <Users className="mr-3 h-10 w-10" />
@@ -360,7 +363,7 @@ export default function TeamsPage() {
   return (
     <div className="space-y-8">
       <TeamsSubNavigation />
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <header className="text-center sm:text-left space-y-2">
             <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
             <Users className="mr-3 h-10 w-10" />
@@ -370,7 +373,7 @@ export default function TeamsPage() {
             Scopri tutte le squadre create dagli utenti e le loro scelte.
             </p>
         </header>
-        <div className="flex flex-col sm:flex-row gap-2 items-center">
+        <div className="flex flex-col sm:flex-row gap-2 items-center flex-shrink-0 self-center sm:self-auto">
             {user && !userTeam && !teamsLockedAdmin && (
                 <Button asChild variant="default" size="lg">
                 <Link href="/teams/new">
@@ -393,19 +396,33 @@ export default function TeamsPage() {
           <Users className="h-4 w-4" />
           <AlertTitle>Visualizzazione Pubblica</AlertTitle>
           <AlertDescription>
-            Stai visualizzando le squadre come ospite. <Link href="#" className="font-bold hover:underline" onClick={() => {
-              const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
-              if (authButtonDialogTrigger) {
-                if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
-                else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
-              }
-            }}>Accedi</Link> o <Link href="#" className="font-bold hover:underline" onClick={() => {
-               const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
-              if (authButtonDialogTrigger) {
-                if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
-                else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
-              }
-            }}>registrati</Link> per creare o modificare la tua squadra.
+            Stai visualizzando le squadre come ospite.
+            <Button variant="link" asChild className="p-0 ml-1 font-bold hover:underline">
+              <Link href="#" onClick={(e) => {
+                e.preventDefault();
+                const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
+                if (authButtonDialogTrigger) {
+                  if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
+                  else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
+                }
+              }}>Accedi</Link>
+            </Button>
+            {userRegistrationEnabled && (
+              <>
+                {' '}o{' '}
+                <Button variant="link" asChild className="p-0 ml-0.5 font-bold hover:underline">
+                  <Link href="#" onClick={(e) => {
+                    e.preventDefault();
+                    const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
+                    if (authButtonDialogTrigger) {
+                      if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
+                      else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
+                    }
+                  }}>registrati</Link>
+                </Button>
+              </>
+            )}
+            {' '}per creare o modificare la tua squadra.
           </AlertDescription>
         </Alert>
       )}
@@ -422,7 +439,7 @@ export default function TeamsPage() {
                 La Mia Squadra
                 </h2>
                  {userTeam && !teamsLockedAdmin && (
-                    <Button asChild variant="default" size="sm" className="w-auto">
+                    <Button asChild variant="outline" size="sm" className="w-auto">
                         <Link href={`/teams/${userTeam.id}/edit`}>
                             <Edit className="h-4 w-4 sm:mr-1.5" />
                             <span className="hidden sm:inline">Modifica Squadra</span>
@@ -439,11 +456,11 @@ export default function TeamsPage() {
           <TeamListItem 
             team={userTeam} 
             allNations={allNations}
-            nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
+            nationGlobalCategorizedScoresArray={Array.from(nationGlobalCategorizedScoresMap.entries())}
             isOwnTeamCard={true}
           />
            <div className="mt-4 flex justify-center">
-            {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && (
+            {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && !teamsLockedAdmin && (
                 <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="mr-2 h-5 w-5" />
@@ -451,13 +468,13 @@ export default function TeamsPage() {
                     </Link>
                 </Button>
             )}
-            {user && userTeam && hasUserSubmittedFinalPredictions && (
+             {user && userTeam && hasUserSubmittedFinalPredictions && (
                  <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
                     <ListOrdered className="mr-2 h-5 w-5"/>
                     <span className="mr-2">Pronostici Inviati</span>
                 </Button>
             )}
-            {user && userTeam && finalPredictionsEnabledAdmin === false && (
+            {user && userTeam && (teamsLockedAdmin || finalPredictionsEnabledAdmin === false) && !hasUserSubmittedFinalPredictions && (
                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
                     <Lock className="h-5 w-5 mr-2"/>
                     <span className="mr-2">Pronostici Bloccati</span>
@@ -507,7 +524,7 @@ export default function TeamsPage() {
             <Users className="h-4 w-4" />
             <AlertTitle>Nessuna Squadra Ancora!</AlertTitle>
             <AlertDescription>
-              Non ci sono ancora squadre. {user && !userTeam && !teamsLockedAdmin ? "Sii il primo a crearne una!" : !user ? "Effettua il login per crearne una." : ""}
+              Non ci sono ancora squadre. {user && !userTeam && !teamsLockedAdmin && userRegistrationEnabled ? "Sii il primo a crearne una!" : !user && userRegistrationEnabled ? "Effettua il login per crearne una." : ""}
             </AlertDescription>
           </Alert>
         )}
@@ -530,8 +547,8 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
+                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px] hidden md:table-cell">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
-                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -546,34 +563,27 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
-                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {(team.founderChoices || []).map(nationId => {
-                             const nation = nationsMap.get(nationId);
-                             if (!nation) return <span key={nationId} className="text-xs text-muted-foreground">N/D</span>;
-                             return (
-                                <PrimaSquadraNationDisplay 
-                                key={`${team.id}-${nationId}-prima`} 
-                                detail={{
-                                    id: nationId, 
-                                    name: nation.name,
-                                    countryCode: nation.countryCode,
-                                    artistName: nation.artistName,
-                                    songTitle: nation.songTitle,
-                                    points: 0, 
-                                    actualRank: nation.ranking
-                                }}
-                                leaderboardLocked={leaderboardLockedAdmin}
-                                />
-                             );
-                          })}
-                        </div>
-                      </TableCell>
                       {!leaderboardLockedAdmin && (
-                        <TableCell className="text-right font-semibold">
+                        <TableCell className="text-right font-semibold hidden md:table-cell">
                             {typeof team.score === 'number' ? team.score : 'N/D'}
                         </TableCell>
                        )}
+                       <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {(team.founderChoices || []).map(nationId => (
+                            <PrimaSquadraNationDisplay 
+                              key={`${team.id}-${nationId}-prima`} 
+                              detail={{
+                                  id: nationId, 
+                                  name: nationsMap.get(nationId)?.name || 'Sconosciuto',
+                                  countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
+                                  actualRank: nationsMap.get(nationId)?.ranking,
+                                  points: 0 // Points not shown here per earlier request
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -582,10 +592,15 @@ export default function TeamsPage() {
           </Card>
         ) : !isLoadingAllTeams && searchTerm && allNations.length > 0 ? (
           <p className="text-center text-muted-foreground py-10">Nessuna squadra trovata corrispondente alla tua ricerca.</p>
-        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 ? (
+        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && allFetchedTeams.length > 0 && !userTeam ? (
+           // Show this only if there are other teams but the current user has no team
            <p className="text-center text-muted-foreground py-10">Nessun'altra squadra creata dagli utenti.</p>
+        ) : !isLoadingAllTeams && filteredOtherTeams.length === 0 && !searchTerm && !userTeam && allFetchedTeams.length === 0 ? (
+           // If no teams at all, this is covered by the earlier "Nessuna Squadra Ancora!" alert.
+            null
         ) : null }
       </section>
     </div>
   );
 }
+
