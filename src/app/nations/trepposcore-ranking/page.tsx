@@ -7,13 +7,15 @@ import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib
 import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
-import { Users, BarChart3, Star, User, Loader2, TrendingUp } from "lucide-react";
+import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; // Import lock status
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 
 export default function TreppoScoreRankingPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -26,9 +28,29 @@ export default function TreppoScoreRankingPage() {
   const [isLoadingNationsData, setIsLoadingNationsData] = React.useState(true);
   const [isLoadingUserVotes, setIsLoadingUserVotes] = React.useState(false);
 
+  const [leaderboardLocked, setLeaderboardLocked] = React.useState<boolean | null>(null);
+  const [isLoadingLockStatus, setIsLoadingLockStatus] = React.useState(true);
+
+  // Fetch leaderboard lock status
+  React.useEffect(() => {
+    async function fetchLockStatus() {
+      setIsLoadingLockStatus(true);
+      try {
+        const status = await getLeaderboardLockedStatus();
+        setLeaderboardLocked(status);
+      } catch (error) {
+        console.error("Failed to fetch leaderboard lock status:", error);
+        setLeaderboardLocked(false); // Default to unlocked on error
+      } finally {
+        setIsLoadingLockStatus(false);
+      }
+    }
+    fetchLockStatus();
+  }, []);
 
   // Fetch initial nations data
   React.useEffect(() => {
+    if (leaderboardLocked) return; // Don't fetch if locked
     async function fetchInitialNations() {
       setIsLoadingNationsData(true);
       try {
@@ -42,10 +64,11 @@ export default function TreppoScoreRankingPage() {
       }
     }
     fetchInitialNations();
-  }, []);
+  }, [leaderboardLocked]);
 
   // Fetch user-specific votes
   React.useEffect(() => {
+    if (leaderboardLocked) return; // Don't fetch if locked
     if (authLoading) {
       setIsLoadingUserVotes(true);
       return;
@@ -69,28 +92,31 @@ export default function TreppoScoreRankingPage() {
       }
     }
     fetchUserVotes();
-  }, [user, authLoading]);
+  }, [user, authLoading, leaderboardLocked]);
 
 
   // Listen to global scores in real-time
   React.useEffect(() => {
-    // Initial overall loading state
+    if (leaderboardLocked) return; // Don't listen if locked
+    
     setIsLoadingData(true); 
     
     const unsubscribe = listenToAllVotesForAllNationsCategorized((scores) => {
       setGlobalScoresMap(scores);
-      // Set loading to false after first data received from listener,
-      // or if nations/user votes are still loading, wait for them.
       if (!isLoadingNationsData && !isLoadingUserVotes) {
           setIsLoadingData(false);
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener on component unmount
-  }, [isLoadingNationsData, isLoadingUserVotes]); // Re-run if these initial loads complete after listener setup
+    return () => unsubscribe(); 
+  }, [isLoadingNationsData, isLoadingUserVotes, leaderboardLocked]);
 
   // Process and sort nations when data changes
   React.useEffect(() => {
+    if (leaderboardLocked) {
+      setNationsWithScores([]); // Clear data if locked
+      return;
+    }
     if (allNations.length > 0 && globalScoresMap.size > 0) {
       const processedNations: NationWithTreppoScore[] = allNations
         .map(nation => {
@@ -102,7 +128,7 @@ export default function TreppoScoreRankingPage() {
 
           return {
             ...nation,
-            globalTreppoScore: scoreData?.overallAverageScore ?? null, // Use overallAverageScore from new type
+            globalTreppoScore: scoreData?.overallAverageScore ?? null, 
             globalVoteCount: scoreData?.voteCount ?? 0,
             userAverageScore: userAverageScore,
           };
@@ -112,7 +138,6 @@ export default function TreppoScoreRankingPage() {
       
       setNationsWithScores(processedNations);
     } else if (allNations.length > 0) {
-        // Handle case where nations are loaded but no scores yet (e.g. no votes)
         const processedNationsWithNoScores: NationWithTreppoScore[] = allNations.map(nation => ({
             ...nation,
             globalTreppoScore: null,
@@ -123,27 +148,63 @@ export default function TreppoScoreRankingPage() {
     } else {
       setNationsWithScores([]);
     }
-  }, [allNations, globalScoresMap, userVotesMap, user]);
+  }, [allNations, globalScoresMap, userVotesMap, user, leaderboardLocked]);
 
   // Consolidate overall loading state
   React.useEffect(() => {
+    if (leaderboardLocked) {
+      setIsLoadingData(false);
+      return;
+    }
     if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size > 0) {
       setIsLoadingData(false);
     } else if (!isLoadingNationsData && !isLoadingUserVotes && globalScoresMap.size === 0 && allNations.length > 0) {
-      // Nations loaded, user votes loaded (or not applicable), but still no global scores received (listener might be empty at first)
-      // We can consider loading finished if we expect no votes might be present.
       setIsLoadingData(false);
     } else if (!isLoadingNationsData && !isLoadingUserVotes && allNations.length === 0){
-        // No nations, so nothing to rank.
         setIsLoadingData(false);
     } else {
         setIsLoadingData(true);
     }
-  }, [isLoadingNationsData, isLoadingUserVotes, globalScoresMap, allNations]);
+  }, [isLoadingNationsData, isLoadingUserVotes, globalScoresMap, allNations, leaderboardLocked]);
 
 
-  if (isLoadingData || authLoading) {
+  if (authLoading || isLoadingLockStatus) {
     return (
+      <div className="space-y-8">
+        <NationsSubNavigation />
+        <header className="text-center sm:text-left space-y-2 mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <TrendingUp className="mr-3 h-10 w-10" />
+            Classifica TreppoScore
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Caricamento...
+          </p>
+        </header>
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (leaderboardLocked) {
+    return (
+      <div className="space-y-8">
+        <NationsSubNavigation />
+        <Alert variant="destructive" className="max-w-lg mx-auto">
+          <LockIcon className="h-4 w-4" />
+          <AlertTitle>Classifica TreppoScore Bloccata</AlertTitle>
+          <AlertDescription>
+            L'amministratore ha temporaneamente bloccato l'accesso a questa classifica.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+  
+  if (isLoadingData) {
+     return (
       <div className="space-y-8">
         <NationsSubNavigation />
         <header className="text-center sm:text-left space-y-2 mb-8">
@@ -269,3 +330,6 @@ export default function TreppoScoreRankingPage() {
     </div>
   );
 }
+
+
+    
