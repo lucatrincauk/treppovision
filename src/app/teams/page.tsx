@@ -407,7 +407,7 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
             {userTeam && !teamsLockedAdmin && (
-                <Button asChild variant="default" size="sm" className="w-auto">
+                <Button asChild variant="outline" size="sm" className="w-auto">
                    <Link href={`/teams/${userTeam.id}/edit`}>
                         <Edit className="h-4 w-4 sm:mr-1.5" />
                         <span className="hidden sm:inline">Modifica Squadra</span>
@@ -426,7 +426,6 @@ export default function TeamsPage() {
             allNations={allNations}
             nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
             isOwnTeamCard={true}
-            disableEdit={true}
           />
            <div className="mt-4 flex justify-center">
             {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && (
@@ -443,7 +442,7 @@ export default function TeamsPage() {
                     <span className="mr-2">Pronostici Inviati</span>
                 </Button>
             )}
-            {user && userTeam && !finalPredictionsEnabledAdmin && (
+            {user && userTeam && finalPredictionsEnabledAdmin === false && (
                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
                     <Lock className="h-5 w-5 mr-2"/>
                     <span className="mr-2">Pronostici Bloccati</span>
@@ -516,7 +515,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
-                     {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
+                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -532,25 +531,27 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
-                       {!leaderboardLockedAdmin && (
+                      {!leaderboardLockedAdmin && (
                         <TableCell className="text-right font-semibold">
                             {typeof team.score === 'number' ? team.score : 'N/D'}
                         </TableCell>
                        )}
-                      <TableCell>
+                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
+                             const nation = nationsMap.get(nationId);
+                             if (!nation) return <span key={nationId} className="text-xs text-muted-foreground">N/D</span>;
                              return (
                                 <PrimaSquadraNationDisplay 
                                 key={`${team.id}-${nationId}-prima`} 
                                 detail={{
                                     id: nationId, 
-                                    name: nationsMap.get(nationId)?.name || 'Sconosciuto',
-                                    countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
-                                    artistName: nationsMap.get(nationId)?.artistName,
-                                    songTitle: nationsMap.get(nationId)?.songTitle,
-                                    points: 0, 
-                                    actualRank: nationsMap.get(nationId)?.ranking
+                                    name: nation.name,
+                                    countryCode: nation.countryCode,
+                                    artistName: nation.artistName,
+                                    songTitle: nation.songTitle,
+                                    points: 0, // Points are calculated but not shown here per design
+                                    actualRank: nation.ranking
                                 }}
                                 leaderboardLocked={leaderboardLockedAdmin}
                                 />
@@ -574,6 +575,3 @@ export default function TeamsPage() {
   );
 }
 
-
-
-    
