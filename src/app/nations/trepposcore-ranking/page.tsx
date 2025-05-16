@@ -5,7 +5,6 @@ import * as React from "react";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib/voting-service";
 import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores, RankingCategoryKey } from "@/types";
-// NationList is no longer needed here
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
 import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon, SlidersHorizontal, Music, Diamond } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +17,7 @@ import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const categoryOptions: { value: RankingCategoryKey; label: string; title: string; columnHeader: string; icon: React.ElementType }[] = [
   { value: 'overallAverageScore', label: 'Globale', title: "Classifica TreppoScore Globale", columnHeader: "TreppoScore Globale", icon: TrendingUp },
@@ -295,7 +295,6 @@ export default function TreppoScoreRankingPage() {
         </div>
       ) : (
         <>
-          {/* Section for top 3 cards removed */}
           {nationsWithScores.length > 0 && (
             <section className="mt-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
@@ -308,9 +307,6 @@ export default function TreppoScoreRankingPage() {
                       <TableRow>
                         <TableHead className="w-[60px] text-center">Pos.</TableHead>
                         <TableHead>Nazione</TableHead>
-                        {user && (
-                          <TableHead className="text-right w-[120px] hidden md:table-cell">Il Tuo Voto</TableHead>
-                        )}
                         <TableHead className="text-right w-[140px]">{currentScoreColumnHeader}</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
                       </TableRow>
@@ -339,19 +335,18 @@ export default function TreppoScoreRankingPage() {
                               </div>
                             </Link>
                           </TableCell>
-                          {user && (
-                            <TableCell className="text-right hidden md:table-cell">
-                              {nation.userAverageScore !== null && nation.userAverageScore !== undefined ? (
-                                <span className="font-medium text-primary">{nation.userAverageScore.toFixed(2)}</span>
-                              ) : (
-                                <span className="text-muted-foreground">N/D</span>
-                              )}
-                            </TableCell>
-                          )}
-                          <TableCell className="text-right font-semibold text-accent">
-                            <div className="flex items-center justify-end">
-                               {React.createElement(categoryOptions.find(opt => opt.value === selectedCategoryKey)?.icon || TrendingUp, { className: "w-4 h-4 mr-1 text-yellow-400"})}
-                              {nation.scoreForRanking?.toFixed(2) ?? 'N/A'}
+                          <TableCell className="text-right">
+                            <div className="flex flex-col items-end">
+                                <div className="flex items-center font-semibold text-accent">
+                                    {React.createElement(categoryOptions.find(opt => opt.value === selectedCategoryKey)?.icon || TrendingUp, { className: "w-4 h-4 mr-1 text-yellow-400"})}
+                                    {nation.scoreForRanking?.toFixed(2) ?? 'N/A'}
+                                </div>
+                                {user && nation.userAverageScore !== null && nation.userAverageScore !== undefined && (
+                                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                        <User className="w-3 h-3 mr-1 text-primary" />
+                                        <span>{nation.userAverageScore.toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.voteCount}</TableCell>
