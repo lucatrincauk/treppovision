@@ -4,7 +4,7 @@
 import { getTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores, listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreTypeFromTypes } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType } from "@/types";
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,19 +13,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { TeamList } from "@/components/teams/team-list";
-// Removed Dialog imports as modal is being replaced
 import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
-interface GlobalCategoryPickDetail extends GlobalCategoryPickDetailTypeFromTypes {
+interface CategoryPickDetail {
+  categoryName: string;
+  pickedNationId?: string;
+  pickedNationName?: string;
+  pickedNationCountryCode?: string;
+  actualCategoryRank?: number;
+  pickedNationScoreInCategory?: number | null;
+  pointsAwarded: number;
   iconName: 'Music2' | 'Star' | 'Shirt' | 'ThumbsDown' | 'Info';
 }
 
-interface TeamWithScore extends TeamWithScoreTypeFromTypes {
+interface TeamWithScore extends Team {
+  score: number;
   primaSquadraDetails: GlobalPrimaSquadraDetailType[];
-  categoryPicksDetails: GlobalCategoryPickDetail[];
+  categoryPicksDetails: CategoryPickDetail[];
+  rank?: number;
+  isTied?: boolean;
 }
 
 const getPointsForRank = (rank?: number): number => {
@@ -45,7 +54,7 @@ const getPointsForRank = (rank?: number): number => {
   return 0; 
 };
 
-const getRankText = (rank?: number): string => {
+const getRankText = (rank?: number, isTied?: boolean): string => {
   if (rank === undefined || rank === null || rank <= 0) return "";
   let rankStr = "";
   switch (rank) {
@@ -61,7 +70,7 @@ const getRankText = (rank?: number): string => {
     case 10: rankStr = "Decimo Posto"; break;
     default: rankStr = `${rank}° Posto`;
   }
-  return rankStr;
+  return isTied ? `${rankStr}*` : rankStr;
 };
 
 
@@ -163,7 +172,7 @@ export default function TeamsLeaderboardPage() {
         let calculatedTeams: TeamWithScore[] = fetchedTeams.map(team => {
           let score = 0;
           const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
-          const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
+          const categoryPicksDetails: CategoryPickDetail[] = [];
 
           (team.founderChoices || []).forEach(nationId => {
             const nation = nationsMap.get(nationId);
@@ -218,6 +227,18 @@ export default function TeamsLeaderboardPage() {
             actualCategoryRank: worstSongPick.rank, pickedNationScoreInCategory: worstSongPick.score,
             pointsAwarded: worstSongPick.points, iconName: "ThumbsDown",
           });
+          
+          let firstPlaceCategoryPicksCount = 0;
+          categoryPicksDetails.forEach(pickDetail => {
+            if (pickDetail.actualCategoryRank === 1) {
+              firstPlaceCategoryPicksCount++;
+            }
+          });
+
+          if (firstPlaceCategoryPicksCount >= 2) {
+            score += 5; // Bonus points
+          }
+
 
           return { ...team, score, primaSquadraDetails, categoryPicksDetails };
         });
@@ -281,7 +302,7 @@ export default function TeamsLeaderboardPage() {
           </p>
         </header>
          <div className="flex items-center justify-center py-10">
-            <Loader2 className="mr-2 h-12 w-12 animate-spin text-primary" />
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -302,14 +323,15 @@ export default function TeamsLeaderboardPage() {
     );
   }
   
-  const MedalIcon = ({ rank, className }: { rank?: number, className?: string }) => {
+  const MedalIcon = React.memo(({ rank, className }: { rank?: number, className?: string }) => {
     if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
     let colorClass = "";
     if (rank === 1) colorClass = "text-yellow-400";
     else if (rank === 2) colorClass = "text-slate-400";
     else if (rank === 3) colorClass = "text-amber-500";
     return <Award className={cn("w-3.5 h-3.5 flex-shrink-0", colorClass, className)} />;
-  };
+  });
+  MedalIcon.displayName = 'MedalIcon';
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: GlobalPrimaSquadraDetailType }) => {
     const nationData = allNations.find(n => n.id === detail.id);
@@ -319,42 +341,47 @@ export default function TeamsLeaderboardPage() {
     const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
-      <div className="px-2 py-1 flex items-start">
+      <div className={cn("px-2 py-1 flex items-start justify-between w-full")}>
         <div className="flex items-center gap-1.5">
-          <BadgeCheck className="w-5 h-5 text-accent shrink-0 mr-1.5" />
-           {nationData?.countryCode ? (
-            <Image
-              src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
-              alt={detail.name}
-              width={20}
-              height={13}
-              className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
-              data-ai-hint={`${detail.name} flag icon`}
-            />
-          ) : (
-            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
-          )}
-          <div className="flex flex-col items-start">
-             <Link
-                href={`/nations/${detail.id}`}
-                className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
-                title={titleText}
-              >
-                <span className="font-medium">{detail.name}</span>
-                {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
-                {!adminSettings.leaderboardLocked && rankText && (
-                  <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                )}
-              </Link>
-               {(nationData?.artistName || nationData?.songTitle) && (
-                <span className="text-xs text-muted-foreground/80 block">
-                    {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
-                </span>
+          <BadgeCheck className="w-5 h-5 text-accent shrink-0" />
+          <div className="flex items-center gap-1.5"> 
+            {nationData?.countryCode ? (
+                <Image
+                    src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
+                    alt={detail.name}
+                    width={20}
+                    height={13}
+                    className="rounded-sm border border-border/30 object-contain shrink-0"
+                    data-ai-hint={`${detail.name} flag icon`}
+                />
+                ) : (
+                <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
             )}
+            <div className="flex flex-col items-start">
+                <Link
+                    href={`/nations/${detail.id}`}
+                    className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
+                    title={titleText}
+                >
+                    <span className="font-medium">{detail.name}</span>
+                    {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
+                    {rankText && !adminSettings.leaderboardLocked && (
+                      <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                    )}
+                </Link>
+                 {(nationData?.artistName || nationData?.songTitle) && (
+                     <span className="text-xs text-muted-foreground/80 block">
+                        {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                    </span>
+                )}
+            </div>
           </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
-          <span className={cn("text-xs ml-auto pl-1", detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground")}>
+          <span className={cn(
+            "text-xs ml-auto pl-1", 
+            detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
+          )}>
             {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
           </span>
         )}
@@ -362,7 +389,7 @@ export default function TeamsLeaderboardPage() {
     );
   };
 
-  const CategoryPickDisplay = ({ detail }: { detail: GlobalCategoryPickDetail }) => {
+  const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
     let IconComponent: React.ElementType;
     const iconColorClass = "text-accent";
   
@@ -388,7 +415,7 @@ export default function TeamsLeaderboardPage() {
     const titleText = `${detail.categoryName}: ${pickedNationFullDetails?.name || 'N/D'}${rankText}${!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' ? ` Punti: ${detail.pointsAwarded}`: ''}`;
   
     return (
-      <div className="px-2 py-1.5">
+     <div className={cn("px-2 py-1.5")}>
         <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5">
                 <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
@@ -401,21 +428,20 @@ export default function TeamsLeaderboardPage() {
             )}
         </div>
 
-        <div className="w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]"> {/* Consistent indent */}
+        <div className={cn("w-full mt-1 pl-[calc(1rem+theme(spacing.1.5))]")}>
           {pickedNationFullDetails ? (
-            <div className="flex items-start">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5"> 
                 {pickedNationFullDetails.countryCode ? (
                 <Image
                     src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
                     alt={pickedNationFullDetails.name}
                     width={20}
                     height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
+                    className="rounded-sm border border-border/30 object-contain shrink-0"
                     data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
                 />
                 ) : (
-                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
+                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
                 )}
                 <div className="flex flex-col items-start"> 
                     <Link href={`/nations/${pickedNationFullDetails.id}`}
@@ -431,7 +457,6 @@ export default function TeamsLeaderboardPage() {
                          )}
                     </Link>
                 </div>
-              </div>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -504,7 +529,6 @@ export default function TeamsLeaderboardPage() {
                       {teamsWithScores.map((team) => (
                         <TableRow 
                             key={team.id}
-                            className={cn(user && user.uid === team.userId && "bg-primary/10 hover:bg-primary/20")}
                         >
                           <TableCell className="font-medium text-center align-top pt-4">
                             <div className="flex items-center justify-center">
@@ -523,12 +547,12 @@ export default function TeamsLeaderboardPage() {
                               <div className="font-medium text-base group-hover:underline">
                                 {team.name}
                               </div>
-                              {team.creatorDisplayName && (
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={`Utente: ${team.creatorDisplayName}`}>
-                                      <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
-                                  </div>
-                              )}
                             </Link>
+                            {team.creatorDisplayName && (
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={`Utente: ${team.creatorDisplayName}`}>
+                                    <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
+                                </div>
+                            )}
                           </TableCell>
                           {!adminSettings.leaderboardLocked && 
                             <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">
@@ -563,6 +587,7 @@ export default function TeamsLeaderboardPage() {
                     <li>
                         <strong>Pronostici TreppoScore</strong>: Punti per aver indovinato le nazioni più o meno votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
                         Per ogni categoria (Migliore/Peggiore): 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
+                        Inoltre, un bonus di +5 punti viene assegnato se una squadra indovina il 1° posto in almeno due di queste categorie Pronostici TreppoScore.
                     </li>
                 </ul>
               </div>
