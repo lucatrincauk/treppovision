@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ListMusic, Award, TrendingUp, Lock as LockIcon, Loader2 } from "lucide-react"; 
 import React, { useState, useEffect } from "react";
-import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
+import { getLeaderboardLockedStatus, checkIfAnyNationIsRankedAction } from "@/lib/actions/admin-actions";
 
 const subNavItems = [
   { href: "/nations", label: "Elenco Completo", icon: ListMusic, id: "all" },
@@ -17,25 +17,31 @@ const subNavItems = [
 export function NationsSubNavigation() {
   const pathname = usePathname();
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
-  const [isLoadingLockStatus, setIsLoadingLockStatus] = React.useState(true);
+  const [isFinalRankingAvailable, setIsFinalRankingAvailable] = useState<boolean | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = React.useState(true);
 
   useEffect(() => {
     async function fetchStatus() {
-      setIsLoadingLockStatus(true);
+      setIsLoadingStatus(true);
       try {
-        const status = await getLeaderboardLockedStatus();
-        setLeaderboardLocked(status);
+        const [leaderboardStatus, finalRankingStatus] = await Promise.all([
+          getLeaderboardLockedStatus(),
+          checkIfAnyNationIsRankedAction()
+        ]);
+        setLeaderboardLocked(leaderboardStatus);
+        setIsFinalRankingAvailable(finalRankingStatus);
       } catch (error) {
-        console.error("Failed to fetch leaderboard lock status for nations sub-nav:", error);
-        setLeaderboardLocked(false); // Default to unlocked on error
+        console.error("Failed to fetch nation sub-nav statuses:", error);
+        setLeaderboardLocked(false); 
+        setIsFinalRankingAvailable(true); // Default to available on error to not block unnecessarily
       } finally {
-        setIsLoadingLockStatus(false);
+        setIsLoadingStatus(false);
       }
     }
     fetchStatus();
   }, []);
 
-  if (isLoadingLockStatus) {
+  if (isLoadingStatus) {
     return (
       <nav className="mb-8 flex items-center justify-center space-x-1 rounded-md bg-muted p-1 sm:space-x-2 animate-pulse">
         {subNavItems.map((item) => (
@@ -59,7 +65,12 @@ export function NationsSubNavigation() {
     <nav className="mb-8 flex items-center justify-center space-x-1 rounded-md bg-muted p-1 sm:space-x-2">
       {subNavItems.map((item) => {
         const isTreppoScoreLink = item.id === "trepposcore";
-        const isDisabled = isTreppoScoreLink && leaderboardLocked;
+        const isFinalRankingLink = item.id === "final";
+        
+        const isTreppoScoreLocked = isTreppoScoreLink && leaderboardLocked;
+        const isFinalRankingLocked = isFinalRankingLink && !isFinalRankingAvailable;
+
+        const isDisabled = isTreppoScoreLocked || isFinalRankingLocked;
 
         return (
           <Link
@@ -74,6 +85,7 @@ export function NationsSubNavigation() {
             )}
             aria-disabled={isDisabled}
             onClick={(e) => { if (isDisabled) e.preventDefault(); }}
+            title={isDisabled ? (isFinalRankingLocked ? "La classifica finale non è disponibile finché almeno una nazione non ha un ranking." : "Questa classifica è temporaneamente bloccata dall'amministratore.") : item.label}
           >
             {isDisabled ? <LockIcon className="h-3 w-3 mr-1" /> : <item.icon className="h-4 w-4" />}
             <span className="hidden sm:inline">{item.label}</span>
@@ -87,5 +99,3 @@ export function NationsSubNavigation() {
     </nav>
   );
 }
-
-    

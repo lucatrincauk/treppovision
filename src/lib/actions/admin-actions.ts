@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import type { AdminNationPayload, AdminSettings } from "@/types";
 import { doc, setDoc, getDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
+import { getNations } from "@/lib/nation-service"; // Import getNations
 
 const NATIONS_COLLECTION = "nations";
 const ADMIN_SETTINGS_COLLECTION = "adminSettings";
@@ -117,23 +118,21 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
     if (docSnap.exists()) {
       const data = docSnap.data();
       return {
-        teamsLocked: data.teamsLocked === undefined ? false : data.teamsLocked, // Default to false
-        leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked, // Default to false
+        teamsLocked: data.teamsLocked === undefined ? false : data.teamsLocked,
+        leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked,
       };
     }
-    // Return default settings if document doesn't exist
     return { teamsLocked: false, leaderboardLocked: false };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
-    // Return default settings on error
     return { teamsLocked: false, leaderboardLocked: false };
   }
 }
 
 export async function updateAdminSettingsAction(
-  payload: Partial<AdminSettings> // Accept partial updates
+  payload: Partial<AdminSettings>
 ): Promise<{ success: boolean; message: string }> {
-  const isAdmin = await verifyAdminServerSide(); // Ensure this check is robust in production
+  const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato." };
   }
@@ -145,7 +144,11 @@ export async function updateAdminSettingsAction(
     revalidatePath("/teams"); 
     revalidatePath("/teams/[teamId]/edit", "layout"); 
     revalidatePath("/teams/leaderboard"); 
-    revalidatePath("/components/teams/teams-sub-navigation"); // This won't directly revalidate a component, but revalidates pages that use it
+    revalidatePath("/components/teams/teams-sub-navigation");
+    revalidatePath("/nations/ranking");
+    revalidatePath("/nations/trepposcore-ranking");
+    revalidatePath("/components/nations/nations-sub-navigation");
+
 
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
@@ -158,4 +161,14 @@ export async function updateAdminSettingsAction(
 export async function getLeaderboardLockedStatus(): Promise<boolean> {
     const settings = await getAdminSettingsAction();
     return settings.leaderboardLocked;
+}
+
+export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
+  try {
+    const nations = await getNations();
+    return nations.some(nation => nation.ranking && nation.ranking > 0);
+  } catch (error) {
+    console.error("Error checking for ranked nations:", error);
+    return false; // Default to false on error, preventing access if data is unreadable
+  }
 }
