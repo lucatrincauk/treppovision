@@ -55,7 +55,7 @@ const getRankText = (rank?: number): string => {
 interface NationScoreDetail extends GlobalPrimaSquadraDetail {}
 
 interface CategoryPickDetail extends GlobalCategoryPickDetailType {
-  iconName: string; // Ensure iconName is part of the type
+  iconName: string; 
 }
 
 interface TeamWithScore extends Team {
@@ -129,14 +129,15 @@ export default async function TeamsLeaderboardPage() {
 
   const allTeams = await getTeams();
   const allNations = await getNations();
-  const globalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); 
+  const nationGlobalCategorizedScoresMap = await getAllNationsGlobalCategorizedScores(); 
+  const globalCategorizedScoresArray = Array.from(nationGlobalCategorizedScoresMap.entries());
 
   const nationsMap = new Map(allNations.map(nation => [nation.id, nation]));
 
-  const topSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
-  const bottomSongNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); 
-  const topPerformanceNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
-  const topOutfitNations = getTopNationsForCategory(globalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
+  const topSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+  const bottomSongNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc'); 
+  const topPerformanceNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
+  const topOutfitNations = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
 
   let teamsWithScores: TeamWithScore[] = allTeams.map(team => {
     let score = 0;
@@ -230,8 +231,6 @@ export default async function TeamsLeaderboardPage() {
     return { ...team, score, primaSquadraDetails, categoryPicksDetails };
   });
 
-  // Standard competition ranking (1224 ranking if scores are different, ties share rank and next rank is skipped)
-  // Secondary sort by team name for consistent tie-breaking
   teamsWithScores.sort((a, b) => {
     if (b.score === a.score) {
       return a.name.localeCompare(b.name);
@@ -247,11 +246,8 @@ export default async function TeamsLeaderboardPage() {
     teamsWithScores[i].rank = currentRank;
   }
 
-  const top3Teams = teamsWithScores.slice(0, 3);
-  const otherRankedTeams = teamsWithScores.slice(3);
-
-  const globalCategorizedScoresArray: [string, NationGlobalCategorizedScores][] = Array.from(globalCategorizedScoresMap.entries());
-
+  const podiumTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank <= 3);
+  const tableTeams = teamsWithScores.filter(team => team.rank !== undefined && team.rank > 3);
 
   const PrimaSquadraNationDisplay = ({ detail }: { detail: NationScoreDetail }) => {
       const MedalIcon = ({ rank }: { rank?: number }) => {
@@ -263,40 +259,42 @@ export default async function TeamsLeaderboardPage() {
       };
       const nationData = nationsMap.get(detail.id);
       return (
-        <div className="flex items-start gap-1.5 px-2 py-1 hover:bg-muted/30 rounded-md"> 
-          <BadgeCheck className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-           <Image
-            src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
-            alt={detail.name}
-            width={20} 
-            height={13}
-            className="rounded-sm border border-border/30 object-contain flex-shrink-0 mt-1"
-            data-ai-hint={`${detail.name} flag`}
-          />
-          <div className="flex-grow">
-            <Link 
-              href={`/nations/${detail.id}`} 
-              className="text-xs hover:underline hover:text-primary flex flex-col items-start" 
-              title={`${detail.name}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
-            >
-              <div className="flex items-center">
-                <span className="font-medium">{detail.name}</span>
-                <MedalIcon rank={detail.actualRank} />
-                <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
-              </div>
-              {nationData && (
-                 <span className="text-xs text-muted-foreground/80 truncate max-w-[180px] block">
-                    {nationData.artistName} - {nationData.songTitle}
-                </span>
-              )}
-            </Link>
+        <div className="px-2 py-1 hover:bg-muted/30 rounded-md"> 
+          <div className="flex items-center gap-1.5">
+            <BadgeCheck className="w-5 h-5 text-accent flex-shrink-0" />
+             <Image
+              src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
+              alt={detail.name}
+              width={20} 
+              height={13}
+              className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+              data-ai-hint={`${detail.name} flag`}
+            />
+            <div className="flex-grow">
+              <Link 
+                href={`/nations/${detail.id}`} 
+                className="text-xs hover:underline hover:text-primary flex flex-col items-start" 
+                title={`${detail.name}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''} (Classifica Finale: ${detail.actualRank ?? 'N/D'}) - Punti: ${detail.points}`}
+              >
+                <div className="flex items-center">
+                  <span className="font-medium">{detail.name}</span>
+                  <MedalIcon rank={detail.actualRank} />
+                  <span className="text-muted-foreground ml-1">({detail.actualRank ? `${detail.actualRank}°` : 'N/D'})</span>
+                </div>
+                {nationData && (
+                   <span className="text-xs text-muted-foreground/80 block">
+                      {nationData.artistName} - {nationData.songTitle}
+                  </span>
+                )}
+              </Link>
+            </div>
+            <span className={cn(
+              "text-xs ml-auto pl-1", 
+              detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
+            )}>
+              {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
+            </span>
           </div>
-          <span className={cn(
-            "text-xs ml-auto pl-1 mt-0.5", 
-            detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground"
-          )}>
-            {detail.points > 0 ? `+${detail.points}pt` : `${detail.points}pt`}
-          </span>
         </div>
       );
   };
@@ -403,22 +401,22 @@ export default async function TeamsLeaderboardPage() {
         </div>
       ) : (
         <>
-          {top3Teams.length > 0 && (
+          {podiumTeams.length > 0 && (
             <section className="mb-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
                 Il Podio delle Squadre
               </h2>
               <TeamList
-                teams={top3Teams}
+                teams={podiumTeams}
                 allNations={allNations}
-                nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
+                nationGlobalCategorizedScoresArray={globalCategorizedArray}
                 disableListItemEdit={true} 
               />
             </section>
           )}
 
-          {otherRankedTeams.length > 0 && (
-             <section className={top3Teams.length > 0 ? "mt-12" : ""}>
+          {tableTeams.length > 0 && (
+             <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
                 Classifica Completa (dal 4° posto)
               </h2>
@@ -432,20 +430,18 @@ export default async function TeamsLeaderboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {otherRankedTeams.map((team) => (
+                      {tableTeams.map((team) => (
                         <TableRow key={team.id}>
                           <TableCell className="align-top pt-4">
-                              {team.rank && (
-                                <div className="text-xs font-medium text-muted-foreground mb-0.5">
-                                  {getRankText(team.rank)}
-                                </div>
-                              )}
+                              <div className="text-xs font-medium text-muted-foreground mb-0.5">
+                                {getRankText(team.rank)}
+                              </div>
                               <div className="font-medium text-base mb-1 flex items-center">
                                 {team.name}
                                 {team.creatorDisplayName && (
-                                    <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={`Utente: ${team.creatorDisplayName}`}>
+                                    <div className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={`Utente: ${team.creatorDisplayName}`}>
                                         (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
-                                    </span>
+                                    </div>
                                 )}
                               </div>
                               
@@ -503,6 +499,7 @@ export default async function TeamsLeaderboardPage() {
   
 
     
+
 
 
 
