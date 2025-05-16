@@ -1,11 +1,11 @@
 
 "use client";
 
-import type { Nation, Vote } from "@/types";
+import type { Nation } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Star, TrendingUp, Lock } from "lucide-react";
+import { Loader2, Star, TrendingUp, Lock, Award } from "lucide-react"; // TrendingUp might be unused now
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,6 +14,7 @@ import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 
 interface NationListItemProps {
   nation: Nation & { userAverageScore?: number | null };
+  // Add other props if NationListItem is used in different contexts that require them.
 }
 
 export function NationListItem({ nation }: NationListItemProps) {
@@ -28,21 +29,20 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [fetchedUserAverageScore, setFetchedUserAverageScore] = useState<number | null>(null);
   const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
 
-  const [globalAverageScore, setGlobalAverageScore] = useState<number | null>(null);
-  const [globalVoteCount, setGlobalVoteCount] = useState<number>(0);
-  const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
+  // Global score state is no longer needed here for display on the card
+  // const [globalAverageScore, setGlobalAverageScore] = useState<number | null>(null);
+  // const [globalVoteCount, setGlobalVoteCount] = useState<number>(0);
+  // const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
 
   const userAverageScore = nation.userAverageScore !== undefined ? nation.userAverageScore : fetchedUserAverageScore;
 
   useEffect(() => {
     async function fetchLockStatus() {
-      setIsLoadingGlobalVote(true); // Ensure loading state until lock status is known
+      // setIsLoadingGlobalVote(true); // Not fetching global scores for display here anymore
       const status = await getLeaderboardLockedStatus();
       setLeaderboardLocked(status);
-      if (status) { // If locked, don't proceed to fetch global scores
-        setIsLoadingGlobalVote(false);
-      }
+      // setIsLoadingGlobalVote(false);
     }
     fetchLockStatus();
   }, []);
@@ -96,20 +96,6 @@ export function NationListItem({ nation }: NationListItemProps) {
     return () => { isMounted = false; };
   }, [nation.id, nation.userAverageScore, user, authLoading]);
 
-  useEffect(() => {
-    if (leaderboardLocked === null || leaderboardLocked) {
-      setIsLoadingGlobalVote(false);
-      return;
-    }
-    // setIsLoadingGlobalVote(true); // Already set by lock status fetch or initial state
-    const unsubscribe = listenToAllVotesForNation(nation.id, (avgScore, count) => {
-      setGlobalAverageScore(avgScore);
-      setGlobalVoteCount(count);
-      setIsLoadingGlobalVote(false);
-    });
-
-    return () => unsubscribe();
-  }, [nation.id, leaderboardLocked]);
 
   const rankBorderClass =
     nation.ranking === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30" :
@@ -117,7 +103,8 @@ export function NationListItem({ nation }: NationListItemProps) {
     nation.ranking === 3 ? "border-amber-500 border-2 shadow-amber-500/30" :
     "border-border group-hover:border-primary/50";
 
-  const displayUserScoreInContent = user && nation.ranking && [1, 2, 3].includes(nation.ranking) && userAverageScore !== null;
+  // Logic to display user score in content based on rank, only used in TreppoScore page for top 3
+  const displayUserScoreInContent = nation.ranking && [1, 2, 3].includes(nation.ranking) && userAverageScore !== null;
   const displayUserScoreOnThumbnail = user && !authLoading && userAverageScore !== null && !displayUserScoreInContent;
 
   return (
@@ -126,8 +113,8 @@ export function NationListItem({ nation }: NationListItemProps) {
         "h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:scale-[1.02]",
         rankBorderClass
       )}>
-        <CardHeader className="p-0 relative flex-grow"> {/* Added flex-grow here */}
-          <div className="aspect-[3/2] w-full h-full relative"> {/* Added h-full */}
+        <CardHeader className="p-0 relative flex-grow">
+          <div className="aspect-[3/2] w-full h-full relative">
             <Image
               src={imageUrl}
               alt={imageAlt}
@@ -139,9 +126,6 @@ export function NationListItem({ nation }: NationListItemProps) {
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-3">
-              <div className="mb-auto"> {/* Spacer to push content to bottom */}
-                {/* Vote badges will be positioned absolutely at bottom-right */}
-              </div>
               <div>
                 <CardTitle className="text-lg font-bold text-white drop-shadow-md flex items-center gap-2">
                   <Image
@@ -185,32 +169,22 @@ export function NationListItem({ nation }: NationListItemProps) {
                 </div>
               )}
 
-              {leaderboardLocked === null || (isLoadingGlobalVote && !leaderboardLocked) ? (
-                 <div className={cn(
-                    "flex items-center justify-start bg-secondary/70 text-secondary-foreground/70 rounded-sm animate-pulse min-w-[70px]",
-                    displayUserScoreInContent ? "px-2 py-1" : "px-1.5 py-0.5"
-                 )}>
-                    <TrendingUp className={cn("mr-1", displayUserScoreInContent ? "w-3.5 h-3.5" : "w-3 h-3")} />
-                    <span className={cn("w-6 bg-secondary-foreground/30 rounded", displayUserScoreInContent ? "h-3.5" : "h-3")}></span>
-                 </div>
-              ) : leaderboardLocked === false && globalAverageScore !== null && globalVoteCount > 0 && (
-                <div className={cn(
-                  "flex items-center justify-start bg-secondary text-secondary-foreground rounded-sm min-w-[70px]",
-                  displayUserScoreInContent ? "px-2 py-1" : "px-1.5 py-0.5"
-                )}>
-                  <TrendingUp className={cn("mr-1", displayUserScoreInContent ? "w-3.5 h-3.5" : "w-3 h-3")} />
-                  <span className={cn("font-semibold", displayUserScoreInContent ? "text-sm" : "text-xs")}>
-                    {globalAverageScore.toFixed(2)}
-                  </span>
-                   <span className={cn("ml-1 font-semibold text-secondary-foreground/80", displayUserScoreInContent ? "text-xs" : "text-[0.7rem]")}>
-                    ({globalVoteCount})
-                  </span>
-                </div>
-              )}
+              {/* Global score badge removed from here */}
+
             </div>
           </div>
         </CardHeader>
-        {/* CardContent and CardFooter removed */}
+        {/* CardContent and CardFooter are removed for compact view */}
+        {/* Display user's score in content for top 3 on TreppoScore page */}
+        {displayUserScoreInContent && (
+          <div className="px-3 py-2 border-t border-border/50 bg-card/70">
+            <div className="flex items-center text-xs text-accent-foreground">
+              <Star className="w-3 h-3 mr-1 text-accent" />
+              <span className="font-medium">Il tuo Voto:</span>
+              <span className="font-bold ml-1">{userAverageScore?.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
       </Card>
     </Link>
   );
