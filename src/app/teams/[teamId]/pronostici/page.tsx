@@ -30,8 +30,8 @@ export default function EditFinalAnswersPage() {
   useEffect(() => {
     async function fetchPageData() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authLoading);
         setIsLoadingSettings(authLoading);
+        setIsLoadingData(authLoading); // Ensure data loading is also true if auth is loading
         if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
           setIsLoadingData(false);
@@ -50,18 +50,18 @@ export default function EditFinalAnswersPage() {
       } catch (settingsError: any) {
         console.error("Failed to fetch final predictions enabled status:", settingsError);
         setError("Impossibile caricare le impostazioni dei pronostici.");
-        setFinalPredictionsEnabled(false);
+        setFinalPredictionsEnabled(false); // Default to false on error
         setIsLoadingSettings(false);
-        setIsLoadingData(false);
+        setIsLoadingData(false); // Stop data loading if settings fetch fails
         return;
       }
       setIsLoadingSettings(false);
 
       if (predictionsEnabledStatus === false) {
-        setIsLoadingData(false);
+        setIsLoadingData(false); // No need to load team data if predictions are disabled
         return;
       }
-
+      
       setIsLoadingData(true);
       try {
         const fetchedTeam = await getTeamById(teamId);
@@ -78,6 +78,7 @@ export default function EditFinalAnswersPage() {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
+            // No error here, page will handle unauthorized display
           }
         } else {
           setError("Squadra non trovata.");
@@ -133,7 +134,7 @@ export default function EditFinalAnswersPage() {
 
   if (!user) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="max-w-lg mx-auto">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Accesso Richiesto</AlertTitle>
         <AlertDescription>
@@ -148,7 +149,7 @@ export default function EditFinalAnswersPage() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="max-w-lg mx-auto">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Errore</AlertTitle>
         <AlertDescription>
@@ -181,7 +182,7 @@ export default function EditFinalAnswersPage() {
 
   if (!isAuthorized && team) { 
      return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="max-w-lg mx-auto">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Accesso Negato</AlertTitle>
         <AlertDescription>
@@ -196,7 +197,7 @@ export default function EditFinalAnswersPage() {
   
   if (!team && !error) { 
     return (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="max-w-lg mx-auto">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Squadra Non Trovata</AlertTitle>
             <AlertDescription>
@@ -222,15 +223,7 @@ export default function EditFinalAnswersPage() {
             <ChevronLeft className="w-4 h-4 mr-1" />
             Torna alle Squadre
         </Link>
-        {!hasExistingPredictions && (
-           <Alert variant="default" className="max-w-2xl mx-auto">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Attenzione</AlertTitle>
-                <AlertDescription>
-                    I pronostici finali, una volta inviati, non possono essere modificati.
-                </AlertDescription>
-            </Alert>
-        )}
+       {/* Warning Alert is now moved inside FinalAnswersForm */}
       <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
@@ -246,6 +239,7 @@ export default function EditFinalAnswersPage() {
             initialData={initialFinalAnswers}
             teamId={team!.id}
             isReadOnly={hasExistingPredictions} 
+            // showOneTimeSubmitWarning={!hasExistingPredictions} // Pass this prop
           />
         </CardContent>
       </Card>

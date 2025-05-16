@@ -26,10 +26,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Nation, TeamFinalAnswersFormData } from "@/types";
 import { getNations } from "@/lib/nation-service";
-import { updateTeamFinalAnswersAction } from "@/lib/actions/team-actions"; // Removed getTeamsLockedStatus
+import { updateTeamFinalAnswersAction } from "@/lib/actions/team-actions"; 
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Lock, Users, Info } from "lucide-react"; // Lock icon can be removed if not used elsewhere
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, Save, Users, Info } from "lucide-react"; 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import Image from "next/image";
 
 const finalAnswersFormZodSchema = z.object({
@@ -52,8 +52,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [nations, setNations] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
-  // Removed teamsLocked state and related useEffect
-
+  
   React.useEffect(() => {
     async function fetchData() {
       setIsLoadingNations(true);
@@ -100,7 +99,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       toast({ title: "Autenticazione Richiesta", description: "Devi effettuare il login.", variant: "destructive" });
       return;
     }
-    // Removed check for teamsLocked here
     if (isReadOnly) {
       toast({ title: "Modifica Bloccata", description: "I pronostici sono già stati inviati e non possono essere modificati.", variant: "destructive" });
       return;
@@ -124,7 +122,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     setIsSubmitting(false);
   }
 
-  if (authLoading || isLoadingNations) { // Removed teamsLocked === null check
+  if (authLoading || isLoadingNations) { 
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
@@ -132,8 +130,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       </div>
     );
   }
-
-  // Removed the Alert for teamsLocked as this form's access is controlled by parent page based on finalPredictionsEnabled
   
   if (nations.length === 0 && !isLoadingNations) {
     return (
@@ -167,18 +163,11 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   );
   
   if (isReadOnly) {
-    // This block handles the case where the form is read-only because predictions have already been submitted
-    // The parent page `pronostici/page.tsx` will likely show a different message already,
+    // This form is read-only because predictions have already been submitted.
+    // The parent page (`pronostici/page.tsx`) will likely show a different message already,
     // but this provides a fallback if the form component is somehow rendered when read-only.
     return (
       <>
-        <Alert variant="default" className="mb-6">
-          <Info className="h-4 w-4" />
-          <AlertTitle>Pronostici Inviati</AlertTitle>
-          <AlertDescription>
-            I tuoi pronostici finali sono stati inviati e non possono essere modificati.
-          </AlertDescription>
-        </Alert>
         <Form {...form}>
           <form className="space-y-6 py-4">
             <FormField
@@ -350,6 +339,16 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
             </FormItem>
           )}
         />
+        
+        {!isReadOnly && (
+           <Alert variant="default" className="mt-6 mb-2"> {/* Added margin for spacing */}
+                <Info className="h-4 w-4" />
+                <AlertTitle>Attenzione</AlertTitle>
+                <AlertDescription>
+                    I pronostici finali, una volta inviati, non possono essere modificati.
+                </AlertDescription>
+            </Alert>
+        )}
 
         <Button
           type="submit"
