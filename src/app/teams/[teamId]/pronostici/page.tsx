@@ -12,7 +12,7 @@ import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft, Info } f
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getTeamsLockedStatus } from "@/lib/actions/team-actions"; 
+import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import { getFinalPredictionsEnabledStatus } from "@/lib/actions/admin-actions";
 
 export default function EditFinalAnswersPage() {
@@ -50,9 +50,9 @@ export default function EditFinalAnswersPage() {
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           setHasExistingPredictions(
-            !!fetchedTeam.bestSongNationId || 
-            !!fetchedTeam.bestPerformanceNationId || 
-            !!fetchedTeam.bestOutfitNationId || 
+            !!fetchedTeam.bestSongNationId ||
+            !!fetchedTeam.bestPerformanceNationId ||
+            !!fetchedTeam.bestOutfitNationId ||
             !!fetchedTeam.worstSongNationId
           );
           if (user && fetchedTeam.userId === user.uid) {
@@ -115,7 +115,7 @@ export default function EditFinalAnswersPage() {
       </Alert>
     );
   }
-  
+
   if (!finalPredictionsEnabled) {
      return (
       <Alert variant="destructive" className="max-w-lg mx-auto">
@@ -182,6 +182,11 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
+            {!hasExistingPredictions && (
+              <span className="block mt-1 text-destructive font-medium">
+                Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -195,4 +200,3 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
-
