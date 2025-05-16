@@ -5,7 +5,7 @@ import type { Nation, Vote } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Star, Users, TrendingUp, Award } from "lucide-react"; // TrendingUp might be unused now
+import { Loader2, Star, Users, TrendingUp, Award } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +25,6 @@ export function NationListItem({ nation }: NationListItemProps) {
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
   const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
-
 
   useEffect(() => {
     async function fetchLockStatus() {
@@ -73,8 +72,8 @@ export function NationListItem({ nation }: NationListItemProps) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-row justify-between items-end p-3">
               {/* Left part: Flag and Nation Name */}
-              <div className="flex flex-col">
-                <CardTitle className="text-lg font-bold text-white drop-shadow-md flex items-center gap-2">
+              <div>
+                <CardTitle className="text-xl font-bold text-white drop-shadow-md flex items-center gap-2">
                   <Image
                     src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
                     alt={`Bandiera ${nation.name}`}
@@ -88,10 +87,10 @@ export function NationListItem({ nation }: NationListItemProps) {
               </div>
               {/* Right part: Artist and Song Title */}
               <div className="text-right">
-                <p className="text-xs text-white/90 drop-shadow-sm" title={nation.artistName}>
+                <p className="text-sm text-white/90 drop-shadow-sm" title={nation.artistName}>
                   {nation.artistName}
                 </p>
-                <p className="text-xs text-white/80 drop-shadow-sm" title={nation.songTitle}>
+                <p className="text-sm text-white/80 drop-shadow-sm" title={nation.songTitle}>
                   {nation.songTitle}
                 </p>
               </div>
