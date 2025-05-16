@@ -18,8 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { getTeamsLockedStatus, getFinalPredictionsEnabledStatus } from "@/lib/actions/team-actions";
-import { getLeaderboardLockedStatus, getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; 
+import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
+import { getLeaderboardLockedStatus, getFinalPredictionsEnabledStatus, getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; 
 
 // Helper function to calculate points for a given rank (Eurovision rank)
 const getPointsForRank = (rank?: number): number => {
@@ -409,20 +409,10 @@ export default function TeamsPage() {
             </Button>
             {userRegistrationEnabled && (
               <>
-                {' '}o{' '}
-                <Button variant="link" asChild className="p-0 ml-0.5 font-bold hover:underline">
-                  <Link href="#" onClick={(e) => {
-                    e.preventDefault();
-                    const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
-                    if (authButtonDialogTrigger) {
-                      if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
-                      else if (authButtonDialogTrigger.parentElement?.tagName === 'BUTTON') { (authButtonDialogTrigger.parentElement as HTMLElement).click(); }
-                    }
-                  }}>registrati</Link>
-                </Button>
+                {' '}per creare o modificare la tua squadra.
               </>
             )}
-            {' '}per creare o modificare la tua squadra.
+            {!userRegistrationEnabled && ' per creare o modificare la tua squadra.'}
           </AlertDescription>
         </Alert>
       )}
@@ -433,18 +423,19 @@ export default function TeamsPage() {
             <p className="text-muted-foreground">Caricamento squadra utente...</p>
         </div>
       ) : userTeam && allNations.length > 0 && (
-        <section className="mb-12 pt-6 border-t border-border">
+        <>
+        <section className="mb-6 pt-6 border-t border-border">
            <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl font-semibold tracking-tight text-primary">
-                La Mia Squadra
+                  La Mia Squadra
                 </h2>
-                 {userTeam && !teamsLockedAdmin && (
-                    <Button asChild variant="outline" size="sm" className="w-auto">
-                        <Link href={`/teams/${userTeam.id}/edit`}>
-                            <Edit className="h-4 w-4 sm:mr-1.5" />
-                            <span className="hidden sm:inline">Modifica Squadra</span>
-                        </Link>
-                    </Button>
+                {userTeam && !teamsLockedAdmin && (
+                  <Button asChild variant="outline" size="sm" className="w-auto">
+                      <Link href={`/teams/${userTeam.id}/edit`}>
+                          <Edit className="h-4 w-4 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Modifica Squadra</span>
+                      </Link>
+                  </Button>
                 )}
                 {userTeam && teamsLockedAdmin && (
                     <Button variant="outline" size="sm" disabled className="w-auto">
@@ -458,9 +449,11 @@ export default function TeamsPage() {
             allNations={allNations}
             nationGlobalCategorizedScoresArray={Array.from(nationGlobalCategorizedScoresMap.entries())}
             isOwnTeamCard={true}
+            disableEdit={true}
           />
+          </section>
            <div className="mt-4 flex justify-center">
-            {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && !teamsLockedAdmin && (
+            {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && (
                 <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="mr-2 h-5 w-5" />
@@ -474,14 +467,14 @@ export default function TeamsPage() {
                     <span className="mr-2">Pronostici Inviati</span>
                 </Button>
             )}
-            {user && userTeam && (teamsLockedAdmin || finalPredictionsEnabledAdmin === false) && !hasUserSubmittedFinalPredictions && (
+            {user && userTeam && !finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
                     <Lock className="h-5 w-5 mr-2"/>
                     <span className="mr-2">Pronostici Bloccati</span>
                 </Button>
             )}
             </div>
-        </section>
+        </>
       ))}
 
       <section className="pt-6 border-t border-border">
@@ -547,7 +540,6 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
-                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px] hidden md:table-cell">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -563,11 +555,6 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
-                      {!leaderboardLockedAdmin && (
-                        <TableCell className="text-right font-semibold hidden md:table-cell">
-                            {typeof team.score === 'number' ? team.score : 'N/D'}
-                        </TableCell>
-                       )}
                        <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => (
@@ -604,3 +591,4 @@ export default function TeamsPage() {
   );
 }
 
+    
