@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getTeamsByUserId, listenToTeams, getTeamById } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized } from "@/lib/voting-service"; 
-import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail, TeamFinalAnswersFormData } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
@@ -406,8 +406,8 @@ export default function TeamsPage() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary">
               La Mia Squadra
             </h2>
-             {userTeam && !teamsLockedAdmin && (
-                <Button asChild variant="outline" size="sm" className="w-auto">
+            {userTeam && !teamsLockedAdmin && (
+                <Button asChild variant="default" size="sm" className="w-auto">
                    <Link href={`/teams/${userTeam.id}/edit`}>
                         <Edit className="h-4 w-4 sm:mr-1.5" />
                         <span className="hidden sm:inline">Modifica Squadra</span>
@@ -426,26 +426,27 @@ export default function TeamsPage() {
             allNations={allNations}
             nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
             isOwnTeamCard={true}
+            disableEdit={true}
           />
            <div className="mt-4 flex justify-center">
-            {userTeam && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
-                <Button asChild variant="secondary" size="lg">
+            {user && userTeam && !hasUserSubmittedFinalPredictions && finalPredictionsEnabledAdmin && (
+                <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
                         <ListOrdered className="mr-2 h-5 w-5" />
                         <span className="mr-2">Pronostici Finali</span>
                     </Link>
                 </Button>
             )}
-            {userTeam && !finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
-                <Button variant="outline" size="lg" disabled>
-                    <Lock className="h-5 w-5 mr-2"/>
-                    <span className="mr-2">Pronostici Bloccati</span>
-                </Button>
-            )}
-            {userTeam && hasUserSubmittedFinalPredictions && (
-                 <Button variant="outline" size="lg" disabled>
+            {user && userTeam && hasUserSubmittedFinalPredictions && (
+                 <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
                     <ListOrdered className="mr-2 h-5 w-5"/>
                     <span className="mr-2">Pronostici Inviati</span>
+                </Button>
+            )}
+            {user && userTeam && !finalPredictionsEnabledAdmin && (
+                <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
+                    <Lock className="h-5 w-5 mr-2"/>
+                    <span className="mr-2">Pronostici Bloccati</span>
                 </Button>
             )}
             </div>
@@ -548,7 +549,7 @@ export default function TeamsPage() {
                                     countryCode: nationsMap.get(nationId)?.countryCode || 'xx',
                                     artistName: nationsMap.get(nationId)?.artistName,
                                     songTitle: nationsMap.get(nationId)?.songTitle,
-                                    points: 0, // Points details are not shown here
+                                    points: 0, 
                                     actualRank: nationsMap.get(nationId)?.ranking
                                 }}
                                 leaderboardLocked={leaderboardLockedAdmin}
@@ -573,3 +574,6 @@ export default function TeamsPage() {
   );
 }
 
+
+
+    

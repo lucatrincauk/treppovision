@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation"; // Removed useRouter as it's not used
+import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamFinalAnswersFormData } from "@/types";
@@ -30,9 +30,9 @@ export default function EditFinalAnswersPage() {
   useEffect(() => {
     async function fetchPageData() {
       if (authLoading || !teamId) {
-        setIsLoadingData(authLoading); // Reflect auth loading in main data loading
+        setIsLoadingData(authLoading); 
         setIsLoadingSettings(authLoading);
-        if (!teamId && !authLoading) { // If no teamId and auth is resolved
+        if (!teamId && !authLoading) { 
           setError("ID Squadra non valido.");
           setIsLoadingData(false);
           setIsLoadingSettings(false);
@@ -41,7 +41,7 @@ export default function EditFinalAnswersPage() {
       }
 
       setIsLoadingSettings(true);
-      setError(null); // Reset error on new fetch attempt
+      setError(null); 
 
       let predictionsEnabledStatus = false;
       try {
@@ -50,20 +50,18 @@ export default function EditFinalAnswersPage() {
       } catch (settingsError: any) {
         console.error("Failed to fetch final predictions enabled status:", settingsError);
         setError("Impossibile caricare le impostazioni dei pronostici.");
-        setFinalPredictionsEnabled(false); // Default to false on error
+        setFinalPredictionsEnabled(false); 
         setIsLoadingSettings(false);
-        setIsLoadingData(false); // Stop main data loading if settings fail
+        setIsLoadingData(false); 
         return;
       }
       setIsLoadingSettings(false);
 
-      // If predictions are not enabled, don't bother fetching team data for the form
       if (predictionsEnabledStatus === false) {
         setIsLoadingData(false);
         return;
       }
 
-      // Proceed to fetch team data only if predictions are enabled
       setIsLoadingData(true);
       try {
         const fetchedTeam = await getTeamById(teamId);
@@ -80,7 +78,6 @@ export default function EditFinalAnswersPage() {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
-            // Don't set a generic error if just unauthorized, page will handle it
           }
         } else {
           setError("Squadra non trovata.");
@@ -107,7 +104,6 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  // This check is now more reliable as finalPredictionsEnabled has been fetched
   if (finalPredictionsEnabled === false) {
      return (
       <div className="space-y-6">
@@ -126,7 +122,6 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  // If settings are loaded and predictions are enabled, then check for main data loading
   if (isLoadingData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -165,38 +160,7 @@ export default function EditFinalAnswersPage() {
       </Alert>
     );
   }
-
-  if (!isAuthorized && team) { // Check team to ensure it's not a "Squadra non trovata" case
-     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Accesso Negato</AlertTitle>
-        <AlertDescription>
-          Non sei autorizzato a modificare questi pronostici.
-          <Button variant="link" asChild className="p-0 ml-1">
-            <Link href="/teams">Torna alle Squadre</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
   
-  if (!team && !error) { // Case where team is null but no specific error was set (e.g. bad teamId early)
-    return (
-        <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Squadra Non Trovata</AlertTitle>
-            <AlertDescription>
-                La squadra richiesta non è stata trovata.
-                <Button variant="link" asChild className="p-0 ml-1">
-                <Link href="/teams">Torna alle Squadre</Link>
-                </Button>
-            </AlertDescription>
-        </Alert>
-    );
-  }
-
-
   if (hasExistingPredictions) {
     return (
       <div className="space-y-6">
@@ -215,7 +179,36 @@ export default function EditFinalAnswersPage() {
     );
   }
 
-  // This implies team must exist if we reach here
+  if (!isAuthorized && team) { 
+     return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Accesso Negato</AlertTitle>
+        <AlertDescription>
+          Non sei autorizzato a modificare questi pronostici.
+          <Button variant="link" asChild className="p-0 ml-1">
+            <Link href="/teams">Torna alle Squadre</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  
+  if (!team && !error) { 
+    return (
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Squadra Non Trovata</AlertTitle>
+            <AlertDescription>
+                La squadra richiesta non è stata trovata.
+                <Button variant="link" asChild className="p-0 ml-1">
+                <Link href="/teams">Torna alle Squadre</Link>
+                </Button>
+            </AlertDescription>
+        </Alert>
+    );
+  }
+
   const initialFinalAnswers: TeamFinalAnswersFormData = {
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",

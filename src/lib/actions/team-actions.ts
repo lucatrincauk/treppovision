@@ -121,7 +121,7 @@ export async function updateTeamAction(
     const teamPayloadToUpdate = {
       name: data.name,
       founderChoices: data.founderChoices,
-      creatorDisplayName: data.creatorDisplayName, // Ensure this is updated if needed
+      creatorDisplayName: data.creatorDisplayName, 
       updatedAt: serverTimestamp(),
     };
 
@@ -151,7 +151,6 @@ export async function updateTeamFinalAnswersAction(
     return { success: false, message: "ID del team mancante." };
   }
 
-  // `teamsLocked` setting no longer gates final predictions
   const finalPredictionsEnabled = await getFinalPredictionsEnabledStatus();
   if (!finalPredictionsEnabled) {
     return { success: false, message: "L'inserimento dei pronostici finali è attualmente disabilitato dall'amministratore." };
@@ -169,7 +168,6 @@ export async function updateTeamFinalAnswersAction(
       return { success: false, message: "Non sei autorizzato a modificare i pronostici di questo team." };
     }
     
-    // Check if predictions have already been submitted
     const hasExistingPredictions = !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
@@ -257,3 +255,6 @@ export async function getTeamsLockedStatus(): Promise<boolean> {
     return settings.teamsLocked;
 }
 
+
+
+    
