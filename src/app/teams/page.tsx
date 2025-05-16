@@ -286,7 +286,7 @@ export default function TeamsPage() {
       </header>
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         {user && !userTeam && !teamsLockedAdmin && (
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="default" size="lg">
             <Link href="/teams/new">
                 <PlusCircle className="mr-2 h-5 w-5" />
                 Crea Nuova Squadra
@@ -326,6 +326,59 @@ export default function TeamsPage() {
     );
   };
 
+  const renderCategoryPickCell = (team: TeamWithScore, category: 'bestSong' | 'bestPerf' | 'bestOutfit' | 'worstSong') => {
+    let nationId: string | undefined;
+    let topId: string | undefined;
+    let IconComponent: React.ElementType;
+
+    const topSongNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc')[0]?.id;
+    const worstSongNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'asc')[0]?.id;
+    const topPerformanceNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc')[0]?.id;
+    const topOutfitNationId = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc')[0]?.id;
+
+    switch (category) {
+      case 'bestSong':
+        nationId = team.bestSongNationId;
+        topId = topSongNationId;
+        IconComponent = Music2;
+        break;
+      case 'bestPerf':
+        nationId = team.bestPerformanceNationId;
+        topId = topPerformanceNationId;
+        IconComponent = Star;
+        break;
+      case 'bestOutfit':
+        nationId = team.bestOutfitNationId;
+        topId = topOutfitNationId;
+        IconComponent = Shirt;
+        break;
+      case 'worstSong':
+        nationId = team.worstSongNationId;
+        topId = worstSongNationId;
+        IconComponent = ThumbsDown;
+        break;
+    }
+    const nation = nationId ? nationsMap.get(nationId) : null;
+    const isCorrectPick = nationId && nationId === topId;
+
+    if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
+
+    return (
+      <div className="flex items-center gap-1.5">
+        {isCorrectPick && !leaderboardLockedAdmin && <IconComponent className="h-3.5 w-3.5 text-accent flex-shrink-0" />}
+        <Image
+          src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+          alt={nation.name}
+          width={20}
+          height={13}
+          className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+          data-ai-hint={`${nation.name} flag icon`}
+        />
+        <span className="text-xs truncate" title={`${nation.name} - ${nation.artistName} - ${nation.songTitle}`}>{nation.name}</span>
+      </div>
+    );
+  };
+
 
   if (authIsLoading || isLoadingNations || isLoadingGlobalScores || teamsLockedAdmin === null || leaderboardLockedAdmin === null || finalPredictionsEnabledAdmin === null) {
     return (
@@ -356,7 +409,8 @@ export default function TeamsPage() {
     )
   }
   
-  const hasUserSubmittedFinalPredictions = userTeam && userTeam.bestSongNationId !== "";
+  const hasUserSubmittedFinalPredictions = userTeam && userTeam.bestSongNationId !== "" && userTeam.bestSongNationId !== undefined;
+
 
   return (
     <div className="space-y-8">
@@ -397,15 +451,15 @@ export default function TeamsPage() {
               La Mia Squadra
             </h2>
              {userTeam && !teamsLockedAdmin && (
-                <Button asChild variant="default" size="sm">
-                    <Link href={`/teams/${userTeam.id}/edit`}>
+                <Button asChild variant="outline" size="sm" className="w-auto">
+                   <Link href={`/teams/${userTeam.id}/edit`}>
                         <Edit className="h-4 w-4 sm:mr-1.5" />
                         <span className="hidden sm:inline">Modifica Squadra</span>
                     </Link>
                 </Button>
             )}
             {userTeam && teamsLockedAdmin && (
-                <Button variant="outline" size="sm" disabled>
+                <Button variant="outline" size="sm" disabled className="w-auto">
                     <Lock className="h-4 w-4 sm:mr-1.5"/>
                     <span className="hidden sm:inline">Modifica Bloccata</span>
                 </Button>
@@ -416,18 +470,17 @@ export default function TeamsPage() {
             allNations={allNations}
             nationGlobalCategorizedScoresMap={nationGlobalCategorizedScoresMap}
             isOwnTeamCard={true}
-            leaderboardLocked={leaderboardLockedAdmin}
           />
            <div className="mt-4 flex justify-center">
             {userTeam && !teamsLockedAdmin && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (
                 <Button asChild variant="secondary" size="lg">
                     <Link href={`/teams/${userTeam.id}/pronostici`}>
-                        <ListOrdered className="h-5 w-5 mr-2" />
+                        <ListOrdered className="mr-2 h-5 w-5" />
                         <span className="mr-2">Pronostici Finali</span>
                     </Link>
                 </Button>
             )}
-            {userTeam && (teamsLockedAdmin || !finalPredictionsEnabledAdmin) && (
+            {userTeam && (teamsLockedAdmin || (!teamsLockedAdmin && !finalPredictionsEnabledAdmin)) && (
                 <Button variant="outline" size="lg" disabled>
                     <Lock className="h-5 w-5 mr-2"/>
                     <span className="mr-2">Pronostici Bloccati</span>
@@ -435,7 +488,7 @@ export default function TeamsPage() {
             )}
             {userTeam && hasUserSubmittedFinalPredictions && (
                  <Button variant="outline" size="lg" disabled>
-                    <ListOrdered className="h-5 w-5 mr-2"/>
+                    <ListOrdered className="mr-2 h-5 w-5"/>
                     <span className="mr-2">Pronostici Inviati</span>
                 </Button>
             )}
