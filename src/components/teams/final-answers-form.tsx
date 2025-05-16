@@ -28,7 +28,7 @@ import type { Nation, TeamFinalAnswersFormData } from "@/types";
 import { getNations } from "@/lib/nation-service";
 import { updateTeamFinalAnswersAction } from "@/lib/actions/team-actions"; 
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Users, Info } from "lucide-react"; 
+import { Loader2, Save, Users, Info, AlertTriangle } from "lucide-react"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import Image from "next/image";
 
@@ -163,9 +163,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   );
   
   if (isReadOnly) {
-    // This form is read-only because predictions have already been submitted.
-    // The parent page (`pronostici/page.tsx`) will likely show a different message already,
-    // but this provides a fallback if the form component is somehow rendered when read-only.
     return (
       <>
         <Form {...form}>
@@ -341,8 +338,8 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
         />
         
         {!isReadOnly && (
-           <Alert variant="default" className="mt-6 mb-2"> {/* Added margin for spacing */}
-                <Info className="h-4 w-4" />
+           <Alert variant="destructive" className="mt-6 mb-2">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Attenzione</AlertTitle>
                 <AlertDescription>
                     I pronostici finali, una volta inviati, non possono essere modificati.
