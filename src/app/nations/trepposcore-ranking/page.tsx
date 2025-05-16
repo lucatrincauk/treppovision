@@ -4,18 +4,27 @@
 import * as React from "react";
 import { getNations } from "@/lib/nation-service";
 import { listenToAllVotesForAllNationsCategorized, getAllUserVotes } from "@/lib/voting-service";
-import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores } from "@/types";
+import type { Nation, NationWithTreppoScore, Vote, NationGlobalCategorizedScores, RankingCategoryKey } from "@/types";
 import { NationList } from "@/components/nations/nation-list";
 import { NationsSubNavigation } from "@/components/nations/nations-sub-navigation";
-import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon } from "lucide-react";
+import { Users, BarChart3, Star, User, Loader2, TrendingUp, Lock as LockIcon, SlidersHorizontal, Music, Diamond } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
-import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions"; // Import lock status
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
+import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+const categoryOptions: { value: RankingCategoryKey; label: string; title: string; columnHeader: string; icon: React.ElementType }[] = [
+  { value: 'overallAverageScore', label: 'Globale', title: "Classifica TreppoScore Globale", columnHeader: "TreppoScore Globale", icon: TrendingUp },
+  { value: 'averageSongScore', label: 'Canzone', title: "Classifica Miglior Canzone", columnHeader: "Punteggio Canzone", icon: Music },
+  { value: 'averagePerformanceScore', label: 'Performance', title: "Classifica Miglior Performance", columnHeader: "Punteggio Performance", icon: Star },
+  { value: 'averageOutfitScore', label: 'Outfit', title: "Classifica Miglior Outfit", columnHeader: "Punteggio Outfit", icon: Diamond },
+];
 
 export default function TreppoScoreRankingPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -31,7 +40,10 @@ export default function TreppoScoreRankingPage() {
   const [leaderboardLocked, setLeaderboardLocked] = React.useState<boolean | null>(null);
   const [isLoadingLockStatus, setIsLoadingLockStatus] = React.useState(true);
 
-  // Fetch leaderboard lock status
+  const [selectedCategoryKey, setSelectedCategoryKey] = React.useState<RankingCategoryKey>('overallAverageScore');
+  const [currentRankingTitle, setCurrentRankingTitle] = React.useState("Classifica TreppoScore Globale");
+  const [currentScoreColumnHeader, setCurrentScoreColumnHeader] = React.useState("TreppoScore Globale");
+
   React.useEffect(() => {
     async function fetchLockStatus() {
       setIsLoadingLockStatus(true);
@@ -40,7 +52,7 @@ export default function TreppoScoreRankingPage() {
         setLeaderboardLocked(status);
       } catch (error) {
         console.error("Failed to fetch leaderboard lock status:", error);
-        setLeaderboardLocked(false); // Default to unlocked on error
+        setLeaderboardLocked(false); 
       } finally {
         setIsLoadingLockStatus(false);
       }
@@ -48,9 +60,8 @@ export default function TreppoScoreRankingPage() {
     fetchLockStatus();
   }, []);
 
-  // Fetch initial nations data
   React.useEffect(() => {
-    if (leaderboardLocked) return; // Don't fetch if locked
+    if (leaderboardLocked) return; 
     async function fetchInitialNations() {
       setIsLoadingNationsData(true);
       try {
@@ -66,9 +77,8 @@ export default function TreppoScoreRankingPage() {
     fetchInitialNations();
   }, [leaderboardLocked]);
 
-  // Fetch user-specific votes
   React.useEffect(() => {
-    if (leaderboardLocked) return; // Don't fetch if locked
+    if (leaderboardLocked) return; 
     if (authLoading) {
       setIsLoadingUserVotes(true);
       return;
@@ -94,10 +104,8 @@ export default function TreppoScoreRankingPage() {
     fetchUserVotes();
   }, [user, authLoading, leaderboardLocked]);
 
-
-  // Listen to global scores in real-time
   React.useEffect(() => {
-    if (leaderboardLocked) return; // Don't listen if locked
+    if (leaderboardLocked) return; 
     
     setIsLoadingData(true); 
     
@@ -111,10 +119,9 @@ export default function TreppoScoreRankingPage() {
     return () => unsubscribe(); 
   }, [isLoadingNationsData, isLoadingUserVotes, leaderboardLocked]);
 
-  // Process and sort nations when data changes
   React.useEffect(() => {
     if (leaderboardLocked) {
-      setNationsWithScores([]); // Clear data if locked
+      setNationsWithScores([]); 
       return;
     }
     if (allNations.length > 0 && globalScoresMap.size > 0) {
@@ -125,32 +132,44 @@ export default function TreppoScoreRankingPage() {
           const userAverageScore = userVote
             ? (userVote.scores.song + userVote.scores.performance + userVote.scores.outfit) / 3
             : null;
+          
+          const scoreForRanking = scoreData ? scoreData[selectedCategoryKey] : null;
 
           return {
             ...nation,
-            globalTreppoScore: scoreData?.overallAverageScore ?? null, 
-            globalVoteCount: scoreData?.voteCount ?? 0,
+            globalScores: scoreData || null,
+            scoreForRanking: scoreForRanking,
+            voteCount: scoreData?.voteCount ?? 0,
             userAverageScore: userAverageScore,
           };
         })
-        .filter(n => n.globalTreppoScore !== null && n.globalVoteCount > 0)
-        .sort((a, b) => (b.globalTreppoScore ?? 0) - (a.globalTreppoScore ?? 0));
+        .filter(n => n.scoreForRanking !== null && n.voteCount > 0)
+        .sort((a, b) => (b.scoreForRanking ?? 0) - (a.scoreForRanking ?? 0));
       
-      setNationsWithScores(processedNations);
+      // Assign rank
+      let currentRank = 1;
+      const rankedNations = processedNations.map((nation, index, arr) => {
+        if (index > 0 && (arr[index].scoreForRanking ?? -Infinity) < (arr[index - 1].scoreForRanking ?? -Infinity)) {
+          currentRank = index + 1;
+        }
+        return { ...nation, rank: currentRank };
+      });
+      
+      setNationsWithScores(rankedNations);
     } else if (allNations.length > 0) {
         const processedNationsWithNoScores: NationWithTreppoScore[] = allNations.map(nation => ({
             ...nation,
-            globalTreppoScore: null,
-            globalVoteCount: 0,
+            globalScores: null,
+            scoreForRanking: null,
+            voteCount: 0,
             userAverageScore: user ? (userVotesMap.get(nation.id) ? ((userVotesMap.get(nation.id)!.scores.song + userVotesMap.get(nation.id)!.scores.performance + userVotesMap.get(nation.id)!.scores.outfit) / 3) : null) : null,
         }));
         setNationsWithScores(processedNationsWithNoScores);
     } else {
       setNationsWithScores([]);
     }
-  }, [allNations, globalScoresMap, userVotesMap, user, leaderboardLocked]);
+  }, [allNations, globalScoresMap, userVotesMap, user, leaderboardLocked, selectedCategoryKey]);
 
-  // Consolidate overall loading state
   React.useEffect(() => {
     if (leaderboardLocked) {
       setIsLoadingData(false);
@@ -167,6 +186,15 @@ export default function TreppoScoreRankingPage() {
     }
   }, [isLoadingNationsData, isLoadingUserVotes, globalScoresMap, allNations, leaderboardLocked]);
 
+  const handleCategoryChange = (value: string) => {
+    const newKey = value as RankingCategoryKey;
+    setSelectedCategoryKey(newKey);
+    const selectedOption = categoryOptions.find(opt => opt.value === newKey);
+    if (selectedOption) {
+      setCurrentRankingTitle(selectedOption.title);
+      setCurrentScoreColumnHeader(selectedOption.columnHeader);
+    }
+  };
 
   if (authLoading || isLoadingLockStatus) {
     return (
@@ -175,7 +203,7 @@ export default function TreppoScoreRankingPage() {
         <header className="text-center sm:text-left space-y-2 mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
             <TrendingUp className="mr-3 h-10 w-10" />
-            Classifica TreppoScore
+            {currentRankingTitle}
           </h1>
           <p className="text-xl text-muted-foreground">
             Caricamento...
@@ -194,7 +222,7 @@ export default function TreppoScoreRankingPage() {
         <NationsSubNavigation />
         <Alert variant="destructive" className="max-w-lg mx-auto">
           <LockIcon className="h-4 w-4" />
-          <AlertTitle>Classifica TreppoScore Bloccata</AlertTitle>
+          <AlertTitle>Classifica Bloccata</AlertTitle>
           <AlertDescription>
             L'amministratore ha temporaneamente bloccato l'accesso a questa classifica.
           </AlertDescription>
@@ -210,7 +238,7 @@ export default function TreppoScoreRankingPage() {
         <header className="text-center sm:text-left space-y-2 mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
             <TrendingUp className="mr-3 h-10 w-10" />
-            Classifica TreppoScore
+            {currentRankingTitle}
           </h1>
           <p className="text-xl text-muted-foreground">
             Caricamento classifica...
@@ -230,38 +258,63 @@ export default function TreppoScoreRankingPage() {
     <div className="space-y-8">
       <NationsSubNavigation />
       <header className="text-center sm:text-left space-y-2 mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-          <TrendingUp className="mr-3 h-10 w-10" />
-          Classifica TreppoScore
-        </h1>
+         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            {React.createElement(categoryOptions.find(opt => opt.value === selectedCategoryKey)?.icon || TrendingUp, { className: "mr-3 h-10 w-10" })}
+            {currentRankingTitle}
+          </h1>
         <p className="text-xl text-muted-foreground">
-          Le nazioni partecipanti, ordinate in base al voto medio degli utenti (TreppoScore).
+          Le nazioni partecipanti, ordinate in base alla categoria selezionata.
         </p>
       </header>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+        <div className="w-full sm:w-auto sm:max-w-xs">
+            <Label htmlFor="category-select" className="text-sm font-medium text-muted-foreground sr-only">
+                Filtra Classifica
+            </Label>
+            <Select value={selectedCategoryKey} onValueChange={handleCategoryChange}>
+                <SelectTrigger id="category-select" className="w-full">
+                <SelectValue placeholder="Seleziona categoria..." />
+                </SelectTrigger>
+                <SelectContent>
+                {categoryOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        {React.createElement(option.icon, { className: "h-4 w-4 text-muted-foreground"})}
+                        <span>{option.label}</span>
+                      </div>
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+        </div>
+      </div>
 
       {nationsWithScores.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
           <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-lg">{allNations.length === 0 ? "Nessuna nazione trovata." : "Nessun voto ancora registrato."}</p>
+          <p className="text-lg">{allNations.length === 0 ? "Nessuna nazione trovata." : "Nessun voto ancora registrato per questa categoria."}</p>
           <p>{allNations.length > 0 && "Quando gli utenti voteranno, questa classifica si popolerà."}</p>
         </div>
       ) : (
         <>
           {top3Nations.length > 0 && (
             <NationList
-              nations={top3Nations.map((nation, index) => ({
+              nations={top3Nations.map(nation => ({
                 ...nation,
-                ranking: index + 1, 
-                userAverageScore: nation.userAverageScore 
+                // NationList expects ranking based on Eurovision for styling, so we use the dynamic rank
+                ranking: nation.rank,
+                userAverageScore: nation.userAverageScore,
+                // Pass the specific score for display on the card if needed, though NationListItem primarily shows overall
               }))}
-              title="Il Podio TreppoScore"
+              title={`Il Podio - ${categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}`}
             />
           )}
 
           {otherRankedNations.length > 0 && (
             <section className="mt-12">
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Classifica Completa TreppoScore (dal 4° posto)
+                Classifica Completa (dal 4° posto) - {categoryOptions.find(opt => opt.value === selectedCategoryKey)?.label || 'Globale'}
               </h2>
               <Card>
                 <CardContent className="p-0">
@@ -273,14 +326,14 @@ export default function TreppoScoreRankingPage() {
                         {user && (
                           <TableHead className="text-right w-[120px] hidden md:table-cell">Il Tuo Voto</TableHead>
                         )}
-                        <TableHead className="text-right w-[140px]">TreppoScore Globale</TableHead>
+                        <TableHead className="text-right w-[140px]">{currentScoreColumnHeader}</TableHead>
                         <TableHead className="text-right w-[100px] hidden sm:table-cell">N. Voti</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {otherRankedNations.map((nation, index) => (
+                      {otherRankedNations.map((nation) => (
                         <TableRow key={nation.id}>
-                          <TableCell className="font-medium text-center">{index + 4}</TableCell>
+                          <TableCell className="font-medium text-center">{nation.rank}</TableCell>
                           <TableCell>
                             <Link href={`/nations/${nation.id}`} className="flex items-center gap-3 group">
                               <Image
@@ -312,11 +365,11 @@ export default function TreppoScoreRankingPage() {
                           )}
                           <TableCell className="text-right font-semibold text-accent">
                             <div className="flex items-center justify-end">
-                              <Star className="w-4 h-4 mr-1 text-yellow-400"/>
-                              {nation.globalTreppoScore?.toFixed(2) ?? 'N/A'}
+                               {React.createElement(categoryOptions.find(opt => opt.value === selectedCategoryKey)?.icon || TrendingUp, { className: "w-4 h-4 mr-1 text-yellow-400"})}
+                              {nation.scoreForRanking?.toFixed(2) ?? 'N/A'}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.globalVoteCount}</TableCell>
+                          <TableCell className="text-right text-muted-foreground hidden sm:table-cell">{nation.voteCount}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -330,6 +383,3 @@ export default function TreppoScoreRankingPage() {
     </div>
   );
 }
-
-
-    
