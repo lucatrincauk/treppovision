@@ -252,8 +252,8 @@ export default function NationPageClient({ initialNation, params: serverParams }
         </div>
       </header>
       
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-6">
+      <div className="flex flex-col md:grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6 order-2 md:order-1">
           {nation.songDescription && (
             <Card>
               <CardHeader>
@@ -297,7 +297,7 @@ export default function NationPageClient({ initialNation, params: serverParams }
           )}
         </div>
 
-        <div id="voting-form" className="md:col-span-1">
+        <div id="voting-form" className="md:col-span-1 order-1 md:order-2">
           <VotingForm nation={nation} onVoteSuccess={handleVoteSuccess} />
         </div>
       </div>
