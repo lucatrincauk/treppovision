@@ -283,37 +283,6 @@ export default function TeamsPage() {
     setFilteredOtherTeams(filtered);
   }, [searchTerm, otherTeams]);
 
-
-  const displayHeaderAndButtons = () => (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-      <header className="text-center sm:text-left space-y-2">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-          <Users className="mr-3 h-10 w-10" />
-          Squadre TreppoVision
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Scopri tutte le squadre create dagli utenti e le loro scelte.
-        </p>
-      </header>
-      <div className="flex flex-col sm:flex-row gap-2 items-center">
-        {user && !userTeam && !teamsLockedAdmin && (
-            <Button asChild variant="default" size="lg">
-            <Link href="/teams/new">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Crea Nuova Squadra
-            </Link>
-            </Button>
-        )}
-        {user && teamsLockedAdmin && !userTeam && (
-            <Button variant="outline" size="lg" disabled>
-                <Lock className="mr-2 h-5 w-5"/>
-                Creazione Bloccata
-            </Button>
-        )}
-      </div>
-    </div>
-  );
-
   const PrimaSquadraNationDisplay = ({ detail, leaderboardLocked }: { detail: GlobalPrimaSquadraDetail, leaderboardLocked: boolean | null }) => {
     const nation = nationsMap.get(detail.id);
     if (!nation) return <span className="text-xs text-muted-foreground">N/D</span>;
@@ -342,7 +311,17 @@ export default function TeamsPage() {
     return (
       <div className="space-y-8">
         <TeamsSubNavigation />
-        {displayHeaderAndButtons()}
+         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+          <header className="text-center sm:text-left space-y-2">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+              <Users className="mr-3 h-10 w-10" />
+              Squadre TreppoVision
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Scopri tutte le squadre create dagli utenti e le loro scelte.
+            </p>
+          </header>
+        </div>
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">Caricamento dati squadre...</p>
@@ -355,7 +334,17 @@ export default function TeamsPage() {
     return (
        <div className="space-y-8">
         <TeamsSubNavigation />
-        {displayHeaderAndButtons()}
+         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+            <header className="text-center sm:text-left space-y-2">
+                <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+                <Users className="mr-3 h-10 w-10" />
+                Squadre TreppoVision
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                Scopri tutte le squadre create dagli utenti e le loro scelte.
+                </p>
+            </header>
+        </div>
         <Alert variant="destructive">
           <Users className="h-4 w-4" />
           <AlertTitle>Errore nel Caricamento Dati</AlertTitle>
@@ -371,7 +360,33 @@ export default function TeamsPage() {
   return (
     <div className="space-y-8">
       <TeamsSubNavigation />
-      {displayHeaderAndButtons()}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+        <header className="text-center sm:text-left space-y-2">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <Users className="mr-3 h-10 w-10" />
+            Squadre TreppoVision
+            </h1>
+            <p className="text-xl text-muted-foreground">
+            Scopri tutte le squadre create dagli utenti e le loro scelte.
+            </p>
+        </header>
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+            {user && !userTeam && !teamsLockedAdmin && (
+                <Button asChild variant="default" size="lg">
+                <Link href="/teams/new">
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Crea Nuova Squadra
+                </Link>
+                </Button>
+            )}
+            {user && teamsLockedAdmin && !userTeam && (
+                <Button variant="outline" size="lg" disabled>
+                    <Lock className="mr-2 h-5 w-5"/>
+                    Creazione Bloccata
+                </Button>
+            )}
+        </div>
+      </div>
 
       {!user && allFetchedTeams.length > 0 && (
          <Alert>
@@ -403,24 +418,24 @@ export default function TeamsPage() {
       ) : userTeam && allNations.length > 0 && (
         <section className="mb-12 pt-6 border-t border-border">
            <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-semibold tracking-tight text-primary">
-              La Mia Squadra
-            </h2>
-            {userTeam && !teamsLockedAdmin && (
-                <Button asChild variant="outline" size="sm" className="w-auto">
-                   <Link href={`/teams/${userTeam.id}/edit`}>
-                        <Edit className="h-4 w-4 sm:mr-1.5" />
-                        <span className="hidden sm:inline">Modifica Squadra</span>
-                    </Link>
-                </Button>
-            )}
-            {userTeam && teamsLockedAdmin && (
-                <Button variant="outline" size="sm" disabled className="w-auto">
-                    <Lock className="h-4 w-4 sm:mr-1.5"/>
-                    <span className="hidden sm:inline">Modifica Bloccata</span>
-                </Button>
-            )}
-          </div>
+                <h2 className="text-3xl font-semibold tracking-tight text-primary">
+                La Mia Squadra
+                </h2>
+                 {userTeam && !teamsLockedAdmin && (
+                    <Button asChild variant="default" size="sm" className="w-auto">
+                        <Link href={`/teams/${userTeam.id}/edit`}>
+                            <Edit className="h-4 w-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Modifica Squadra</span>
+                        </Link>
+                    </Button>
+                )}
+                {userTeam && teamsLockedAdmin && (
+                    <Button variant="outline" size="sm" disabled className="w-auto">
+                        <Lock className="h-4 w-4 sm:mr-1.5"/>
+                        <span className="hidden sm:inline">Modifica Bloccata</span>
+                    </Button>
+                )}
+            </div>
           <TeamListItem 
             team={userTeam} 
             allNations={allNations}
@@ -515,8 +530,8 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px] sm:w-[250px]">Squadra</TableHead>
-                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
                     <TableHead>Pronostici TreppoVision</TableHead>
+                    {!leaderboardLockedAdmin && <TableHead className="text-right w-[100px]">Punti</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -531,11 +546,6 @@ export default function TeamsPage() {
                           </div>
                         )}
                       </TableCell>
-                      {!leaderboardLockedAdmin && (
-                        <TableCell className="text-right font-semibold">
-                            {typeof team.score === 'number' ? team.score : 'N/D'}
-                        </TableCell>
-                       )}
                        <TableCell>
                         <div className="flex flex-col gap-1">
                           {(team.founderChoices || []).map(nationId => {
@@ -550,7 +560,7 @@ export default function TeamsPage() {
                                     countryCode: nation.countryCode,
                                     artistName: nation.artistName,
                                     songTitle: nation.songTitle,
-                                    points: 0, // Points are calculated but not shown here per design
+                                    points: 0, 
                                     actualRank: nation.ranking
                                 }}
                                 leaderboardLocked={leaderboardLockedAdmin}
@@ -559,6 +569,11 @@ export default function TeamsPage() {
                           })}
                         </div>
                       </TableCell>
+                      {!leaderboardLockedAdmin && (
+                        <TableCell className="text-right font-semibold">
+                            {typeof team.score === 'number' ? team.score : 'N/D'}
+                        </TableCell>
+                       )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -574,4 +589,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-
