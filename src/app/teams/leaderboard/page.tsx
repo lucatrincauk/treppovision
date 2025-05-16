@@ -17,6 +17,9 @@ import { getAdminSettingsAction } from "@/lib/actions/admin-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TeamListItem } from "@/components/teams/team-list-item";
+
 
 interface CategoryPickDetail {
   categoryName: string;
@@ -139,6 +142,9 @@ export default function TeamsLeaderboardPage() {
   
   const globalCategorizedScoresArray = useMemo(() => Array.from(globalCategorizedScoresMap.entries()), [globalCategorizedScoresMap]);
 
+  const [selectedTeamDetail, setSelectedTeamDetail] = useState<TeamWithScore | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
   useEffect(() => {
     async function fetchPageData() {
       setIsLoadingSettings(true);
@@ -173,6 +179,7 @@ export default function TeamsLeaderboardPage() {
           let score = 0;
           const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
           const categoryPicksDetails: CategoryPickDetail[] = [];
+          let firstPlacePicksCount = 0;
 
           (team.founderChoices || []).forEach(nationId => {
             const nation = nationsMap.get(nationId);
@@ -188,6 +195,9 @@ export default function TeamsLeaderboardPage() {
                 actualRank: nation.ranking,
                 points,
               });
+              if (nation.ranking === 1) {
+                firstPlacePicksCount++;
+              }
             }
           });
 
@@ -199,6 +209,10 @@ export default function TeamsLeaderboardPage() {
             pickedNationCountryCode: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.countryCode : undefined,
             actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score,
           });
+           if (bestSongPick.rank === 1) {
+            firstPlacePicksCount++;
+          }
+
 
           const bestPerformancePick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerformanceNations);
           score += bestPerformancePick.points;
@@ -208,6 +222,9 @@ export default function TeamsLeaderboardPage() {
             pickedNationCountryCode: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.countryCode : undefined,
             actualCategoryRank: bestPerformancePick.rank, pointsAwarded: bestPerformancePick.points, iconName: "Star", pickedNationScoreInCategory: bestPerformancePick.score,
           });
+          if (bestPerformancePick.rank === 1) {
+            firstPlacePicksCount++;
+          }
           
           const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
           score += bestOutfitPick.points;
@@ -217,6 +234,9 @@ export default function TeamsLeaderboardPage() {
             pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined,
             actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score,
           });
+          if (bestOutfitPick.rank === 1) {
+            firstPlacePicksCount++;
+          }
           
           const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, bottomSongNations);
           score += worstSongPick.points;
@@ -227,15 +247,11 @@ export default function TeamsLeaderboardPage() {
             actualCategoryRank: worstSongPick.rank, pickedNationScoreInCategory: worstSongPick.score,
             pointsAwarded: worstSongPick.points, iconName: "ThumbsDown",
           });
+           if (worstSongPick.rank === 1) { // "1st" for worst song means correctly picked the lowest
+            firstPlacePicksCount++;
+          }
           
-          let firstPlaceCategoryPicksCount = 0;
-          categoryPicksDetails.forEach(pickDetail => {
-            if (pickDetail.actualCategoryRank === 1) {
-              firstPlaceCategoryPicksCount++;
-            }
-          });
-
-          if (firstPlaceCategoryPicksCount >= 2) {
+          if (firstPlacePicksCount >= 2) {
             score += 5; // Bonus points
           }
 
@@ -333,7 +349,7 @@ export default function TeamsLeaderboardPage() {
   });
   MedalIcon.displayName = 'MedalIcon';
 
-  const PrimaSquadraNationDisplay = ({ detail }: { detail: GlobalPrimaSquadraDetailType }) => {
+  const PrimaSquadraNationDisplay = React.memo(({ detail, allNations }: { detail: GlobalPrimaSquadraDetailType, allNations: Nation[] }) => {
     const nationData = allNations.find(n => n.id === detail.id);
     const rankText = !adminSettings.leaderboardLocked && detail.actualRank && detail.actualRank > 0
       ? `(${detail.actualRank}°)`.trim()
@@ -341,41 +357,41 @@ export default function TeamsLeaderboardPage() {
     const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
-      <div className={cn("px-2 py-1 flex items-start justify-between w-full")}>
-        <div className="flex items-center gap-1.5">
-          <BadgeCheck className="w-5 h-5 text-accent shrink-0" />
-          <div className="flex items-center gap-1.5"> 
-            {nationData?.countryCode ? (
-                <Image
-                    src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
-                    alt={detail.name}
-                    width={20}
-                    height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0"
-                    data-ai-hint={`${detail.name} flag icon`}
-                />
-                ) : (
-                <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
-            )}
-            <div className="flex flex-col items-start">
-                <Link
-                    href={`/nations/${detail.id}`}
-                    className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
-                    title={titleText}
-                >
-                    <span className="font-medium">{detail.name}</span>
-                    {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
-                    {rankText && !adminSettings.leaderboardLocked && (
-                      <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                    )}
-                </Link>
-                 {(nationData?.artistName || nationData?.songTitle) && (
-                     <span className="text-xs text-muted-foreground/80 block">
-                        {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
-                    </span>
+      <div className={cn("px-2 py-1 flex items-center justify-between w-full")}>
+         <div className="flex items-center gap-1.5">
+            <BadgeCheck className="w-5 h-5 text-accent shrink-0" />
+            <div className="flex items-center gap-1.5">
+                {nationData?.countryCode ? (
+                    <Image
+                        src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
+                        alt={detail.name}
+                        width={20}
+                        height={13}
+                        className="rounded-sm border border-border/30 object-contain shrink-0"
+                        data-ai-hint={`${detail.name} flag icon`}
+                    />
+                    ) : (
+                    <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
                 )}
+                <div className="flex flex-col items-start">
+                    <Link
+                        href={`/nations/${detail.id}`}
+                        className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
+                        title={titleText}
+                    >
+                        <span className="font-medium">{detail.name}</span>
+                        {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
+                        {rankText && !adminSettings.leaderboardLocked && (
+                        <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                        )}
+                    </Link>
+                    {(nationData?.artistName || nationData?.songTitle) && (
+                        <span className="text-xs text-muted-foreground/80 block">
+                            {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                        </span>
+                    )}
+                </div>
             </div>
-          </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
           <span className={cn(
@@ -387,9 +403,11 @@ export default function TeamsLeaderboardPage() {
         )}
       </div>
     );
-  };
+  });
+  PrimaSquadraNationDisplay.displayName = 'PrimaSquadraNationDisplay';
 
-  const CategoryPickDisplay = ({ detail }: { detail: CategoryPickDetail }) => {
+
+const CategoryPickDisplay = React.memo(({ detail, allNations }: { detail: CategoryPickDetail, allNations: Nation[] }) => {
     let IconComponent: React.ElementType;
     const iconColorClass = "text-accent";
   
@@ -452,7 +470,10 @@ export default function TeamsLeaderboardPage() {
                           {pickedNationFullDetails.name}
                         </span>
                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && (
+                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && detail.categoryName !== "Peggior Canzone" && (
+                            <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                         )}
+                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && detail.categoryName === "Peggior Canzone" && (
                             <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                          )}
                     </Link>
@@ -467,134 +488,155 @@ export default function TeamsLeaderboardPage() {
         </div>
       </div>
     );
-  };
+  });
+CategoryPickDisplay.displayName = 'CategoryPickDisplay';
 
 
   return (
-    <div className="space-y-8">
-      <TeamsSubNavigation />
-      <header className="text-center sm:text-left space-y-2 mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
-          <BarChartBig className="mr-3 h-10 w-10" />
-          Classifica Squadre
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Punteggi basati sulla classifica finale e sui pronostici degli utenti.
-        </p>
-      </header>
+    <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+      <div className="space-y-8">
+        <TeamsSubNavigation />
+        <header className="text-center sm:text-left space-y-2 mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary flex items-center">
+            <BarChartBig className="mr-3 h-10 w-10" />
+            Classifica Squadre
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Punteggi basati sulla classifica finale e sui pronostici degli utenti.
+          </p>
+        </header>
 
-      {teamsWithScores.length === 0 ? (
-        <div className="text-center text-muted-foreground py-10">
-          <Trophy className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-lg">Nessuna squadra trovata o nessun punteggio calcolabile.</p>
-          <p>Assicurati che le squadre siano state create e che le nazioni abbiano un ranking e voti utente.</p>
-        </div>
-      ) : (
-        <>
-          {podiumTeams.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Il Podio delle Squadre
-              </h2>
-              <TeamList
-                teams={podiumTeams}
+        {teamsWithScores.length === 0 ? (
+          <div className="text-center text-muted-foreground py-10">
+            <Trophy className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+            <p className="text-lg">Nessuna squadra trovata o nessun punteggio calcolabile.</p>
+            <p>Assicurati che le squadre siano state create e che le nazioni abbiano un ranking e voti utente.</p>
+          </div>
+        ) : (
+          <>
+            {podiumTeams.length > 0 && (
+              <section className="mb-12">
+                <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
+                  Il Podio delle Squadre
+                </h2>
+                <TeamList
+                  teams={podiumTeams}
+                  allNations={allNations}
+                  nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
+                  isLeaderboardPodiumDisplay={true} 
+                  disableListItemEdit={true} 
+                />
+              </section>
+            )}
+
+            {teamsWithScores.length > 0 && ( 
+              <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
+                <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
+                  Classifica Completa
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                  <Info className="h-4 w-4" />
+                  <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio in una nuova pagina.</span>
+                </div>
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[80px] text-center">Pos.</TableHead>
+                          <TableHead>Squadra</TableHead>
+                          <TableHead className="text-right">Punteggio Totale</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {teamsWithScores.map((team) => (
+                          <TableRow 
+                              key={team.id}
+                          >
+                            <TableCell className="font-medium text-center align-top pt-4">
+                              <div className="flex items-center justify-center">
+                                  {!adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && <MedalIcon rank={team.rank} className="mr-1"/>}
+                                  <span className={cn(
+                                      !adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && 
+                                      (team.rank === 1 ? "text-yellow-400" : team.rank === 2 ? "text-slate-400" : "text-amber-500"),
+                                      "font-semibold"
+                                  )}>
+                                      {team.rank}{team.isTied && "*"}
+                                  </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="align-top pt-4">
+                               <DialogTrigger asChild>
+                                <button 
+                                  onClick={() => { setSelectedTeamDetail(team); setIsDetailModalOpen(true);}}
+                                  className="text-left hover:text-primary group w-full"
+                                >
+                                  <div className="font-medium text-base group-hover:underline">
+                                    {team.name}
+                                  </div>
+                                  {team.creatorDisplayName && (
+                                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={`Utente: ${team.creatorDisplayName}`}>
+                                          <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
+                                      </div>
+                                  )}
+                                </button>
+                              </DialogTrigger>
+                            </TableCell>
+                            {!adminSettings.leaderboardLocked && 
+                              <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">
+                                  {team.score}
+                              </TableCell>
+                            }
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+          </>
+        )}
+        <Card className="mt-8 border-primary/20 bg-card/50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Il punteggio totale di una squadra è composto da due parti:
+                  </p>
+                  <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
+                      <li>
+                          <strong>Pronostici TreppoVision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
+                          Sistema: 1°: +30pt, 2°: +25pt, 3°: +20pt, 4°: +18pt, 5°: +16pt, 6°: +14pt, 7°-10°: +12pt, 11°-12°: +10pt, 13°-24°: -5pt, 25°: -10pt, 26°: -15pt.
+                          Nazioni senza ranking valido ottengono 0 punti.
+                      </li>
+                      <li>
+                          <strong>Pronostici TreppoScore</strong>: Punti per aver indovinato le nazioni più (o meno, per "Peggior Canzone") votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
+                          Per ogni categoria: 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
+                      </li>
+                      <li>
+                          <strong>Bonus</strong>: Un bonus di +5 punti viene assegnato se una squadra indovina il 1° posto in almeno due categorie, combinando i successi da "Pronostici TreppoVision" (1° posto Eurovision) e "Pronostici TreppoScore" (1° posto nella votazione utenti per categoria).
+                      </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+      </div>
+      {selectedTeamDetail && (
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
+            <TeamListItem
+                team={selectedTeamDetail}
                 allNations={allNations}
                 nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
-                isLeaderboardPodiumDisplay={true} 
-                disableListItemEdit={true} 
-              />
-            </section>
-          )}
-
-          {teamsWithScores.length > 0 && ( 
-             <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
-              <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Classifica Completa
-              </h2>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                <Info className="h-4 w-4" />
-                <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio in una nuova pagina.</span>
-              </div>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[80px] text-center">Pos.</TableHead>
-                        <TableHead>Squadra</TableHead>
-                        <TableHead className="text-right">Punteggio Totale</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teamsWithScores.map((team) => (
-                        <TableRow 
-                            key={team.id}
-                        >
-                          <TableCell className="font-medium text-center align-top pt-4">
-                            <div className="flex items-center justify-center">
-                                {!adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && <MedalIcon rank={team.rank} className="mr-1"/>}
-                                <span className={cn(
-                                    !adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && 
-                                    (team.rank === 1 ? "text-yellow-400" : team.rank === 2 ? "text-slate-400" : "text-amber-500"),
-                                    "font-semibold"
-                                )}>
-                                    {team.rank}{team.isTied && "*"}
-                                </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="align-top pt-4">
-                            <Link href={`/teams/${team.id}/details`} className="hover:text-primary group">
-                              <div className="font-medium text-base group-hover:underline">
-                                {team.name}
-                              </div>
-                            </Link>
-                            {team.creatorDisplayName && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5" title={`Utente: ${team.creatorDisplayName}`}>
-                                    <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
-                                </div>
-                            )}
-                          </TableCell>
-                          {!adminSettings.leaderboardLocked && 
-                            <TableCell className="text-right font-semibold text-lg text-primary align-top pt-4">
-                                {team.score}
-                            </TableCell>
-                          }
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </section>
-          )}
-        </>
+                isLeaderboardPodiumDisplay={true}
+                disableEdit={true}
+                isOwnTeamCard={user?.uid === selectedTeamDetail.userId}
+            />
+        </DialogContent>
       )}
-      <Card className="mt-8 border-primary/20 bg-card/50">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Il punteggio totale di una squadra è composto da due parti:
-                </p>
-                <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
-                    <li>
-                        <strong>Pronostici TreppoVision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
-                        Sistema: 1°: +30pt, 2°: +25pt, 3°: +20pt, 4°: +18pt, 5°: +16pt, 6°: +14pt, 7°-10°: +12pt, 11°-12°: +10pt, 13°-24°: -5pt, 25°: -10pt, 26°: -15pt.
-                        Nazioni senza ranking valido ottengono 0 punti.
-                    </li>
-                    <li>
-                        <strong>Pronostici TreppoScore</strong>: Punti per aver indovinato le nazioni più o meno votate dagli utenti nelle categorie Miglior Canzone, Miglior Performance, Miglior Outfit e Peggior Canzone.
-                        Per ogni categoria (Migliore/Peggiore): 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
-                        Inoltre, un bonus di +5 punti viene assegnato se una squadra indovina il 1° posto in almeno due di queste categorie Pronostici TreppoScore.
-                    </li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-    </div>
+    </Dialog>
   );
 }
-
