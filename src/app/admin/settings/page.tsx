@@ -57,8 +57,8 @@ export default function AdminSettingsPage() {
             return rankA - rankB;
           });
 
-          setNations(sortedNations); // Initially sort by existing rank, then performing order
-          setAllNationsStable(fetchedNations); // Keep a stable list for reference
+          setNations(sortedNations); 
+          setAllNationsStable(fetchedNations); 
 
           const initialRanks = new Map<string, string>();
           fetchedNations.forEach(nation => { 
@@ -142,16 +142,19 @@ export default function AdminSettingsPage() {
       }
       newNationsArray.splice(newIndex, 0, item);
       
-      // Update rankingsInput to reflect new visual order immediately
       const newRankingsInput = new Map(rankingsInput);
       newNationsArray.forEach((nation, idx) => {
-        newRankingsInput.set(nation.id, String(idx + 1));
+        const newTargetRankString = String(idx + 1);
+        const currentRankStringInInput = newRankingsInput.get(nation.id) ?? "";
+        if (newTargetRankString !== currentRankStringInInput) {
+          newRankingsInput.set(nation.id, newTargetRankString);
+        }
       });
       setRankingsInput(newRankingsInput);
       
       return newNationsArray;
     });
-  }, [rankingsInput]); // Removed handleRankingInputChange from dependencies as it's not called directly
+  }, [rankingsInput]); 
 
   const handleSaveAllChangedRankings = async () => {
     setIsSavingAll(true);
@@ -170,7 +173,6 @@ export default function AdminSettingsPage() {
             .then(result => {
               if (result.success) {
                 successfulSaves++;
-                // Update the nation's rank in the local 'nations' state for UI consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
@@ -195,7 +197,6 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
-      // Update initialRankingsMap to reflect the new saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -205,17 +206,15 @@ export default function AdminSettingsPage() {
     setIsDeletingAll(true);
     const promises = [];
     for (const nation of allNationsStable) {
-      promises.push(updateNationRankingAction(nation.id, "")); // Pass empty string to clear
+      promises.push(updateNationRankingAction(nation.id, "")); 
     }
     await Promise.all(promises);
 
-    // Clear all input fields and initial map
     const newEmptyRankings = new Map<string, string>();
     allNationsStable.forEach(n => newEmptyRankings.set(n.id, ""));
     setRankingsInput(newEmptyRankings);
     setInitialRankingsMap(newEmptyRankings);
 
-    // Update local nations state to remove rankings
     setNations(prevNations => prevNations.map(n => ({ ...n, ranking: undefined })));
 
     toast({ title: "Ranking Eliminati", description: "Tutti i ranking sono stati eliminati." });
@@ -335,14 +334,14 @@ export default function AdminSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-end gap-2 mb-4">
-            <Button onClick={handleSaveAllChangedRankings} disabled={isSavingAll || isDeletingAll}>
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mb-4">
+            <Button onClick={handleSaveAllChangedRankings} disabled={isSavingAll || isDeletingAll} className="w-full sm:w-auto">
               {isSavingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Salva Ranking Modificati
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={isSavingAll || isDeletingAll}>
+                <Button variant="destructive" disabled={isSavingAll || isDeletingAll} className="w-full sm:w-auto">
                   {isDeletingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                   Elimina Tutti i Ranking
                 </Button>
