@@ -78,7 +78,15 @@ const getTopNationsForCategory = (
       if (a.score === null && b.score === null) return 0;
       if (a.score === null) return 1; 
       if (b.score === null) return -1; 
-      if (a.score === b.score) return a.name.localeCompare(b.name);
+      if (a.score === b.score) {
+        // Secondary sort by vote count if scores are equal, then by name
+        const voteCountA = scoresMap.get(a.id)?.voteCount || 0;
+        const voteCountB = scoresMap.get(b.id)?.voteCount || 0;
+        if (voteCountA !== voteCountB) {
+          return sortOrder === 'desc' ? voteCountB - voteCountA : voteCountA - voteCountB;
+        }
+        return a.name.localeCompare(b.name);
+      }
       if (sortOrder === 'desc') {
         return (b.score as number) - (a.score as number);
       }
@@ -228,9 +236,7 @@ export default function TeamsLeaderboardPage() {
             currentRank = i + 1;
           }
           calculatedTeams[i].rank = currentRank;
-        }
-
-        for (let i = 0; i < calculatedTeams.length; i++) {
+          
           let isTiedValue = false;
           if (i > 0 && calculatedTeams[i].rank === calculatedTeams[i-1].rank) {
             isTiedValue = true;
@@ -289,7 +295,8 @@ export default function TeamsLeaderboardPage() {
   }
   
   const podiumTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) <= 3);
-  const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
+  // The table will now show all teams.
+  // const tableTeams = teamsWithScores.filter(team => (team.rank ?? Infinity) > 3);
 
   const MedalIcon = ({ rank, className }: { rank?: number, className?: string }) => {
     if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
@@ -309,12 +316,13 @@ export default function TeamsLeaderboardPage() {
     const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
-      <div className={cn("px-2 py-1 flex items-center", detail.id ? "justify-between" : "justify-start")}>
+      <div className={cn("px-2 py-1 flex items-start", detail.id ? "justify-between" : "justify-start")}>
         <div className="flex items-center gap-1.5">
+          <BadgeCheck className="w-5 h-5 text-accent shrink-0 mr-1" />
           {nationData?.countryCode ? (
             <Image
               src={`https://flagcdn.com/w20/${nationData.countryCode.toLowerCase()}.png`}
-              alt={detail.name}
+              alt={detail.name || "Bandiera"}
               width={20}
               height={13}
               className="rounded-sm border border-border/30 object-contain shrink-0"
@@ -323,17 +331,24 @@ export default function TeamsLeaderboardPage() {
           ) : (
             <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
           )}
-          <Link
-            href={`/nations/${detail.id}`}
-            className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
-            title={titleText}
-          >
-            <span className="font-medium">{detail.name}</span>
-            {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
-            {!adminSettings.leaderboardLocked && rankText && (
-              <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-            )}
-          </Link>
+          <div className="flex flex-col items-start">
+             <Link
+                href={`/nations/${detail.id}`}
+                className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
+                title={titleText}
+              >
+                <span className="font-medium">{detail.name}</span>
+                {!adminSettings.leaderboardLocked && <MedalIcon rank={detail.actualRank} className="ml-0.5" />}
+                {!adminSettings.leaderboardLocked && rankText && (
+                  <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                )}
+              </Link>
+              {(nationData?.artistName || nationData?.songTitle) && (
+                <span className="text-xs text-muted-foreground/80 block">
+                  {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                </span>
+              )}
+          </div>
         </div>
         {!adminSettings.leaderboardLocked && typeof detail.points === 'number' && (
           <span className={cn("text-xs ml-auto pl-1", detail.points > 0 ? "font-semibold text-primary" : detail.points < 0 ? "font-semibold text-destructive" : "text-muted-foreground")}>
@@ -346,7 +361,7 @@ export default function TeamsLeaderboardPage() {
 
   const CategoryPickDisplay = ({ detail }: { detail: GlobalCategoryPickDetailType }) => {
     let IconComponent: React.ElementType;
-    const iconColorClass = "text-accent"; 
+    const iconColorClass = "text-accent";
   
     switch (detail.iconName) {
       case 'Music2': IconComponent = Music2; break;
@@ -363,59 +378,72 @@ export default function TeamsLeaderboardPage() {
       rankSuffix = " in cat.";
     } else if (detail.categoryName === "Peggior Canzone") {
       rankSuffix = " peggiore";
+    } else if (detail.categoryName === "Miglior Canzone") {
+      rankSuffix = "";
     }
 
+
     const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
-      ? `(${detail.actualCategoryRank}°${rankSuffix ? `${rankSuffix}` : ''})`.trim()
+      ? `(${detail.actualCategoryRank}°${rankSuffix})`.trim()
       : "";
     const titleText = `${detail.categoryName}: ${pickedNationFullDetails?.name || 'N/D'}${rankText}${!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' ? ` Punti: ${detail.pointsAwarded}`: ''}`;
   
     return (
       <div className={cn("px-2 py-1")}>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-1.5">
-            <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
-            <span className="text-xs text-foreground/90 min-w-[100px] shrink-0 font-medium">{detail.categoryName}</span>
-          </div>
-          {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && (
-            <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-              {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
-            </span>
-          )}
-        </div>
-        <div className="w-full mt-0.5 pl-[calc(1rem+theme(spacing.1_5))]">
-          {pickedNationFullDetails ? (
-            <div className="flex items-center gap-1">
-              {pickedNationFullDetails.countryCode ? (
-                <Image
-                  src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
-                  alt={pickedNationFullDetails.name}
-                  width={20}
-                  height={13}
-                  className="rounded-sm border border-border/30 object-contain shrink-0 mr-1.5"
-                  data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
-                />
-              ) : (
-                <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
-              )}
-              <Link
-                href={`/nations/${pickedNationFullDetails.id}`}
-                className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
-                title={titleText}
-              >
-                <span className="font-medium">{pickedNationFullDetails.name}</span>
-                {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank <= 3 && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                 {!adminSettings.leaderboardLocked && rankText && (
-                    <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                )}
-              </Link>
+        <div className="flex flex-col gap-0.5"> {/* Main container for this pick, always stacks lines */}
+            {/* Line 1: Icon, Label, Points */}
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5">
+                    <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
+                    <span className="text-xs text-foreground/90 min-w-[100px] shrink-0 font-medium">{detail.categoryName}</span>
+                </div>
+            {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && detail.pointsAwarded !== 0 && (
+                <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+                {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+                </span>
+            )}
             </div>
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <UserCircle className="h-4 w-4 shrink-0" />
-              <span>Nessuna selezione</span>
+
+            {/* Line 2 (indented): Nation Details (Flag, Name, Rank, Artist/Song) */}
+            <div className={cn(
+                "w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]" 
+            )}>
+            {pickedNationFullDetails ? (
+                <div className="flex items-center gap-1"> {/* Flag + Text Block, vertically centered */}
+                    {pickedNationFullDetails.countryCode ? (
+                    <Image
+                        src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
+                        alt={pickedNationFullDetails.name}
+                        width={20}
+                        height={13}
+                        className="rounded-sm border border-border/30 object-contain shrink-0 mr-0.5"
+                        data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
+                    />
+                    ) : (
+                    <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm mr-1.5"></div>
+                    )}
+                    <div className="flex flex-col items-start"> {/* Text block */}
+                        <Link href={`/nations/${pickedNationFullDetails.id}`}
+                            className={cn("group text-xs hover:underline hover:text-primary flex items-center gap-1")}
+                            title={titleText}
+                        >
+                            <span className="font-medium">
+                            {pickedNationFullDetails.name}
+                            </span>
+                            {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
+                            {rankText && !adminSettings.leaderboardLocked && (
+                                <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                            )}
+                        </Link>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <UserCircle className="h-4 w-4 shrink-0" />
+                <span>Nessuna selezione</span>
+                </div>
+            )}
             </div>
-          )}
         </div>
       </div>
     );
@@ -458,10 +486,10 @@ export default function TeamsLeaderboardPage() {
             </section>
           )}
 
-          {tableTeams.length > 0 && (
+          {teamsWithScores.length > 0 && ( // Always show the table if there are any teams
              <section className={podiumTeams.length > 0 ? "mt-12" : ""}>
               <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-                Classifica Completa (dal 4° posto)
+                Classifica Completa
               </h2>
               <Card>
                 <CardContent className="p-0">
@@ -474,10 +502,19 @@ export default function TeamsLeaderboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tableTeams.map((team) => (
+                      {teamsWithScores.map((team) => ( // Iterate over all teams for the table
                         <TableRow key={team.id}>
-                          <TableCell className="font-medium text-center">
-                            {team.rank}{team.isTied && "*"}
+                          <TableCell className="font-medium text-center align-top pt-4">
+                            <div className="flex items-center justify-center">
+                                {!adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && <MedalIcon rank={team.rank} className="mr-1" />}
+                                <span className={cn(
+                                    !adminSettings.leaderboardLocked && team.rank && [1,2,3].includes(team.rank) && 
+                                    (team.rank === 1 ? "text-yellow-400" : team.rank === 2 ? "text-slate-400" : "text-amber-500"),
+                                    "font-semibold"
+                                )}>
+                                    {team.rank}{team.isTied && "*"}
+                                </span>
+                            </div>
                           </TableCell>
                           <TableCell className="align-top pt-4">
                               <div className="font-medium text-base">
@@ -531,5 +568,3 @@ export default function TeamsLeaderboardPage() {
     </div>
   );
 }
-
-
