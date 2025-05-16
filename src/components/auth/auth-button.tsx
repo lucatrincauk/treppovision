@@ -44,6 +44,7 @@ import type { Team } from "@/types";
 import { useRouter } from "next/navigation";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
 import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions";
+import { cn } from "@/lib/utils";
 
 export function AuthButton() {
   const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName, sendPasswordReset } = useAuth();
@@ -128,6 +129,12 @@ export function AuthButton() {
 
     refreshLockStatusOnOpen();
   }, [user, isDropdownOpen]);
+
+  React.useEffect(() => {
+    if (userRegistrationEnabled === false && activeTab === "signup") {
+      setActiveTab("login"); // Switch to login tab if signup is disabled and was active
+    }
+  }, [userRegistrationEnabled, activeTab]);
 
 
   const handleAuthSuccess = () => {
@@ -311,11 +318,16 @@ export function AuthButton() {
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={cn(
+            "grid w-full",
+            (userRegistrationEnabled === true || userRegistrationEnabled === null) ? "grid-cols-3" : "grid-cols-2"
+          )}>
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
-            <TabsTrigger value="signup" disabled={userRegistrationEnabled === false || isLoadingRegStatus}>
-              <UserPlus className="mr-1"/>{userRegistrationEnabled === false ? "Registrazione Chiusa" : "Registrati"}
-            </TabsTrigger>
+            {(userRegistrationEnabled === true || userRegistrationEnabled === null) && (
+              <TabsTrigger value="signup" disabled={isLoadingRegStatus}>
+                <UserPlus className="mr-1"/>{isLoadingRegStatus ? "Caricamento..." : "Registrati"}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="emailLink"><Link2 className="mr-1"/>Link Email</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
@@ -332,3 +344,5 @@ export function AuthButton() {
     </Dialog>
   );
 }
+
+    
