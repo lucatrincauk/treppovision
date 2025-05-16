@@ -4,14 +4,14 @@ import { NationListItem } from "./nation-list-item";
 
 interface NationListProps {
   nations: Nation[];
-  title: string;
+  title?: string; // Title is now optional, as it's handled by parent
 }
 
 export function NationList({ nations, title }: NationListProps) {
   if (nations.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight mb-4 text-primary">{title}</h2>
+        {/* Title and conditional paragraph are removed from here */}
         <p className="text-muted-foreground">Nessuna nazione in questa categoria.</p>
       </div>
     );
@@ -19,14 +19,7 @@ export function NationList({ nations, title }: NationListProps) {
 
   return (
     <div className="mb-12">
-      <h2 className="text-3xl font-bold tracking-tight mb-6 text-primary border-b-2 border-primary/30 pb-2">
-        {title}
-      </h2>
-      {title === "Elenco Nazioni" && (
-        <p className="text-sm text-muted-foreground -mt-2 mb-4">
-          Nazioni elencate per ordine di esibizione.
-        </p>
-      )}
+      {/* Title and conditional paragraph are removed from here */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {nations.map((nation) => (
           <NationListItem key={nation.id} nation={nation} />

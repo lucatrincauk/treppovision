@@ -57,20 +57,23 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
         });
     } else {
       setUserVotesMap(new Map()); // Clear votes if user logs out
-      if (typeof window !== 'undefined') {
-        // If user logs out, reset the toggle to false and clear local storage if desired
-        // Or keep it as is, and it will just not apply if they're not logged in.
-        // For now, let's reset it:
-        // setHideVotedNations(false);
-        // localStorage.setItem(HIDE_VOTED_NATIONS_KEY, 'false');
-      }
       setIsLoadingUserVotes(false);
     }
   }, [user, authLoading]);
 
   useEffect(() => {
-    let results = initialNations;
+    let results = [...initialNations]; // Create a copy to sort
 
+    // Sort by performingOrder, then by name
+    results.sort((a, b) => {
+      const orderA = a.performingOrder ?? Infinity;
+      const orderB = b.performingOrder ?? Infinity;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    
     // Apply search filter
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
@@ -90,7 +93,6 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
     setFilteredNations(results);
   }, [searchTerm, initialNations, hideVotedNations, user, userVotesMap, isLoadingUserVotes]);
 
-  // Effect to save the toggle preference to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(HIDE_VOTED_NATIONS_KEY, String(hideVotedNations));
@@ -103,6 +105,15 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
 
   return (
     <div className="space-y-6">
+      <h2 className="text-3xl font-bold tracking-tight text-primary border-b-2 border-primary/30 pb-2">
+        {listTitle}
+      </h2>
+      {listTitle === "Elenco Nazioni" && (
+         <p className="text-base text-muted-foreground/80 -mt-4 mb-4">
+           Nazioni elencate per ordine di esibizione.
+         </p>
+      )}
+
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 my-4">
         <div className="relative w-full sm:max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -152,7 +163,7 @@ export function NationsDisplayClient({ initialNations, listTitle }: NationsDispl
       )}
       
       {(filteredNations.length > 0 || (!searchTerm && initialNations.length > 0)) && (
-         <NationList nations={filteredNations} title={listTitle} />
+         <NationList nations={filteredNations} />
       )}
     </div>
   );
