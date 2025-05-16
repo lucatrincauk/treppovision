@@ -201,6 +201,11 @@ export default function TeamsLeaderboardPage() {
             }
           });
 
+          // Bonus for all founder choices in top 5
+          if (primaSquadraDetails.length === 3 && primaSquadraDetails.every(detail => detail.actualRank && detail.actualRank >= 1 && detail.actualRank <= 5)) {
+            score += 30; // New Top 5 Bonus
+          }
+
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
           categoryPicksDetails.push({
@@ -247,12 +252,12 @@ export default function TeamsLeaderboardPage() {
             actualCategoryRank: worstSongPick.rank, pickedNationScoreInCategory: worstSongPick.score,
             pointsAwarded: worstSongPick.points, iconName: "ThumbsDown",
           });
-           if (worstSongPick.rank === 1) { // "1st" for worst song means correctly picked the lowest
+           if (worstSongPick.rank === 1) { 
             firstPlacePicksCount++;
           }
           
           if (firstPlacePicksCount >= 2) {
-            score += 5; // Bonus points
+            score += 5; // Original Bonus for 2+ first place picks
           }
 
 
@@ -357,9 +362,9 @@ export default function TeamsLeaderboardPage() {
     const titleText = `${detail.name}${rankText ? ` ${rankText}` : ''}${nationData?.artistName ? ` - ${nationData.artistName}` : ''}${nationData?.songTitle ? ` - ${nationData.songTitle}` : ''}${!adminSettings.leaderboardLocked && typeof detail.points === 'number' ? ` Punti: ${detail.points}`: ''}`;
   
     return (
-      <div className={cn("px-2 py-1 flex items-center justify-between w-full")}>
-         <div className="flex items-center gap-1.5">
-            <BadgeCheck className="w-5 h-5 text-accent shrink-0" />
+      <div className={cn("px-2 py-1 flex items-start justify-between w-full")}>
+         <div className="flex items-center gap-1.5"> 
+            <BadgeCheck className="w-5 h-5 text-accent shrink-0" /> 
             <div className="flex items-center gap-1.5">
                 {nationData?.countryCode ? (
                     <Image
@@ -385,11 +390,11 @@ export default function TeamsLeaderboardPage() {
                         <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
                         )}
                     </Link>
-                    {(nationData?.artistName || nationData?.songTitle) && (
-                        <span className="text-xs text-muted-foreground/80 block">
-                            {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
-                        </span>
-                    )}
+                   {(nationData?.artistName || nationData?.songTitle) && (
+                     <span className="text-xs text-muted-foreground/80 block">
+                        {nationData.artistName}{nationData.artistName && nationData.songTitle && " - "}{nationData.songTitle}
+                     </span>
+                   )}
                 </div>
             </div>
         </div>
@@ -424,7 +429,7 @@ const CategoryPickDisplay = React.memo(({ detail, allNations }: { detail: Catego
     let rankSuffix = "";
     if (detail.categoryName === "Peggior Canzone") {
       rankSuffix = " peggiore";
-    }
+    } 
     
     const rankText = !adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0
       ? `(${detail.actualCategoryRank}°${rankSuffix})`.trim()
@@ -434,57 +439,56 @@ const CategoryPickDisplay = React.memo(({ detail, allNations }: { detail: Catego
   
     return (
      <div className={cn("px-2 py-1.5")}>
-        <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-1.5">
-                <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
-                <span className="text-xs text-foreground/90 min-w-[120px] shrink-0 font-medium">{detail.categoryName}</span>
-            </div>
-            {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && detail.pointsAwarded !== 0 && (
-                <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
-                {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
-                </span>
-            )}
-        </div>
-
-        <div className={cn("w-full mt-1 pl-[calc(1rem+theme(spacing.1.5))]")}>
-          {pickedNationFullDetails ? (
-            <div className="flex items-center gap-1.5"> 
-                {pickedNationFullDetails.countryCode ? (
-                <Image
-                    src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
-                    alt={pickedNationFullDetails.name}
-                    width={20}
-                    height={13}
-                    className="rounded-sm border border-border/30 object-contain shrink-0"
-                    data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
-                />
-                ) : (
-                  <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
-                )}
-                <div className="flex flex-col items-start"> 
-                    <Link href={`/nations/${pickedNationFullDetails.id}`}
-                        className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
-                        title={titleText}
-                    >
-                        <span className="font-medium">
-                          {pickedNationFullDetails.name}
-                        </span>
-                        {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
-                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && detail.categoryName !== "Peggior Canzone" && (
-                            <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                         )}
-                         {!adminSettings.leaderboardLocked && detail.actualCategoryRank && detail.actualCategoryRank > 0 && detail.categoryName === "Peggior Canzone" && (
-                            <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
-                         )}
-                    </Link>
+        <div className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5">
+                    <IconComponent className={cn("w-4 h-4 flex-shrink-0", iconColorClass)} />
+                    <span className="text-xs text-foreground/90 min-w-[120px] shrink-0 font-medium">{detail.categoryName}</span>
                 </div>
+                {!adminSettings.leaderboardLocked && typeof detail.pointsAwarded === 'number' && detail.pointsAwarded !== 0 && (
+                    <span className={cn("text-xs ml-auto pl-1", detail.pointsAwarded > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
+                    {detail.pointsAwarded > 0 ? `+${detail.pointsAwarded}pt` : `${detail.pointsAwarded}pt`}
+                    </span>
+                )}
             </div>
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <UserCircle className="h-4 w-4 shrink-0" />
-              <span>Nessuna selezione</span>
+
+            <div className={cn("w-full mt-1 pl-[calc(1rem+theme(spacing.1_5))]")}>
+            {pickedNationFullDetails ? (
+                <div className="flex items-center gap-1.5"> 
+                    {pickedNationFullDetails.countryCode ? (
+                    <Image
+                        src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
+                        alt={pickedNationFullDetails.name}
+                        width={20}
+                        height={13}
+                        className="rounded-sm border border-border/30 object-contain shrink-0"
+                        data-ai-hint={`${pickedNationFullDetails.name} flag icon`}
+                    />
+                    ) : (
+                    <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
+                    )}
+                    <div className="flex flex-col items-start">
+                        <Link href={`/nations/${pickedNationFullDetails.id}`}
+                            className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
+                            title={titleText}
+                        >
+                            <span className="font-medium">
+                            {pickedNationFullDetails.name}
+                            </span>
+                            {!adminSettings.leaderboardLocked && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} className="ml-0.5"/>}
+                            {!adminSettings.leaderboardLocked && rankText && (
+                                <span className="text-muted-foreground text-xs ml-0.5">{rankText}</span>
+                            )}
+                        </Link>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <UserCircle className="h-4 w-4 shrink-0" />
+                <span>Nessuna selezione</span>
+                </div>
+            )}
             </div>
-          )}
         </div>
       </div>
     );
@@ -536,7 +540,7 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                   <Info className="h-4 w-4" />
-                  <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio in una nuova pagina.</span>
+                  <span>Clicca sul nome di una squadra per vederne il dettaglio del punteggio.</span>
                 </div>
                 <Card>
                   <CardContent className="p-0">
@@ -604,7 +608,7 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                 <div>
                   <h3 className="font-semibold text-primary">Come Funziona il Punteggio?</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Il punteggio totale di una squadra è composto da due parti:
+                    Il punteggio totale di una squadra è composto da:
                   </p>
                   <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
                       <li>
@@ -617,7 +621,10 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
                           Per ogni categoria: 1° posto corretto: +15pt, 2°: +10pt, 3°: +5pt.
                       </li>
                       <li>
-                          <strong>Bonus</strong>: Un bonus di +5 punti viene assegnato se una squadra indovina il 1° posto in almeno due categorie, combinando i successi da "Pronostici TreppoVision" (1° posto Eurovision) e "Pronostici TreppoScore" (1° posto nella votazione utenti per categoria).
+                          <strong>Bonus "Campione di Pronostici"</strong>: Un bonus di +5 punti viene assegnato se una squadra indovina il 1° posto in almeno due categorie, combinando i successi da "Pronostici TreppoVision" (1° posto Eurovision) e "Pronostici TreppoScore" (1° posto nella votazione utenti per categoria).
+                      </li>
+                      <li>
+                          <strong>Bonus "En Plein Top 5"</strong>: Un bonus di +30 punti viene assegnato se tutte e tre le nazioni scelte per "Pronostici TreppoVision" si classificano nelle prime 5 posizioni della classifica finale Eurovision.
                       </li>
                   </ul>
                 </div>
@@ -640,3 +647,6 @@ CategoryPickDisplay.displayName = 'CategoryPickDisplay';
     </Dialog>
   );
 }
+
+
+    
