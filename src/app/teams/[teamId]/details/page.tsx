@@ -54,7 +54,7 @@ const getPointsForRank = (rank?: number): number => {
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
   currentNationsMap: Map<string, Nation>,
-  categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore' | 'overallAverageScore',
+  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount'>,
   sortOrder: 'desc' | 'asc' = 'desc',
 ): Array<{ id: string; name: string; score: number | null }> => { 
   if (!scoresMap || scoresMap.size === 0 || !currentNationsMap || currentNationsMap.size === 0) return [];
@@ -69,6 +69,14 @@ const getTopNationsForCategory = (
       if (a.score === null && b.score === null) return 0;
       if (a.score === null) return 1;
       if (b.score === null) return -1;
+      if (a.score === b.score) {
+        const voteCountA = scoresMap.get(a.id)?.voteCount || 0;
+        const voteCountB = scoresMap.get(b.id)?.voteCount || 0;
+        if (voteCountA !== voteCountB) {
+          return sortOrder === 'desc' ? voteCountB - voteCountA : voteCountA - voteCountB;
+        }
+        return a.name.localeCompare(b.name);
+      }
       if (sortOrder === 'desc') {
         return (b.score as number) - (a.score as number);
       }
@@ -136,7 +144,7 @@ export default function TeamDetailsPage() {
         const nationsMap = new Map(fetchedNations.map(n => [n.id, n]));
         
         let score = 0;
-        let firstPlacePicksCount = 0;
+        let firstPlaceCategoryPicksCount = 0; // For "Campione di Pronostici" (TreppoScore categories only)
         let bonusCampionePronostici = false;
         let bonusEnPleinTop5 = false;
 
@@ -144,7 +152,6 @@ export default function TeamDetailsPage() {
           const nation = nationsMap.get(nationId);
           const points = nation ? getPointsForRank(nation.ranking) : 0;
           score += points;
-          if(nation?.ranking === 1) firstPlacePicksCount++;
           return {
             id: nationId,
             name: nation?.name || 'Sconosciuto',
@@ -170,9 +177,9 @@ export default function TeamDetailsPage() {
 
         const bestSongPick = getCategoryPickPointsAndRank(fetchedTeam.bestSongNationId, topSongNations);
         score += bestSongPick.points;
-        if(bestSongPick.rank === 1) firstPlacePicksCount++;
+        if(bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
         categoryPicksDetails.push({
-            categoryName: "Miglior Canzone", pickedNationId: fetchedTeam.bestSongNationId || "", 
+            categoryName: "Miglior Canzone", pickedNationId: fetchedTeam.bestSongNationId || undefined, 
             pickedNationName: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.countryCode : undefined,
             actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score
@@ -180,9 +187,9 @@ export default function TeamDetailsPage() {
 
         const bestPerfPick = getCategoryPickPointsAndRank(fetchedTeam.bestPerformanceNationId, topPerformanceNations);
         score += bestPerfPick.points;
-        if(bestPerfPick.rank === 1) firstPlacePicksCount++;
+        if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
         categoryPicksDetails.push({
-            categoryName: "Miglior Performance", pickedNationId: fetchedTeam.bestPerformanceNationId || "",
+            categoryName: "Miglior Performance", pickedNationId: fetchedTeam.bestPerformanceNationId || undefined,
             pickedNationName: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.countryCode : undefined,
             actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score
@@ -190,9 +197,9 @@ export default function TeamDetailsPage() {
         
         const bestOutfitPick = getCategoryPickPointsAndRank(fetchedTeam.bestOutfitNationId, topOutfitNations);
         score += bestOutfitPick.points;
-        if(bestOutfitPick.rank === 1) firstPlacePicksCount++;
+        if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
         categoryPicksDetails.push({
-            categoryName: "Miglior Outfit", pickedNationId: fetchedTeam.bestOutfitNationId || "",
+            categoryName: "Miglior Outfit", pickedNationId: fetchedTeam.bestOutfitNationId || undefined,
             pickedNationName: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.countryCode : undefined,
             actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score
@@ -200,15 +207,16 @@ export default function TeamDetailsPage() {
 
         const worstPick = getCategoryPickPointsAndRank(fetchedTeam.worstSongNationId, bottomOverallScoreNations);
         score += worstPick.points;
-        if(worstPick.rank === 1) firstPlacePicksCount++;
+        if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
         categoryPicksDetails.push({
-            categoryName: "Peggior Canzone", pickedNationId: fetchedTeam.worstSongNationId || "",
+            categoryName: "Peggior Canzone", pickedNationId: fetchedTeam.worstSongNationId || undefined,
             pickedNationName: fetchedTeam.worstSongNationId ? nationsMap.get(fetchedTeam.worstSongNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.worstSongNationId ? nationsMap.get(fetchedTeam.worstSongNationId)?.countryCode : undefined,
             actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score
         });
-
-        if (firstPlacePicksCount >= 2) {
+        
+        // "Campione di Pronostici" bonus logic (only TreppoScore categories)
+        if (firstPlaceCategoryPicksCount >= 2) {
           score += 5;
           bonusCampionePronostici = true;
         }
