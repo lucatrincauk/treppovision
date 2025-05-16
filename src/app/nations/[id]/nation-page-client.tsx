@@ -2,13 +2,13 @@
 "use client"; // This directive marks this as a Client Component
 
 import { useState, useEffect } from "react";
-import { getNationById } from "@/lib/nation-service";
+import { getNationById, getNations } from "@/lib/nation-service";
 import { YouTubeEmbed } from "@/components/nations/youtube-embed";
 import { VotingForm } from "@/components/voting/voting-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
-import { Music2, UserSquare2, ChevronLeft, Edit, Award, FileText, Info, ListOrdered, PlayCircle, ListMusic } from "lucide-react";
+import { Music2, UserSquare2, ChevronLeft, ChevronRight, Edit, Award, FileText, Info, ListOrdered, PlayCircle, ListMusic, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
@@ -29,12 +29,30 @@ export default function NationPageClient({ initialNation, params: serverParams }
   const [isLoading, setIsLoading] = useState<boolean>(!initialNation);
   const [voteUpdateTrigger, setVoteUpdateTrigger] = useState<number>(Date.now());
 
+  const [allNations, setAllNations] = useState<Nation[]>([]);
+  const [previousNation, setPreviousNation] = useState<Nation | null>(null);
+  const [nextNation, setNextNation] = useState<Nation | null>(null);
+  const [isLoadingAllNations, setIsLoadingAllNations] = useState(true);
+
   const clientParams = useParams();
   const currentNationId = typeof clientParams?.id === 'string' ? clientParams.id : serverParams.id;
 
   useEffect(() => {
-    // Effect to handle client-side navigation or updates if initialNation is stale
-    // or if the ID in the URL changes on the client without a full page reload.
+    async function fetchAllNationsForNav() {
+      setIsLoadingAllNations(true);
+      try {
+        const nationsList = await getNations(); // Assumes getNations() sorts by performingOrder
+        setAllNations(nationsList);
+      } catch (error) {
+        console.error("Error fetching all nations for navigation:", error);
+        setAllNations([]);
+      }
+      setIsLoadingAllNations(false);
+    }
+    fetchAllNationsForNav();
+  }, []);
+
+  useEffect(() => {
     if (initialNation && initialNation.id === currentNationId) {
       setNation(initialNation);
       setIsLoading(false);
@@ -42,7 +60,7 @@ export default function NationPageClient({ initialNation, params: serverParams }
       async function fetchNation() {
         setIsLoading(true);
         const nationData = await getNationById(currentNationId);
-        setNation(nationData || null); // Set to null if not found client-side
+        setNation(nationData || null);
         setIsLoading(false);
       }
       if (currentNationId) {
@@ -51,12 +69,28 @@ export default function NationPageClient({ initialNation, params: serverParams }
     }
   }, [currentNationId, initialNation]);
 
+  useEffect(() => {
+    if (nation && allNations.length > 0) {
+      const currentIndex = allNations.findIndex(n => n.id === nation.id);
+      if (currentIndex !== -1) {
+        setPreviousNation(currentIndex > 0 ? allNations[currentIndex - 1] : null);
+        setNextNation(currentIndex < allNations.length - 1 ? allNations[currentIndex + 1] : null);
+      } else {
+        setPreviousNation(null);
+        setNextNation(null);
+      }
+    } else {
+      setPreviousNation(null);
+      setNextNation(null);
+    }
+  }, [nation, allNations]);
+
 
   const handleVoteSuccess = () => {
-    setVoteUpdateTrigger(Date.now()); // Update trigger to refresh UserVoteBadge
+    setVoteUpdateTrigger(Date.now());
   };
 
-  if (isLoading || !nation) {
+  if (isLoading || isLoadingAllNations || !nation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <ListMusic className="w-24 h-24 text-primary animate-pulse mb-6" />
@@ -87,6 +121,36 @@ export default function NationPageClient({ initialNation, params: serverParams }
             </Button>
           </div>
         </AdminNationControls>
+      </div>
+
+      {/* Next/Previous Nation Navigation */}
+      <div className="flex justify-between items-center">
+        {previousNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${previousNation.id}`} title={`Precedente: ${previousNation.name}`}>
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              {previousNation.name}
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled>
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Precedente
+          </Button>
+        )}
+        {nextNation ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/nations/${nextNation.id}`} title={`Successiva: ${nextNation.name}`}>
+              {nextNation.name}
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled>
+            Successiva
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        )}
       </div>
 
       <header className="relative rounded-lg overflow-hidden shadow-2xl border border-border">
