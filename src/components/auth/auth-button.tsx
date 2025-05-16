@@ -132,7 +132,7 @@ export function AuthButton() {
 
   React.useEffect(() => {
     if (userRegistrationEnabled === false && activeTab === "signup") {
-      setActiveTab("login"); // Switch to login tab if signup is disabled and was active
+      setActiveTab("login"); 
     }
   }, [userRegistrationEnabled, activeTab]);
 
@@ -301,30 +301,35 @@ export function AuthButton() {
 
   // Logged-out state
   const buttonText = isLoadingRegStatus || userRegistrationEnabled ? "Accedi / Registrati" : "Accedi";
+  const dialogDescriptionText = isLoadingRegStatus || userRegistrationEnabled === null || userRegistrationEnabled
+    ? "Scegli un metodo per accedere o creare un nuovo account."
+    : "Scegli un metodo per accedere.";
 
   return (
     <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
       <DialogUITrigger asChild>
         <Button variant="outline" size="sm" aria-label="Open authentication dialog">
-          <LogIn className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{buttonText}</span>
+          <LogIn className={cn("h-4 w-4", (userRegistrationEnabled === false && !isLoadingRegStatus) ? "" : "sm:mr-2")} />
+          <span className={cn((userRegistrationEnabled === false && !isLoadingRegStatus) ? "hidden sm:inline" : "hidden sm:inline")}>
+            {buttonText}
+          </span>
         </Button>
       </DialogUITrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Autenticazione</DialogTitle>
           <DialogDescription>
-            Scegli un metodo per accedere o creare un nuovo account.
+            {dialogDescriptionText}
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className={cn(
             "grid w-full",
-            (userRegistrationEnabled === true || userRegistrationEnabled === null) ? "grid-cols-3" : "grid-cols-2"
+            (userRegistrationEnabled === true || userRegistrationEnabled === null || isLoadingRegStatus) ? "grid-cols-3" : "grid-cols-2"
           )}>
             <TabsTrigger value="login"><LogIn className="mr-1"/>Accedi</TabsTrigger>
-            {(userRegistrationEnabled === true || userRegistrationEnabled === null) && (
-              <TabsTrigger value="signup" disabled={isLoadingRegStatus}>
+            {(userRegistrationEnabled === true || userRegistrationEnabled === null || isLoadingRegStatus) && (
+              <TabsTrigger value="signup" disabled={isLoadingRegStatus || userRegistrationEnabled === false}>
                 <UserPlus className="mr-1"/>{isLoadingRegStatus ? "Caricamento..." : "Registrati"}
               </TabsTrigger>
             )}
@@ -344,5 +349,3 @@ export function AuthButton() {
     </Dialog>
   );
 }
-
-    
