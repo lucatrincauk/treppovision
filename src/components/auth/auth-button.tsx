@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger as DialogUITrigger, // Renamed to avoid conflict if we had AlertDialogTrigger here
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger, // Added missing import
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +43,7 @@ import { getTeamsByUserId } from "@/lib/team-service";
 import type { Team } from "@/types";
 import { useRouter } from "next/navigation";
 import { getTeamsLockedStatus } from "@/lib/actions/team-actions";
-import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions"; // Import new status
+import { getUserRegistrationEnabledStatus } from "@/lib/actions/admin-actions";
 
 export function AuthButton() {
   const { user, logout, isLoading, completeEmailLinkSignIn, updateUserProfileName, sendPasswordReset } = useAuth();
@@ -56,8 +57,8 @@ export function AuthButton() {
   const [userTeam, setUserTeam] = React.useState<Team | null>(null);
   const [isLoadingUserTeam, setIsLoadingUserTeam] = React.useState(false);
   const [teamsLocked, setTeamsLocked] = React.useState<boolean | null>(null);
-  const [userRegistrationEnabled, setUserRegistrationEnabled] = React.useState<boolean | null>(null); // New state
-  const [isLoadingRegStatus, setIsLoadingRegStatus] = React.useState(true); // Loading for reg status
+  const [userRegistrationEnabled, setUserRegistrationEnabled] = React.useState<boolean | null>(null);
+  const [isLoadingRegStatus, setIsLoadingRegStatus] = React.useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
 
@@ -81,7 +82,7 @@ export function AuthButton() {
         setUserRegistrationEnabled(regStatus);
       } catch (error) {
         console.error("Failed to fetch user registration status:", error);
-        setUserRegistrationEnabled(false); // Default to false on error
+        setUserRegistrationEnabled(false);
       } finally {
         setIsLoadingRegStatus(false);
       }
@@ -293,12 +294,12 @@ export function AuthButton() {
 
   return (
     <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-      <DialogTrigger asChild>
+      <DialogUITrigger asChild>
         <Button variant="outline" size="sm" aria-label="Open authentication dialog">
           <LogIn className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Accedi / Registrati</span>
         </Button>
-      </DialogTrigger>
+      </DialogUITrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Autenticazione</DialogTitle>
