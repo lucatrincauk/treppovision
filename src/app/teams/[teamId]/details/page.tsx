@@ -9,7 +9,7 @@ import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service";
 import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreType, GlobalCategoryPickDetail as BaseGlobalCategoryPickDetail } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
-import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight, Award } from "lucide-react";
+import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight, Award, UserCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -350,56 +350,66 @@ export default function TeamDetailsPage() {
 
       <div className="flex justify-between items-center mb-6">
         {previousTeam ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${previousTeam.id}/details`} 
-              title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - Rank ${rankText(previousTeam.rank, previousTeam.isTied)}`} 
+              title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-2"
             >
               <ChevronLeft className="w-4 h-4" />
               <div className="flex items-center">
                 {previousTeam.rank && (
                     <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
-                    {rankText(previousTeam.rank, previousTeam.isTied)}
+                      {previousTeam.rank}°{previousTeam.isTied ? '*' : ''}
                     </span>
                 )}
                 <NavMedalIcon rank={previousTeam.rank} />
-                <div className="flex flex-col items-start">
-                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{previousTeam.name}</span>
-                  {previousTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({previousTeam.creatorDisplayName})</span>}
-                </div>
+              </div>
+              <div className="flex flex-col items-start text-left leading-tight">
+                <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{previousTeam.name}</span>
+                {previousTeam.creatorDisplayName && (
+                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
+                     <UserCircle className="w-3 h-3 mr-0.5 text-muted-foreground flex-shrink-0" />
+                    ({previousTeam.creatorDisplayName})
+                  </span>
+                )}
               </div>
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled className="h-auto py-1.5 px-2.5">
             <ChevronLeft className="w-4 h-4 mr-2" /> Precedente
           </Button>
         )}
         {nextTeam ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${nextTeam.id}/details`} 
-              title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - Rank ${rankText(nextTeam.rank, nextTeam.isTied)}`} 
+              title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-2"
             >
-              <div className="flex items-center">
+              <div className="flex flex-col items-start text-left leading-tight">
+                <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
+                {nextTeam.creatorDisplayName && (
+                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
+                    <UserCircle className="w-3 h-3 mr-0.5 text-muted-foreground flex-shrink-0" />
+                    ({nextTeam.creatorDisplayName})
+                  </span>
+                )}
+              </div>
+               <div className="flex items-center">
                 {nextTeam.rank && (
                   <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
-                    {rankText(nextTeam.rank, nextTeam.isTied)}
+                    {nextTeam.rank}°{nextTeam.isTied ? '*' : ''}
                   </span>
                 )}
                 <NavMedalIcon rank={nextTeam.rank} />
-                <div className="flex flex-col items-start">
-                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextTeam.name}</span>
-                  {nextTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({nextTeam.creatorDisplayName})</span>}
-                </div>
               </div>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled className="h-auto py-1.5 px-2.5">
             Successiva <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         )}
