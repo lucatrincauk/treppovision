@@ -258,13 +258,13 @@ export default function TeamsPage() {
         actualCategoryRank: bestOutfitPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score,
       });
 
-      const worstSongPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNationsList);
+      const worstSongPick = getCategoryPickPointsAndRank(team.worstTreppoScoreNationId, worstSongNationsList);
       if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += worstSongPick.points;
       if (worstSongPick.rank === 1 && !leaderboardLockedAdmin) firstPlacePicksCount++;
       categoryPicksDetails.push({
-        categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId || "",
-        pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined,
-        pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined,
+        categoryName: "Peggior TreppoScore", pickedNationId: team.worstTreppoScoreNationId || "",
+        pickedNationName: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.name : undefined,
+        pickedNationCountryCode: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.countryCode : undefined,
         actualCategoryRank: worstSongPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : worstSongPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstSongPick.score,
       });
       
@@ -301,7 +301,7 @@ export default function TeamsPage() {
                              !!currentTeam.bestSongNationId ||
                              !!currentTeam.bestPerformanceNationId ||
                              !!currentTeam.bestOutfitNationId ||
-                             !!currentTeam.worstSongNationId;
+                             !!currentTeam.worstTreppoScoreNationId;
         setHasUserSubmittedFinalPredictions(existingPreds);
       } else {
         setHasUserSubmittedFinalPredictions(false);

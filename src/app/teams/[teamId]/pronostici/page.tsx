@@ -73,7 +73,7 @@ export default function EditFinalAnswersPage() {
                                !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
                                !!fetchedTeam.bestOutfitNationId ||
-                               !!fetchedTeam.worstSongNationId;
+                               !!fetchedTeam.worstTreppoScoreNationId;
           setHasExistingPredictions(existingPreds);
 
           if (user && fetchedTeam.userId === user.uid) {
@@ -217,7 +217,7 @@ export default function EditFinalAnswersPage() {
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",
     bestOutfitNationId: team!.bestOutfitNationId || "",
-    worstSongNationId: team!.worstSongNationId || "",
+    worstTreppoScoreNationId: team!.worstTreppoScoreNationId || "",
   };
 
   return (

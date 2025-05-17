@@ -58,7 +58,7 @@ export async function createTeamAction(
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
-      worstSongNationId: "", // This was originally "worstSongNationId", ensure consistency if it was changed and then reverted
+      worstTreppoScoreNationId: "", // This was originally "worstTreppoScoreNationId", ensure consistency if it was changed and then reverted
       createdAt: serverTimestamp(),
     };
 
@@ -174,7 +174,7 @@ export async function updateTeamFinalAnswersAction(
                                  !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
-                                 !!teamDataInDb.worstSongNationId;
+                                 !!teamDataInDb.worstTreppoScoreNationId;
 
     if (hasExistingPredictions) {
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
@@ -184,7 +184,7 @@ export async function updateTeamFinalAnswersAction(
         !data.bestSongNationId || 
         !data.bestPerformanceNationId || 
         !data.bestOutfitNationId || 
-        !data.worstSongNationId) {
+        !data.worstTreppoScoreNationId) {
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
     
@@ -193,7 +193,7 @@ export async function updateTeamFinalAnswersAction(
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,
-      worstSongNationId: data.worstSongNationId,
+      worstTreppoScoreNationId: data.worstTreppoScoreNationId,
       updatedAt: serverTimestamp(),
     };
 

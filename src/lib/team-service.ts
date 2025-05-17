@@ -39,7 +39,7 @@ export async function getTeams(): Promise<Team[]> {
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
         bestOutfitNationId: data.bestOutfitNationId || "",
-        worstSongNationId: data.worstSongNationId || "",
+        worstTreppoScoreNationId: data.worstTreppoScoreNationId || "",
         createdAt: serializeTimestamp(data.createdAt),
         updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
       } as Team;
@@ -71,7 +71,7 @@ export async function getTeamsByUserId(userId: string): Promise<Team[]> {
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
         bestOutfitNationId: data.bestOutfitNationId || "",
-        worstSongNationId: data.worstSongNationId || "",
+        worstTreppoScoreNationId: data.worstTreppoScoreNationId || "",
         createdAt: serializeTimestamp(data.createdAt),
         updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
       } as Team;
@@ -101,7 +101,7 @@ export async function getTeamById(teamId: string): Promise<Team | undefined> {
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
         bestOutfitNationId: data.bestOutfitNationId || "",
-        worstSongNationId: data.worstSongNationId || "",
+        worstTreppoScoreNationId: data.worstTreppoScoreNationId || "",
         createdAt: serializeTimestamp(data.createdAt),
         updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
       } as Team;
@@ -136,7 +136,7 @@ export const listenToTeams = (
           bestSongNationId: data.bestSongNationId || "",
           bestPerformanceNationId: data.bestPerformanceNationId || "",
           bestOutfitNationId: data.bestOutfitNationId || "",
-          worstSongNationId: data.worstSongNationId || "",
+          worstTreppoScoreNationId: data.worstTreppoScoreNationId || "",
           createdAt: serializeTimestamp(data.createdAt),
           updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
         } as Team;
