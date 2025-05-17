@@ -54,11 +54,11 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
-      bestTreppoScoreNationId: "", // Restored
+      bestTreppoScoreNationId: "", 
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
-      worstTreppoScoreNationId: "", // Restored
+      worstTreppoScoreNationId: "", 
       createdAt: serverTimestamp(),
     };
 
@@ -131,6 +131,8 @@ export async function updateTeamAction(
     revalidatePath("/teams");
     revalidatePath(`/teams/${teamId}/edit`);
     revalidatePath("/teams/leaderboard");
+    revalidatePath(`/teams/${teamId}/details`);
+
 
     return { success: true, message: "Dettagli Team aggiornati con successo!", teamId: teamId };
   } catch (error) {
@@ -162,7 +164,7 @@ export async function updateTeamFinalAnswersAction(
     const teamSnap = await getDoc(teamDocRef);
 
     if (!teamSnap.exists()) {
-      return { success: false, message: "Team non trovato." };
+      return { success: false, message: "Squadra non trovata." };
     }
     const teamDataInDb = teamSnap.data() as Team; 
     if (teamDataInDb.userId !== userId) {
@@ -170,30 +172,30 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const hasExistingPredictions = 
-                                 !!teamDataInDb.bestTreppoScoreNationId || // Restored check
+                                 !!teamDataInDb.bestTreppoScoreNationId ||
                                  !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
-                                 !!teamDataInDb.worstTreppoScoreNationId; // Restored check
+                                 !!teamDataInDb.worstTreppoScoreNationId;
 
     if (hasExistingPredictions) {
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
-    if (!data.bestTreppoScoreNationId || // Restored validation
+    if (!data.bestTreppoScoreNationId ||
         !data.bestSongNationId || 
         !data.bestPerformanceNationId || 
         !data.bestOutfitNationId || 
-        !data.worstTreppoScoreNationId) { // Restored validation
+        !data.worstTreppoScoreNationId) {
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
     
     const finalAnswersToUpdate = {
-      bestTreppoScoreNationId: data.bestTreppoScoreNationId, // Restored
+      bestTreppoScoreNationId: data.bestTreppoScoreNationId,
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,
-      worstTreppoScoreNationId: data.worstTreppoScoreNationId, // Restored
+      worstTreppoScoreNationId: data.worstTreppoScoreNationId,
       updatedAt: serverTimestamp(),
     };
 
@@ -202,6 +204,7 @@ export async function updateTeamFinalAnswersAction(
     revalidatePath("/teams");
     revalidatePath("/teams/leaderboard");
     revalidatePath(`/teams/${teamId}/pronostici`);
+    revalidatePath(`/teams/${teamId}/details`);
 
 
     return { success: true, message: "Pronostici finali aggiornati con successo!", teamId: teamId };
@@ -249,6 +252,8 @@ export async function updateTeamCreatorDisplayNameAction(
     revalidatePath("/teams");
     revalidatePath(`/teams/${teamId}/edit`);
     revalidatePath("/teams/leaderboard");
+    revalidatePath(`/teams/${teamId}/details`);
+
 
     return { success: true, message: "Nome utente del team aggiornato." };
   } catch (error) {

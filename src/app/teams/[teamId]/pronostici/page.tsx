@@ -29,20 +29,18 @@ export default function EditFinalAnswersPage() {
 
   useEffect(() => {
     async function fetchPageData() {
-      if (authLoading || !teamId) {
+      if (authLoading || !user || !teamId) {
         setIsLoadingSettings(authLoading);
-        setIsLoadingData(authLoading); 
+        setIsLoadingData(authLoading || (!user && !teamId));
         if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
-          setIsLoadingData(false);
           setIsLoadingSettings(false);
+          setIsLoadingData(false);
         }
         return;
       }
 
       setIsLoadingSettings(true);
-      setError(null);
-
       let predictionsEnabledStatus = false;
       try {
         predictionsEnabledStatus = await getFinalPredictionsEnabledStatus();
@@ -63,23 +61,25 @@ export default function EditFinalAnswersPage() {
       }
       
       setIsLoadingData(true);
+      setError(null);
       try {
         const fetchedTeam = await getTeamById(teamId);
 
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           const existingPreds = 
-                               !!fetchedTeam.bestTreppoScoreNationId || // Restored check
+                               !!fetchedTeam.bestTreppoScoreNationId ||
                                !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
                                !!fetchedTeam.bestOutfitNationId ||
-                               !!fetchedTeam.worstTreppoScoreNationId; // Restored check
+                               !!fetchedTeam.worstTreppoScoreNationId;
           setHasExistingPredictions(existingPreds);
 
-          if (user && fetchedTeam.userId === user.uid) {
+          if (fetchedTeam.userId === user.uid) {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
+            setError("Non sei autorizzato a modificare i pronostici di questo team.");
           }
         } else {
           setError("Squadra non trovata.");
@@ -163,9 +163,9 @@ export default function EditFinalAnswersPage() {
     );
   }
   
-  if (hasExistingPredictions) {
+  if (team && hasExistingPredictions) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-2xl mx-auto">
         <Link href="/teams" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
             <ChevronLeft className="w-4 h-4 mr-1" />
             Torna alle Squadre
@@ -212,20 +212,20 @@ export default function EditFinalAnswersPage() {
   }
 
   const initialFinalAnswers: TeamFinalAnswersFormData = {
-    bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "", // Restored
+    bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "",
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",
     bestOutfitNationId: team!.bestOutfitNationId || "",
-    worstTreppoScoreNationId: team!.worstTreppoScoreNationId || "", // Restored
+    worstTreppoScoreNationId: team!.worstTreppoScoreNationId || "",
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl mx-auto">
         <Link href="/teams" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
             <ChevronLeft className="w-4 h-4 mr-1" />
             Torna alle Squadre
         </Link>
-      <Card className="max-w-2xl mx-auto shadow-lg">
+      <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center text-secondary">
             <ListOrdered className="mr-2 h-6 w-6" />
@@ -233,15 +233,6 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
-            {!hasExistingPredictions && (
-               <Alert variant="destructive" className="mt-2">
-                 <AlertTriangle className="h-4 w-4" />
-                 <AlertTitle>Attenzione</AlertTitle>
-                 <AlertDescription>
-                    I pronostici finali, una volta inviati, non possono essere modificati.
-                 </AlertDescription>
-               </Alert>
-            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
