@@ -87,7 +87,7 @@ export default function EditFinalAnswersPage() {
           setIsAuthorized(false);
         }
       } catch (fetchError: any) {
-         console.error("Failed to fetch team data for final answers:", fetchError);
+        console.error("Failed to fetch team data for final answers:", fetchError);
         setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
         setIsAuthorized(false);
       } finally {

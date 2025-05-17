@@ -141,8 +141,8 @@ export interface GlobalCategoryPickDetail {
   pickedNationCountryCode?: string;
   artistName?: string; 
   songTitle?: string;  
-  actualCategoryRank?: number | null; // Rank of the picked nation within that specific category's global results
-  pickedNationScoreInCategory?: number | null; // Score of the picked nation within that category
+  actualCategoryRank?: number | null; 
+  pickedNationScoreInCategory?: number | null; 
   pointsAwarded: number;
   iconName: string; 
 }
@@ -153,6 +153,9 @@ export interface AdminSettings {
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean; 
   userRegistrationEnabled: boolean;
+  eurovisionWinnerNationId?: string;
+  juryWinnerNationId?: string;
+  televoteWinnerNationId?: string;
 }
 
 export type RankingCategoryKey = 'overallAverageScore' | 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore';
@@ -179,14 +182,14 @@ export interface TeamWithScore extends Team {
   score?: number;
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
   categoryPicksDetails?: GlobalCategoryPickDetail[];
+  primaSquadraScore?: number;
+  treppoScoreCategoryPicksScore?: number;
+  bonusTotalScore?: number;
   rank?: number;
   isTied?: boolean;
   bonusCampionePronostici?: boolean; 
   bonusGranCampionePronostici?: boolean;
   bonusEnPleinTop5?: boolean;
-  primaSquadraScore?: number;
-  treppoScoreCategoryPicksScore?: number;
-  bonusTotalScore?: number;
 }
 
 export interface AdminNationPayload extends Omit<NationFormData, 'ranking' | 'juryRank' | 'televoteRank'> {

@@ -178,7 +178,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </div>
   );
   
-  if (isReadOnly) { // If form is read-only, display current selections as non-interactive
+  if (isReadOnly) { 
     return (
         <Form {...form}>
           <form className="space-y-6 py-4">
@@ -218,7 +218,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
               name="bestTreppoScoreNationId"
               render={({ field }) => (
@@ -287,7 +287,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-        <FormField
+         <FormField
           control={form.control}
           name="eurovisionWinnerPickNationId"
           render={({ field }) => (
@@ -368,7 +368,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
           control={form.control}
           name="bestTreppoScoreNationId"
           render={({ field }) => (
