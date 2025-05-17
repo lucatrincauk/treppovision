@@ -37,7 +37,7 @@ const finalAnswersFormZodSchema = z.object({
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
-  worstSongNationId: z.string().min(1, "Devi selezionare il Peggior TreppoScore."),
+  worstTreppoScoreNationId: z.string().min(1, "Devi selezionare il Peggior TreppoScore."),
 });
 
 interface FinalAnswersFormProps {
@@ -85,7 +85,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       bestSongNationId: "",
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
-      worstSongNationId: "",
+      worstTreppoScoreNationId: "",
     },
   });
 
@@ -96,7 +96,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
         bestOutfitNationId: initialData.bestOutfitNationId || "",
-        worstSongNationId: initialData.worstSongNationId || "",
+        worstTreppoScoreNationId: initialData.worstTreppoScoreNationId || "",
       });
     }
   }, [initialData, form]);
@@ -179,7 +179,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
               name="bestTreppoScoreNationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel></FormLabel>
+                  <FormLabel>Miglior TreppoScore</FormLabel>
                    <Select value={field.value || ""} disabled={true}>
                      <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
@@ -224,7 +224,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
             />
              <FormField
               control={form.control}
-              name="worstSongNationId"
+              name="worstTreppoScoreNationId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Peggior TreppoScore</FormLabel>
@@ -357,7 +357,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
 
         <FormField
           control={form.control}
-          name="worstSongNationId"
+          name="worstTreppoScoreNationId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Peggior TreppoScore</FormLabel>
@@ -371,7 +371,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                 </FormControl>
                 <SelectContent>
                   {sortedNations.map((nation) => (
-                    <SelectItem key={`${nation.id}-worstSong`} value={nation.id}>
+                    <SelectItem key={`${nation.id}-worstTreppo`} value={nation.id}>
                        {renderNationSelectItem(nation)}
                     </SelectItem>
                   ))}

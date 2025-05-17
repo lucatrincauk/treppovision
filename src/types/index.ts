@@ -92,7 +92,7 @@ export interface TeamFinalAnswersFormData {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstTreppoScoreNationId: string;
 }
 
 
@@ -107,7 +107,7 @@ export interface Team {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstTreppoScoreNationId: string;
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -160,6 +160,7 @@ export interface NationWithTreppoScore extends Nation {
   rank?: number; 
   voteCount: number; 
   userAverageScore?: number | null; 
+  isTied?: boolean;
 }
 
 export interface TeamWithScore extends Team {
@@ -168,7 +169,8 @@ export interface TeamWithScore extends Team {
   categoryPicksDetails?: GlobalCategoryPickDetail[];
   rank?: number;
   isTied?: boolean;
-  bonusCampionePronostici?: boolean;
+  bonusCampionePronostici?: boolean; // For +5pt bonus (2-3 correct picks)
+  bonusGranCampionePronostici?: boolean; // For +30pt bonus (>=4 correct picks)
   bonusEnPleinTop5?: boolean;
 }
 
