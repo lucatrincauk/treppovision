@@ -58,9 +58,9 @@ const getTopNationsForCategory = (
   return nationsArray
     .map(nation => {
       let scoreValue: number | null = null;
-      if (scoresMap && typeof categoryKey === 'string' && categoryKey in (scoresMap.get(nation.id) || {})) {
+      if (scoresMap && typeof categoryKey === 'string' && (scoresMap.get(nation.id) || {})[categoryKey as keyof NationGlobalCategorizedScores] !== undefined) {
         scoreValue = (scoresMap.get(nation.id) as any)?.[categoryKey] ?? null;
-      } else if (typeof categoryKey === 'string' && categoryKey in nation) {
+      } else if (!scoresMap && typeof categoryKey === 'string' && categoryKey in nation) {
         scoreValue = (nation as any)[categoryKey] ?? null;
       }
       return {
@@ -73,14 +73,11 @@ const getTopNationsForCategory = (
       };
     })
     .filter(item => {
-      if (!scoresMap && typeof categoryKey === 'string' && categoryKey in item) {
-         if (categoryKey.startsWith('worst') || (categoryKey === 'ranking' || categoryKey === 'juryRank' || categoryKey === 'televoteRank')) { 
+      if (!scoresMap && typeof categoryKey === 'string' && (categoryKey === 'ranking' || categoryKey === 'juryRank' || categoryKey === 'televoteRank')) { 
              return typeof item.score === 'number' && item.score > 0; // Ranks must be > 0
-          }
-        return typeof item.score === 'number' && item.score > 0;
       }
-      if (scoresMap && typeof categoryKey === 'string' && categoryKey in (scoresMap.get(item.id) || {})) {
-         if (categoryKey === 'overallAverageScore' && sortOrder === 'asc') { // For Peggior TreppoScore
+      if (scoresMap && typeof categoryKey === 'string' && (scoresMap.get(item.id) || {})[categoryKey as keyof NationGlobalCategorizedScores] !== undefined) {
+         if (categoryKey === 'overallAverageScore' && sortOrder === 'asc') { 
              return typeof item.score === 'number' && (scoresMap.get(item.id)?.voteCount || 0) > 0;
         }
         return typeof item.score === 'number' && (scoresMap.get(item.id)?.voteCount || 0) > 0;
@@ -92,14 +89,13 @@ const getTopNationsForCategory = (
       if (a.score === null) return 1;
       if (b.score === null) return -1;
       if (a.score === b.score) {
-        if (scoresMap && typeof categoryKey === 'string' && categoryKey in (scoresMap.get(a.id) || {})) {
+        if (scoresMap && typeof categoryKey === 'string' && (scoresMap.get(a.id) || {})[categoryKey as keyof NationGlobalCategorizedScores] !== undefined) {
             const voteCountA = scoresMap.get(a.id)?.voteCount || 0;
             const voteCountB = scoresMap.get(b.id)?.voteCount || 0;
             if (voteCountA !== voteCountB) {
             return sortOrder === 'desc' ? voteCountB - voteCountA : voteCountA - voteCountB;
             }
         }
-        // Secondary sort by name if scores are equal
         return a.name.localeCompare(b.name);
       }
       if (sortOrder === 'desc') {
@@ -210,7 +206,7 @@ export default function TeamDetailsPage() {
           let bonusEnPleinTop5 = false;
 
           const primaSquadraDetails: GlobalPrimaSquadraDetail[] = [];
-          (currentTeam.founderChoices || []).forEach(nationId => {
+          (currentTeam.founderChoices || []).forEach((nationId, index) => {
             const nation = nationsMap.get(nationId);
             if (nation) {
               const points = getPointsForEurovisionRank(nation.ranking);
@@ -218,7 +214,7 @@ export default function TeamDetailsPage() {
               primaSquadraDetails.push({
                 id: nation.id, name: nation.name, countryCode: nation.countryCode,
                 artistName: nation.artistName, songTitle: nation.songTitle,
-                actualRank: nation.ranking, points
+                actualRank: nation.ranking, points, isEvenRow: index % 2 !== 0
               });
             }
           });
@@ -335,6 +331,10 @@ export default function TeamDetailsPage() {
             iconName: "ThumbsDown", pickedNationScoreInCategory: worstTreppoPick.score
           });
 
+          categoryPicksDetails.forEach((detail, index) => {
+            detail.isEvenRow = index % 2 !== 0;
+          });
+
           score = primaSquadraSubtotal + eurovisionPicksSubtotal + treppoScoreCategoryPicksSubtotal;
 
           if (firstPlaceCategoryPicksCount >= 4) {
@@ -390,11 +390,13 @@ export default function TeamDetailsPage() {
             setTeamWithDetails(currentTeamForDetailsPage);
         } else {
             setError("Squadra non trovata nella classifica globale.");
+            setTeamWithDetails(null); // Explicitly set to null
         }
 
       } catch (fetchError: any) {
         console.error("Failed to fetch page data:", fetchError);
         setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
+        setTeamWithDetails(null); // Explicitly set to null on error
       } finally {
         setIsLoadingData(false);
         setIsLoadingRankedTeams(false);
@@ -457,7 +459,7 @@ export default function TeamDetailsPage() {
     );
   }
 
-  if (!teamWithDetails) {
+  if (!teamWithDetails) { // This handles the case where teamWithDetails is null after loading
       return (
         <div className="space-y-4">
             <Link href="/teams/leaderboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
@@ -467,7 +469,7 @@ export default function TeamDetailsPage() {
             <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Errore</AlertTitle>
-                <AlertDescription>Dettagli squadra non disponibili.</AlertDescription>
+                <AlertDescription>Dettagli squadra non disponibili o squadra non trovata.</AlertDescription>
             </Alert>
         </div>
       )
@@ -489,7 +491,7 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link
               href={`/teams/${previousTeam.id}/details`}
-              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `- ${previousTeam.creatorDisplayName}` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`}
+              title={`${previousTeam.name}${previousTeam.creatorDisplayName ? ` - ${previousTeam.creatorDisplayName}` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`}
               className="flex items-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -520,7 +522,7 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link
               href={`/teams/${nextTeam.id}/details`}
-              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `- ${nextTeam.creatorDisplayName}` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`}
+              title={`${nextTeam.name}${nextTeam.creatorDisplayName ? ` - ${nextTeam.creatorDisplayName}` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`}
               className="flex items-center gap-1.5"
             >
               <div className="flex flex-col items-end text-right leading-tight">
@@ -565,5 +567,3 @@ export default function TeamDetailsPage() {
   );
 }
 
-
-    
