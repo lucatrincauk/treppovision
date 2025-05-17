@@ -105,7 +105,7 @@ const NavMedalIcon = memo(({ rank }: { rank?: number }) => {
   if (rank === 1) colorClass = "text-yellow-400";
   else if (rank === 2) colorClass = "text-slate-400";
   else if (rank === 3) colorClass = "text-amber-500";
-  return <Award className={cn("w-3.5 h-3.5 inline-block mx-0.5", colorClass)} />;
+  return <Award className={cn("w-4 h-4 inline-block mx-0.5", colorClass)} />;
 });
 NavMedalIcon.displayName = 'NavMedalIcon';
 
@@ -203,10 +203,10 @@ export default function TeamDetailsPage() {
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
           
-          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNations);
+          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNations); // Changed: worstSongNations based on overallAverageScore
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
+          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
           
           if (firstPlaceCategoryPicksCount >= 4) { 
             score += 30; 
@@ -364,7 +364,6 @@ export default function TeamDetailsPage() {
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{previousTeam.name}</span>
                 {previousTeam.creatorDisplayName && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                     <UserCircle className="w-2 h-2 mr-0.5 text-muted-foreground flex-shrink-0" />
                      {previousTeam.creatorDisplayName}
                   </span>
                 )}
@@ -395,7 +394,6 @@ export default function TeamDetailsPage() {
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
                 {nextTeam.creatorDisplayName && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                    <UserCircle className="w-2 h-2 mr-0.5 text-muted-foreground flex-shrink-0" />
                     {nextTeam.creatorDisplayName}
                   </span>
                 )}
@@ -427,5 +425,6 @@ export default function TeamDetailsPage() {
     
 
       
+
 
 
