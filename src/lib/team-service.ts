@@ -27,7 +27,7 @@ export async function getTeams(): Promise<Team[]> {
     const q = query(teamsCollection, orderBy("createdAt", "desc"));
     const teamSnapshot = await getDocs(q);
 
-    const teamsList = teamSnapshot.docs.map(docSnap => { // Renamed doc to docSnap
+    const teamsList = teamSnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
@@ -35,6 +35,9 @@ export async function getTeams(): Promise<Team[]> {
         creatorDisplayName: data.creatorDisplayName,
         name: data.name,
         founderChoices: data.founderChoices || [],
+        eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
+        juryWinnerPickNationId: data.juryWinnerPickNationId || "",
+        televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
         bestTreppoScoreNationId: data.bestTreppoScoreNationId || "",
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
@@ -59,7 +62,7 @@ export async function getTeamsByUserId(userId: string): Promise<Team[]> {
     const q = query(teamsCollection, where("userId", "==", userId), orderBy("createdAt", "desc"));
     const teamSnapshot = await getDocs(q);
 
-    const teamsList = teamSnapshot.docs.map(docSnap => { // Renamed doc to docSnap
+    const teamsList = teamSnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
@@ -67,6 +70,9 @@ export async function getTeamsByUserId(userId: string): Promise<Team[]> {
         creatorDisplayName: data.creatorDisplayName,
         name: data.name,
         founderChoices: data.founderChoices || [],
+        eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
+        juryWinnerPickNationId: data.juryWinnerPickNationId || "",
+        televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
         bestTreppoScoreNationId: data.bestTreppoScoreNationId || "",
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
@@ -97,6 +103,9 @@ export async function getTeamById(teamId: string): Promise<Team | undefined> {
         creatorDisplayName: data.creatorDisplayName,
         name: data.name,
         founderChoices: data.founderChoices || [],
+        eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
+        juryWinnerPickNationId: data.juryWinnerPickNationId || "",
+        televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
         bestTreppoScoreNationId: data.bestTreppoScoreNationId || "",
         bestSongNationId: data.bestSongNationId || "",
         bestPerformanceNationId: data.bestPerformanceNationId || "",
@@ -132,6 +141,9 @@ export const listenToTeams = (
           creatorDisplayName: data.creatorDisplayName,
           name: data.name,
           founderChoices: data.founderChoices || [],
+          eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
+          juryWinnerPickNationId: data.juryWinnerPickNationId || "",
+          televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
           bestTreppoScoreNationId: data.bestTreppoScoreNationId || "",
           bestSongNationId: data.bestSongNationId || "",
           bestPerformanceNationId: data.bestPerformanceNationId || "",
@@ -150,3 +162,4 @@ export const listenToTeams = (
   );
   return unsubscribe;
 };
+
