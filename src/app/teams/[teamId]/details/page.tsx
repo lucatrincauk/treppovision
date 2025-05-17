@@ -49,7 +49,7 @@ const getPointsForRank = (rank?: number): number => {
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
   currentNationsMap: Map<string, Nation>,
-  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount'>,
+  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount' | 'worstSongNationId'>,
   sortOrder: 'desc' | 'asc' = 'desc',
 ): Array<{ id: string; name: string; score: number | null; artistName?: string; songTitle?: string; }> => {
   if (!scoresMap || scoresMap.size === 0 || !currentNationsMap || currentNationsMap.size === 0) return [];
@@ -348,7 +348,7 @@ export default function TeamDetailsPage() {
             <Link 
               href={`/teams/${previousTeam.id}/details`} 
               title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
               <div className="flex items-center">
@@ -380,7 +380,7 @@ export default function TeamDetailsPage() {
             <Link 
               href={`/teams/${nextTeam.id}/details`} 
               title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
             >
               <div className="flex flex-col items-start text-left leading-tight">
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
