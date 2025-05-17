@@ -100,7 +100,7 @@ export interface Team {
   userId: string;
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[];
+  founderChoices: string[]; // Array of 3 nation IDs
   
   bestSongNationId: string;
   bestPerformanceNationId: string;
@@ -167,7 +167,7 @@ export interface TeamWithScore extends Team {
   categoryPicksDetails?: GlobalCategoryPickDetail[];
   rank?: number;
   isTied?: boolean;
-  bonusCampionePronostici?: boolean;
+  bonusCampionePronostici?: boolean; 
   bonusGranCampionePronostici?: boolean;
   bonusEnPleinTop5?: boolean;
 }
@@ -178,5 +178,6 @@ export interface AdminNationPayload extends Omit<NationFormData, 'ranking'> {
 
 export interface TeamAdminViewDetails extends Team {
   nationsNotVotedCount: number;
+  unvotedNationNames?: string[]; // Added this field
   hasSubmittedFinalPredictions: boolean;
 }

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Users, ListChecks, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area"; // For potentially long lists
 
 interface AdminTeamsManagementProps {
   allNations: Nation[];
@@ -24,11 +25,19 @@ export function AdminTeamsManagement({ allNations }: AdminTeamsManagementProps) 
       try {
         const fetchedTeams = await getTeams();
         const totalNationsCount = allNations.length;
+        const allNationIds = new Set(allNations.map(n => n.id));
 
         const teamsDetailsPromises = fetchedTeams.map(async (team) => {
           const userVotesMap = await getAllUserVotes(team.userId);
-          const nationsVotedCount = userVotesMap.size;
-          const nationsNotVotedCount = totalNationsCount - nationsVotedCount;
+          const votedNationIds = new Set(userVotesMap.keys());
+          
+          const unvotedNations = allNations.filter(nation => !votedNationIds.has(nation.id));
+          const nationsNotVotedCount = unvotedNations.length;
+          
+          let unvotedNationNames: string[] | undefined = undefined;
+          if (nationsNotVotedCount > 0 && nationsNotVotedCount < 5) {
+            unvotedNationNames = unvotedNations.map(n => n.name).sort((a, b) => a.localeCompare(b));
+          }
 
           const hasSubmittedFinalPredictions = !!(
             team.bestSongNationId ||
@@ -40,6 +49,7 @@ export function AdminTeamsManagement({ allNations }: AdminTeamsManagementProps) 
           return {
             ...team,
             nationsNotVotedCount,
+            unvotedNationNames,
             hasSubmittedFinalPredictions,
           };
         });
@@ -120,7 +130,7 @@ export function AdminTeamsManagement({ allNations }: AdminTeamsManagementProps) 
               <TableRow>
                 <TableHead>Nome Squadra</TableHead>
                 <TableHead>Utente</TableHead>
-                <TableHead className="text-center">Nazioni Non Votate</TableHead>
+                <TableHead className="text-center min-w-[200px]">Nazioni Non Votate</TableHead>
                 <TableHead className="text-center">Pronostici Finali Inviati?</TableHead>
               </TableRow>
             </TableHeader>
@@ -130,9 +140,27 @@ export function AdminTeamsManagement({ allNations }: AdminTeamsManagementProps) 
                   <TableCell className="font-medium">{team.name}</TableCell>
                   <TableCell>{team.creatorDisplayName}</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={team.nationsNotVotedCount > 0 ? "destructive" : "default"} className="text-sm">
-                      {team.nationsNotVotedCount}
-                    </Badge>
+                    {team.nationsNotVotedCount === 0 ? (
+                      <Badge variant="default" className="text-sm bg-green-600 hover:bg-green-700">
+                        <CheckCircle className="mr-1 h-4 w-4" />
+                        Tutte votate!
+                      </Badge>
+                    ) : team.nationsNotVotedCount < 5 && team.unvotedNationNames && team.unvotedNationNames.length > 0 ? (
+                      <div className="text-xs text-left">
+                        <p className="font-semibold mb-0.5 text-muted-foreground">{team.nationsNotVotedCount} nazioni:</p>
+                        <ScrollArea className="h-16 max-w-xs mx-auto border rounded-md p-1 bg-muted/20">
+                            <ul className="list-disc list-inside pl-1 space-y-0.5">
+                            {team.unvotedNationNames.map((name, index) => (
+                                <li key={index} className="truncate" title={name}>{name}</li>
+                            ))}
+                            </ul>
+                        </ScrollArea>
+                      </div>
+                    ) : (
+                      <Badge variant={team.nationsNotVotedCount > 0 ? "destructive" : "default"} className="text-sm">
+                        {team.nationsNotVotedCount}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {team.hasSubmittedFinalPredictions ? (
