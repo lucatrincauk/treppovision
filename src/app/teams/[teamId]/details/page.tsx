@@ -206,7 +206,7 @@ export default function TeamDetailsPage() {
           const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNations);
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
+          categoryPicksDetails.push({ categoryName: "Peggior Canzone", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
           
           if (firstPlaceCategoryPicksCount >= 4) { 
             score += 30; 
@@ -215,6 +215,7 @@ export default function TeamDetailsPage() {
             score += 5;
             bonusCampionePronostici = true;
           }
+
 
           return { ...team, score, primaSquadraDetails, categoryPicksDetails, bonusCampionePronostici, bonusGranCampionePronostici, bonusEnPleinTop5 };
         });
@@ -280,7 +281,7 @@ export default function TeamDetailsPage() {
   const nationGlobalCategorizedScoresArray = useMemo(() => Array.from(globalScoresData.entries()), [globalScoresData]);
 
   const rankText = (rank?: number): string => {
-    if (rank === undefined || rank === null || rank <= 0) return "N/D";
+    if (rank === undefined || rank === null || rank <= 0) return ""; // Return empty string if no rank
     return `${rank}°`;
   };
 
@@ -347,13 +348,13 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${previousTeam.id}/details`} 
-              title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
+              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `(${previousTeam.creatorDisplayName})` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
               <div className="flex items-center">
                 {previousTeam.rank && (
-                    <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
+                    <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
                       {rankText(previousTeam.rank)}
                     </span>
                 )}
@@ -363,7 +364,7 @@ export default function TeamDetailsPage() {
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{previousTeam.name}</span>
                 {previousTeam.creatorDisplayName && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                     <UserCircle className="w-2.5 h-2.5 mr-0.5 text-muted-foreground flex-shrink-0" />
+                     <UserCircle className="w-2 h-2 mr-0.5 text-muted-foreground flex-shrink-0" />
                      {previousTeam.creatorDisplayName}
                   </span>
                 )}
@@ -379,21 +380,21 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${nextTeam.id}/details`} 
-              title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
+              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `(${nextTeam.creatorDisplayName})` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-1.5"
             >
               <div className="flex flex-col items-start text-left leading-tight">
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
                 {nextTeam.creatorDisplayName && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                    <UserCircle className="w-2.5 h-2.5 mr-0.5 text-muted-foreground flex-shrink-0" />
+                    <UserCircle className="w-2 h-2 mr-0.5 text-muted-foreground flex-shrink-0" />
                     {nextTeam.creatorDisplayName}
                   </span>
                 )}
               </div>
                <div className="flex items-center">
                 {nextTeam.rank && (
-                  <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
+                  <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
                     {rankText(nextTeam.rank)}
                   </span>
                 )}
@@ -426,3 +427,4 @@ export default function TeamDetailsPage() {
     
 
       
+
