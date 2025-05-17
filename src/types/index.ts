@@ -88,11 +88,11 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
-  bestTreppoScoreNationId: string; // Restored
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstTreppoScoreNationId: string; // Restored
+  worstSongNationId: string; 
+  bestTreppoScoreNationId: string;
 }
 
 
@@ -101,13 +101,13 @@ export interface Team {
   userId: string;
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; // Array of 3 nation IDs
+  founderChoices: string[]; 
   
-  bestTreppoScoreNationId: string; // Restored
+  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstTreppoScoreNationId: string; // Restored
+  worstSongNationId: string;
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -124,23 +124,25 @@ export interface GlobalPrimaSquadraDetail {
 }
 export interface GlobalCategoryPickDetail {
   categoryName: string;
-  pickedNationId: string; // Changed from optional
+  pickedNationId: string; 
   pickedNationName?: string;
   pickedNationCountryCode?: string;
   artistName?: string; 
   songTitle?: string;  
-  actualCategoryRank?: number;
+  actualCategoryRank?: number | null;
   pickedNationScoreInCategory?: number | null;
   pointsAwarded: number;
-  iconName: string; // Ensure this is present
+  iconName: string; 
 }
 
 
 export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
-  finalPredictionsEnabled: boolean;
+  finalPredictionsEnabled: boolean; 
   userRegistrationEnabled: boolean; 
+  juryWinnerNationId?: string;
+  televoteWinnerNationId?: string;
 }
 
 export type RankingCategoryKey = 'overallAverageScore' | 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore';
@@ -166,15 +168,15 @@ export interface NationWithTreppoScore extends Nation {
 export interface TeamWithScore extends Team {
   score?: number;
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
-  primaSquadraScore?: number;
   categoryPicksDetails?: GlobalCategoryPickDetail[];
-  treppoScoreCategoryPicksScore?: number;
-  bonusTotalScore?: number;
   rank?: number;
   isTied?: boolean;
   bonusCampionePronostici?: boolean; 
   bonusGranCampionePronostici?: boolean;
   bonusEnPleinTop5?: boolean;
+  primaSquadraScore?: number;
+  treppoScoreCategoryPicksScore?: number;
+  bonusTotalScore?: number;
 }
 
 export interface AdminNationPayload extends Omit<NationFormData, 'ranking'> {

@@ -13,12 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit, UserPlus, Settings as SettingsIcon, SlidersHorizontal, Users as UsersIcon } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit, UserPlus, Settings as SettingsIcon, SlidersHorizontal, Users as UsersIcon, Trophy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminTeamsManagement } from "@/components/admin/admin-teams-management";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -30,22 +31,24 @@ export default function AdminSettingsPage() {
   const [isSubmittingLeaderboard, setIsSubmittingLeaderboard] = React.useState(false);
   const [isSubmittingFinalPredictions, setIsSubmittingFinalPredictions] = React.useState(false);
   const [isSubmittingUserRegistration, setIsSubmittingUserRegistration] = React.useState(false);
-
+  const [isSubmittingWinners, setIsSubmittingWinners] = React.useState(false);
 
   const [nations, setNations] = React.useState<Nation[]>([]);
   const [allNationsStable, setAllNationsStable] = React.useState<Nation[]>([]);
+  const [sortedNationsForDropdown, setSortedNationsForDropdown] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [rankingsInput, setRankingsInput] = React.useState<Map<string, string>>(new Map());
   const [initialRankingsMap, setInitialRankingsMap] = React.useState<Map<string, string>>(new Map());
   const [isSavingAll, setIsSavingAll] = React.useState(false);
   const [isDeletingAll, setIsDeletingAll] = React.useState(false);
-  const debounceTimers = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const DEBOUNCE_DELAY = 1500; // 1.5 seconds
 
-  const handleSaveRanking = React.useCallback(async (nationId: string, rankingToSaveString: string | null) => {
+  const [selectedJuryWinner, setSelectedJuryWinner] = React.useState<string | undefined>(undefined);
+  const [selectedTelevoteWinner, setSelectedTelevoteWinner] = React.useState<string | undefined>(undefined);
+
+
+  const handleSaveRanking = React.useCallback(async (nationId: string, rankingString: string | null) => {
     setSavingStates(prev => new Map(prev).set(nationId, true));
-    // The server action expects a string or null/undefined to parse or clear
-    const result = await updateNationRankingAction(nationId, rankingToSaveString);
+    const result = await updateNationRankingAction(nationId, rankingString);
 
     if (result.success) {
       toast({
@@ -55,7 +58,7 @@ export default function AdminSettingsPage() {
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
-        ).sort((a,b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity)) // Re-sort after update
+        ).sort((a,b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity)) 
       );
       const newRankString = result.newRanking !== undefined ? String(result.newRanking) : "";
       setInitialRankingsMap(prev => new Map(prev).set(nationId, newRankString));
@@ -69,12 +72,11 @@ export default function AdminSettingsPage() {
       setRankingsInput(prev => new Map(prev).set(nationId, initialRankingsMap.get(nationId) ?? ""));
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
-  }, [toast, allNationsStable, initialRankingsMap, setNations, setInitialRankingsMap, setRankingsInput]);
+  }, [toast, allNationsStable, initialRankingsMap]);
 
 
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
     setRankingsInput(prev => new Map(prev).set(nationId, value));
-    // No debounced save here, saving will be manual via "Salva Ranking Modificati"
   }, []);
 
   const [savingStates, setSavingStates] = React.useState<Map<string, boolean>>(new Map());
@@ -88,9 +90,11 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations() // getNations should already sort by performingOrder then name
+            getNations() 
           ]);
           setSettings(currentSettings);
+          setSelectedJuryWinner(currentSettings.juryWinnerNationId || undefined);
+          setSelectedTelevoteWinner(currentSettings.televoteWinnerNationId || undefined);
 
           const sortedNationsForTable = [...fetchedNations].sort((a, b) => {
             const rankA = a.ranking ?? Infinity;
@@ -103,6 +107,7 @@ export default function AdminSettingsPage() {
 
           setNations(sortedNationsForTable);
           setAllNationsStable(fetchedNations); 
+          setSortedNationsForDropdown([...fetchedNations].sort((a,b) => a.name.localeCompare(b.name)));
 
           const initialRanks = new Map<string, string>();
           fetchedNations.forEach(nation => {
@@ -130,20 +135,31 @@ export default function AdminSettingsPage() {
 
   const handleToggleSetting = async (
     settingKey: keyof AdminSettings,
-    valueToStoreForSetting: boolean,
+    valueToStoreForSetting: boolean | string | undefined, // Allow string for winner IDs
     setSubmittingState: React.Dispatch<React.SetStateAction<boolean>>,
     toastTitle: string,
-    toastDescriptionIfTrue: string,
-    toastDescriptionIfFalse: string
+    toastDescriptionIfTrue?: string, // Optional for non-boolean settings
+    toastDescriptionIfFalse?: string // Optional for non-boolean settings
   ) => {
     setSubmittingState(true);
     const result = await updateAdminSettingsAction({ [settingKey]: valueToStoreForSetting });
     if (result.success) {
-      setSettings(prev => prev ? { ...prev, [settingKey]: valueToStoreForSetting } : { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true, [settingKey]: valueToStoreForSetting });
-      toast({
-        title: toastTitle,
-        description: valueToStoreForSetting ? toastDescriptionIfTrue : toastDescriptionIfFalse,
+      setSettings(prev => {
+        const newSettings = prev ? { ...prev, [settingKey]: valueToStoreForSetting } : {
+          teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true,
+          juryWinnerNationId: undefined, televoteWinnerNationId: undefined,
+          [settingKey]: valueToStoreForSetting
+        } as AdminSettings; // Cast here
+        return newSettings;
       });
+      if (typeof valueToStoreForSetting === 'boolean' && toastDescriptionIfTrue && toastDescriptionIfFalse) {
+        toast({
+          title: toastTitle,
+          description: valueToStoreForSetting ? toastDescriptionIfTrue : toastDescriptionIfFalse,
+        });
+      } else {
+         toast({ title: toastTitle, description: "Impostazione aggiornata."});
+      }
     } else {
       toast({
         title: "Errore Aggiornamento",
@@ -171,7 +187,6 @@ export default function AdminSettingsPage() {
       }
       newNationsArray.splice(newIndex, 0, itemToMove);
       
-      // Update rankingsInput based on new visual order
       const newRankingsMap = new Map(rankingsInput);
       newNationsArray.forEach((nation, idx) => {
           newRankingsMap.set(nation.id, String(idx + 1));
@@ -285,6 +300,21 @@ export default function AdminSettingsPage() {
     );
   }
 
+  const renderNationSelectItem = (nation: Nation) => (
+    <div className="flex items-center space-x-2 py-1 w-full text-left">
+      <Image
+        src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
+        alt={`Bandiera ${nation.name}`}
+        width={20}
+        height={13}
+        className="rounded-sm border border-border/30 object-contain flex-shrink-0"
+        data-ai-hint={`${nation.name} flag icon`}
+      />
+      <span className="font-medium">{nation.name}</span>
+    </div>
+  );
+
+
   return (
     <Tabs defaultValue="general" className="space-y-8">
       <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
@@ -292,9 +322,9 @@ export default function AdminSettingsPage() {
           <SettingsIcon className="mr-2 h-4 w-4" />
           Impostazioni Generali
         </TabsTrigger>
-        <TabsTrigger value="ranking">
+        <TabsTrigger value="nations">
           <ListOrdered className="mr-2 h-4 w-4" />
-          Gestione Ranking
+          Gestione Nazioni
         </TabsTrigger>
         <TabsTrigger value="teams">
           <UsersIcon className="mr-2 h-4 w-4" />
@@ -449,8 +479,80 @@ export default function AdminSettingsPage() {
         </Card>
       </TabsContent>
 
-      <TabsContent value="ranking">
+      <TabsContent value="nations">
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Trophy className="mr-2 h-6 w-6" />
+              Imposta Vincitori Eurovision
+            </CardTitle>
+            <CardDescription>
+              Seleziona la nazione vincitrice secondo la giuria e quella secondo il televoto.
+              Queste impostazioni saranno usate per calcolare bonus speciali.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="jury-winner-select" className="text-base font-medium">Vincitore della Giuria</Label>
+              <Select
+                value={selectedJuryWinner || ""}
+                onValueChange={(value) => {
+                  setSelectedJuryWinner(value === "none" ? undefined : value);
+                  handleToggleSetting('juryWinnerNationId', value === "none" ? "" : value, setIsSubmittingWinners, "Vincitore Giuria Aggiornato");
+                }}
+                disabled={isSubmittingWinners || sortedNationsForDropdown.length === 0}
+              >
+                <SelectTrigger id="jury-winner-select">
+                  <SelectValue placeholder={sortedNationsForDropdown.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione..."}>
+                    {selectedJuryWinner && sortedNationsForDropdown.find(n => n.id === selectedJuryWinner) ? renderNationSelectItem(sortedNationsForDropdown.find(n => n.id === selectedJuryWinner)!) : (sortedNationsForDropdown.length === 0 ? "Nessuna nazione" : "Seleziona nazione...")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuno / Rimuovi</SelectItem>
+                  {sortedNationsForDropdown.map(nation => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                      {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="televote-winner-select" className="text-base font-medium">Vincitore del Televoto</Label>
+               <Select
+                value={selectedTelevoteWinner || ""}
+                onValueChange={(value) => {
+                  setSelectedTelevoteWinner(value === "none" ? undefined : value);
+                  handleToggleSetting('televoteWinnerNationId', value === "none" ? "" : value, setIsSubmittingWinners, "Vincitore Televoto Aggiornato");
+                }}
+                disabled={isSubmittingWinners || sortedNationsForDropdown.length === 0}
+              >
+                <SelectTrigger id="televote-winner-select">
+                  <SelectValue placeholder={sortedNationsForDropdown.length === 0 ? "Nessuna nazione disponibile" : "Seleziona nazione..."}>
+                     {selectedTelevoteWinner && sortedNationsForDropdown.find(n => n.id === selectedTelevoteWinner) ? renderNationSelectItem(sortedNationsForDropdown.find(n => n.id === selectedTelevoteWinner)!) : (sortedNationsForDropdown.length === 0 ? "Nessuna nazione" : "Seleziona nazione...")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuno / Rimuovi</SelectItem>
+                  {sortedNationsForDropdown.map(nation => (
+                    <SelectItem key={nation.id} value={nation.id}>
+                       {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+             {isSubmittingWinners && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvataggio vincitori...
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center">
               <ListOrdered className="mr-2 h-6 w-6" />
