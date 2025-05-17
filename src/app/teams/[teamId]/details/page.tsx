@@ -117,13 +117,6 @@ const getRankTextColorClass = (rank?: number) => {
   return "text-muted-foreground";
 };
 
-const getRankBorderClass = (rank?: number) => {
-  if (rank === undefined || rank === null || rank === 0 || rank > 3) return "";
-  if (rank === 1) return "border-yellow-400 hover:border-yellow-500";
-  if (rank === 2) return "border-slate-400 hover:border-slate-500";
-  if (rank === 3) return "border-amber-500 hover:border-amber-600";
-  return "";
-};
 
 export default function TeamDetailsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -168,7 +161,6 @@ export default function TeamDetailsPage() {
 
         const nationsMap = new Map(nationsData.map(n => [n.id, n]));
 
-        const topOverallNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'desc');
         const topSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageSongScore', 'desc');
         const topPerformanceNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averagePerformanceScore', 'desc');
         const topOutfitNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageOutfitScore', 'desc');
@@ -210,7 +202,7 @@ export default function TeamDetailsPage() {
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
 
-          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstOverallScoreNations); // Using overall score for worst
+          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstOverallScoreNations);
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
@@ -352,10 +344,13 @@ export default function TeamDetailsPage() {
 
       <div className="flex justify-between items-center mb-6">
         {previousTeam ? (
-          <Button asChild variant="outline" size="sm" className={cn(getRankBorderClass(previousTeam.rank))}>
-            <Link href={`/teams/${previousTeam.id}/details`} title={`Precedente: ${previousTeam.name} (${rankText(previousTeam.rank, previousTeam.isTied)})`} className="flex items-center">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/teams/${previousTeam.id}/details`} title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - ${rankText(previousTeam.rank, previousTeam.isTied)}`} className="flex items-center">
               <ChevronLeft className="w-4 h-4 mr-2" />
-              <span className="truncate max-w-[100px] sm:max-w-[150px]">{previousTeam.name}</span>
+              <div className="flex flex-col items-start">
+                <span className="truncate max-w-[100px] sm:max-w-[150px]">{previousTeam.name}</span>
+                {previousTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({previousTeam.creatorDisplayName})</span>}
+              </div>
               {previousTeam.rank && (
                 <span className={cn("ml-1.5 text-xs flex items-center gap-0.5", getRankTextColorClass(previousTeam.rank))}>
                    <NavMedalIcon rank={previousTeam.rank} />
@@ -370,9 +365,12 @@ export default function TeamDetailsPage() {
           </Button>
         )}
         {nextTeam ? (
-          <Button asChild variant="outline" size="sm" className={cn(getRankBorderClass(nextTeam.rank))}>
-            <Link href={`/teams/${nextTeam.id}/details`} title={`Successiva: ${nextTeam.name} (${rankText(nextTeam.rank, nextTeam.isTied)})`} className="flex items-center">
-              <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextTeam.name}</span>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/teams/${nextTeam.id}/details`} title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - ${rankText(nextTeam.rank, nextTeam.isTied)}`} className="flex items-center">
+              <div className="flex flex-col items-start">
+                <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextTeam.name}</span>
+                {nextTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({nextTeam.creatorDisplayName})</span>}
+              </div>
               {nextTeam.rank && (
                  <span className={cn("ml-1.5 text-xs flex items-center gap-0.5", getRankTextColorClass(nextTeam.rank))}>
                    <NavMedalIcon rank={nextTeam.rank} />
