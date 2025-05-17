@@ -88,6 +88,7 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
+  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -101,7 +102,8 @@ export interface Team {
   creatorDisplayName: string;
   name: string;
   founderChoices: string[];
-
+  
+  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;

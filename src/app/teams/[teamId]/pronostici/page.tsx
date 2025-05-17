@@ -69,6 +69,7 @@ export default function EditFinalAnswersPage() {
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           const existingPreds = 
+                               !!fetchedTeam.bestTreppoScoreNationId ||
                                !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
                                !!fetchedTeam.bestOutfitNationId ||
@@ -212,6 +213,7 @@ export default function EditFinalAnswersPage() {
   }
 
   const initialFinalAnswers: TeamFinalAnswersFormData = {
+    bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "",
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",
     bestOutfitNationId: team!.bestOutfitNationId || "",

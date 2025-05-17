@@ -3,7 +3,7 @@
 
 import type { TeamWithScore, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListOrdered, Loader2, Info, CheckCircle, Trophy, TrendingUp } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, ThumbsUp, Shirt, Lock, BadgeCheck, Award, ListOrdered, Loader2, Info, CheckCircle, Trophy, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -112,6 +112,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({
     case 'Star': IconComponent = Star; break;
     case 'Shirt': IconComponent = Shirt; break;
     case 'ThumbsDown': IconComponent = ThumbsDown; break;
+    case 'ThumbsUp': IconComponent = ThumbsUp; break;
     default: IconComponent = Info;
   }
 
@@ -381,7 +382,7 @@ export function TeamListItem({
   }, [team.primaSquadraDetails, team.founderChoices, allNations]);
 
   const treppoScoreCategoriesConfig = useMemo(() => [
-    { teamPickNationId: team.bestTreppoScoreNationId, Icon: Award, label: "Miglior TreppoScore", rankInfoKey: 'TreppoScore', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestTreppoScoreNationId, Icon: ThumbsUp, label: "Miglior TreppoScore", rankInfoKey: 'ThumbsUp', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
     { teamPickNationId: team.bestSongNationId, Icon: Music2, label: "Miglior Canzone", rankInfoKey: 'Music2', categoryKey: 'averageSongScore' as keyof NationGlobalCategorizedScores },
     { teamPickNationId: team.bestPerformanceNationId, Icon: Star, label: "Miglior Performance", rankInfoKey: 'Star', categoryKey: 'averagePerformanceScore' as keyof NationGlobalCategorizedScores },
     { teamPickNationId: team.bestOutfitNationId, Icon: Shirt, label: "Miglior Outfit", rankInfoKey: 'Shirt', categoryKey: 'averageOutfitScore' as keyof NationGlobalCategorizedScores },
@@ -493,7 +494,7 @@ export function TeamListItem({
         const bestTreppoScoreNations = getSortedList('overallAverageScore', 'desc');
         if (team.bestTreppoScoreNationId) {
           const { rank, categoryRankText } = getRankAndText(team.bestTreppoScoreNationId, bestTreppoScoreNations, "Miglior TreppoScore");
-          newRanks['TreppoScore'] = { rank, isCorrectPick: !leaderboardLockedAdmin && rank !== undefined && rank <=3, categoryRankText };
+          newRanks['ThumbsUp'] = { rank, isCorrectPick: !leaderboardLockedAdmin && rank !== undefined && rank <=3, categoryRankText };
         }
 
         const bestSongNations = getSortedList('averageSongScore', 'desc');

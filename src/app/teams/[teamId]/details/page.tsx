@@ -183,7 +183,7 @@ export default function TeamDetailsPage() {
             categoryName: "Miglior TreppoScore", pickedNationId: fetchedTeam.bestTreppoScoreNationId || undefined, 
             pickedNationName: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.name : undefined,
             pickedNationCountryCode: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.countryCode : undefined,
-            actualCategoryRank: bestTreppoScorePick.rank, pointsAwarded: bestTreppoScorePick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoScorePick.score
+            actualCategoryRank: bestTreppoScorePick.rank, pointsAwarded: bestTreppoScorePick.points, iconName: "ThumbsUp", pickedNationScoreInCategory: bestTreppoScorePick.score
         });
 
         const bestSongPick = getCategoryPickPointsAndRank(fetchedTeam.bestSongNationId, topSongNations);

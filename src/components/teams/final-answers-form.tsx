@@ -179,7 +179,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
               name="bestTreppoScoreNationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Miglior TreppoScore</FormLabel>
+                  <FormLabel></FormLabel>
                    <Select value={field.value || ""} disabled={true}>
                      <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>

@@ -54,7 +54,7 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
-      // bestTreppoScoreNationId: "", // REMOVED
+      bestTreppoScoreNationId: "",
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
@@ -170,7 +170,7 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const hasExistingPredictions = 
-                                 // !!teamDataInDb.bestTreppoScoreNationId || // REMOVED
+                                 !!teamDataInDb.bestTreppoScoreNationId ||
                                  !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
@@ -180,7 +180,7 @@ export async function updateTeamFinalAnswersAction(
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
-    if (/*!data.bestTreppoScoreNationId ||*/ // REMOVED
+    if (!data.bestTreppoScoreNationId ||
         !data.bestSongNationId || 
         !data.bestPerformanceNationId || 
         !data.bestOutfitNationId || 
@@ -189,7 +189,7 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const finalAnswersToUpdate = {
-      // bestTreppoScoreNationId: data.bestTreppoScoreNationId, // REMOVED
+      bestTreppoScoreNationId: data.bestTreppoScoreNationId, // REMOVED
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,

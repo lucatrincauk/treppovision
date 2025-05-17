@@ -9,7 +9,7 @@ import type { Team, Nation, NationGlobalCategorizedScores, TeamWithScore, Global
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, Music2, Star, Shirt, ListOrdered, ThumbsDown } from "lucide-react"; 
+import { PlusCircle, Users, Loader2, Edit, Search, UserCircle as UserIcon, Lock, Music2, Star, Shirt, ListOrdered, ThumbsDown, ThumbsUp } from "lucide-react"; 
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
@@ -213,10 +213,21 @@ export default function TeamsPage() {
 
       const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
       const topSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageSongScore', 'desc');
+      const bestOverallNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'overallAverageScore', 'desc');
       const worstSongNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'overallAverageScore', 'asc');
       const topPerfNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averagePerformanceScore', 'desc');
       const topOutfitNationsList = getTopNationsForCategory(nationGlobalCategorizedScoresMap, nationsMap, 'averageOutfitScore', 'desc');
       
+      const bestOverallPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, bestOverallNationsList);
+      if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += bestOverallPick.points;
+      if (bestOverallPick.rank === 1 && !leaderboardLockedAdmin) firstPlacePicksCount++;
+      categoryPicksDetails.push({
+        categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "",
+        pickedNationName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.name : undefined,
+        pickedNationCountryCode: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined,
+        actualCategoryRank: bestOverallPick.rank, pointsAwarded: leaderboardLockedAdmin ? 0 : bestOverallPick.points, iconName: "ThumbsUp", pickedNationScoreInCategory: bestOverallPick.score,
+      });
+
       const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNationsList);
       if (scoreValue !== undefined && !leaderboardLockedAdmin) scoreValue += bestSongPick.points;
       if (bestSongPick.rank === 1 && !leaderboardLockedAdmin) firstPlacePicksCount++;
@@ -286,7 +297,8 @@ export default function TeamsPage() {
       const currentTeam = processedAndScoredTeams.find(team => team.userId === user.uid) || null;
       setUserTeam(currentTeam);
       if (currentTeam) {
-        const existingPreds = !!currentTeam.bestSongNationId ||
+        const existingPreds = !!currentTeam.bestTreppoScoreNationId ||
+                             !!currentTeam.bestSongNationId ||
                              !!currentTeam.bestPerformanceNationId ||
                              !!currentTeam.bestOutfitNationId ||
                              !!currentTeam.worstSongNationId;
@@ -465,12 +477,13 @@ export default function TeamsPage() {
                     </Button>
                 )}
           </div>
+
           <TeamListItem 
             team={userTeam} 
             allNations={allNations}
             nationGlobalCategorizedScoresArray={Array.from(nationGlobalCategorizedScoresMap.entries())}
             isOwnTeamCard={true}
-            disableEdit={true} 
+            disableEdit={true}   
           />
            <div className="mt-4 flex justify-center">
             {user && userTeam && finalPredictionsEnabledAdmin && !hasUserSubmittedFinalPredictions && (

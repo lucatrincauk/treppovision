@@ -8,7 +8,7 @@ import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDet
 import { TeamsSubNavigation } from "@/components/teams/teams-sub-navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, Award, TrendingUp, Lock as LockIcon, Loader2, Edit } from "lucide-react";
+import { Trophy, UserCircle, BarChartBig, Info, BadgeCheck, Music2, Star, Shirt, ThumbsDown, ThumbsUp, Award, TrendingUp, Lock as LockIcon, Loader2, Edit } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -167,6 +167,7 @@ export default function TeamsLeaderboardPage() {
         setGlobalCategorizedScoresMap(fetchedGlobalScoresMap);
         
         const topSongNations = getTopNationsForCategory(fetchedGlobalScoresMap, currentNationsMap, 'averageSongScore', 'desc');
+        const bestOverallScoreNations = getTopNationsForCategory(fetchedGlobalScoresMap, currentNationsMap, 'overallAverageScore', 'desc'); 
         const worstOverallScoreNations = getTopNationsForCategory(fetchedGlobalScoresMap, currentNationsMap, 'overallAverageScore', 'asc'); 
         const topPerformanceNations = getTopNationsForCategory(fetchedGlobalScoresMap, currentNationsMap, 'averagePerformanceScore', 'desc');
         const topOutfitNations = getTopNationsForCategory(fetchedGlobalScoresMap, currentNationsMap, 'averageOutfitScore', 'desc');
@@ -201,6 +202,18 @@ export default function TeamsLeaderboardPage() {
             bonusEnPleinTop5 = true;
           }
           
+          const bestPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, 
+            bestOverallScoreNations);
+          score += bestPick.points;
+          if(bestPick.rank === 1) firstPlaceCategoryPicksCount++;
+          categoryPicksDetails.push({
+            categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || undefined, 
+            pickedNationName: team.bestTreppoScoreNationId ? currentNationsMap.get(team.bestTreppoScoreNationId)?.name : undefined,
+            pickedNationCountryCode: team.bestTreppoScoreNationId ? currentNationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined,
+            actualCategoryRank: bestPick.rank, pickedNationScoreInCategory: bestPick.score,
+            pointsAwarded: bestPick.points, iconName: "ThumbsUp",
+          });
+
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
           if (bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
@@ -426,6 +439,7 @@ const CategoryPickDisplay = React.memo(({ detail }: { detail: CategoryPickDetail
       case 'Star': IconComponent = Star; break;
       case 'Shirt': IconComponent = Shirt; break;
       case 'ThumbsDown': IconComponent = ThumbsDown; break;
+      case 'ThumbsUp': IconComponent = ThumbsUp; break;
       default: IconComponent = Info;
     }
   
