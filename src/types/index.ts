@@ -88,11 +88,11 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
-  bestTreppoScoreNationId: string; // Restored
+  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstTreppoScoreNationId: string; // Restored (was worstSongNationId)
+  worstTreppoScoreNationId: string;
 }
 
 
@@ -103,11 +103,11 @@ export interface Team {
   name: string;
   founderChoices: string[]; // Array of 3 nation IDs
   
-  bestTreppoScoreNationId: string; // Restored
+  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstTreppoScoreNationId: string; // Restored (was worstSongNationId)
+  worstTreppoScoreNationId: string;
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -166,7 +166,10 @@ export interface NationWithTreppoScore extends Nation {
 export interface TeamWithScore extends Team {
   score?: number;
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
+  primaSquadraScore?: number;
   categoryPicksDetails?: GlobalCategoryPickDetail[];
+  treppoScoreCategoryPicksScore?: number;
+  bonusTotalScore?: number;
   rank?: number;
   isTied?: boolean;
   bonusCampionePronostici?: boolean; 
