@@ -32,7 +32,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-// This schema is now only for the core team details
 const teamCoreFormZodSchema = z.object({
   name: z.string().min(3, "Il nome del team deve contenere almeno 3 caratteri."),
   founderChoices: z.array(z.string())
@@ -42,11 +41,10 @@ const teamCoreFormZodSchema = z.object({
     }),
 });
 
-// This form now only handles TeamCoreFormValues
 type TeamCoreFormValues = Omit<TeamCoreFormData, 'creatorDisplayName'>;
 
 interface CreateTeamFormProps {
-  initialData?: TeamCoreFormData; // Expects only core data now
+  initialData?: TeamCoreFormData;
   isEditMode?: boolean;
   teamId?: string;
   teamsLocked?: boolean | null;
@@ -57,7 +55,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [nations, setNations] = React.useState<Nation[]>([]);
+  const [allNations, setAllNations] = React.useState<Nation[]>([]);
   const [isLoadingNations, setIsLoadingNations] = React.useState(true);
   const [userHasTeam, setUserHasTeam] = React.useState<boolean | null>(null);
   const [isLoadingUserTeamCheck, setIsLoadingUserTeamCheck] = React.useState(true);
@@ -79,7 +77,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       if (user || !authLoading) {
         try {
           const fetchedNations = await getNations();
-          setNations(fetchedNations);
+          setAllNations(fetchedNations);
 
           if (user && !isEditMode) {
             const userTeams = await getTeamsByUserId(user.uid);
@@ -96,7 +94,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             description: "Impossibile caricare i dati necessari. Riprova più tardi.",
             variant: "destructive",
           });
-          setNations([]);
+          setAllNations([]);
           if (!isEditMode) setUserHasTeam(false);
         } finally {
           setIsLoadingNations(false);
@@ -134,6 +132,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
       });
     }
   }, [initialData, form]);
+
+  const sortedAllNationsForPopover = React.useMemo(() => {
+    return [...allNations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [allNations]);
 
   async function onSubmit(values: TeamCoreFormValues) {
     if (!user) {
@@ -196,7 +198,8 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             <Users className="h-4 w-4" />
             <AlertTitle>Accesso Richiesto</AlertTitle>
             <AlertDescription>
-                Devi effettuare il <Link href="#" className="font-bold hover:underline" onClick={() => {
+                Devi effettuare il <Link href="#" className="font-bold hover:underline" onClick={(e) => {
+                    e.preventDefault();
                     const authButtonDialogTrigger = document.querySelector('button[aria-label="Open authentication dialog"], button>svg.lucide-log-in') as HTMLElement | null;
                     if (authButtonDialogTrigger) {
                         if (authButtonDialogTrigger.tagName === 'BUTTON') { authButtonDialogTrigger.click(); }
@@ -234,7 +237,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
   }
 
 
-  if (nations.length === 0 && !isLoadingNations) {
+  if (allNations.length === 0 && !isLoadingNations) {
     return (
          <Alert variant="destructive">
             <Users className="h-4 w-4" />
@@ -245,7 +248,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
         </Alert>
     )
   }
-   if (nations.length < 3 && !isLoadingNations) { 
+   if (allNations.length < 3 && !isLoadingNations) { 
      return (
         <Alert variant="destructive">
             <Users className="h-4 w-4" />
@@ -293,14 +296,14 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                         "w-full justify-between",
                         !field.value?.length && "text-muted-foreground"
                       )}
-                      disabled={isSubmitting || teamsLocked || nations.length < 3}
+                      disabled={isSubmitting || teamsLocked || allNations.length < 3}
                     >
                       {field.value?.length > 0
                         ? field.value
-                            .map(val => nations.find(n => n.id === val)?.name) 
+                            .map(val => allNations.find(n => n.id === val)?.name) 
                             .filter(Boolean)
                             .join(", ")
-                        : (nations.length < 3 ? "Nazioni insufficienti" : "Seleziona 3 nazioni")}
+                        : (allNations.length < 3 ? "Nazioni insufficienti" : "Seleziona 3 nazioni")}
                       <ListChecks className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
@@ -308,7 +311,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <ScrollArea className="h-72">
                     <div className="p-2 space-y-1">
-                      {nations.map((nation) => ( 
+                      {sortedAllNationsForPopover.map((nation) => ( 
                         <div key={nation.id} className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded-md">
                           <Checkbox
                             id={`founder-${nation.id}`}
@@ -342,7 +345,7 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
                             />
                             <div className="flex flex-col">
                                 <span className="font-semibold">{nation.name}</span>
-                                <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[250px]" title={`${nation.artistName} - ${nation.songTitle}`}>
+                                <span className="text-xs text-muted-foreground max-w-[200px] sm:max-w-[250px]" title={`${nation.artistName} - ${nation.songTitle}`}>
                                     {nation.artistName} - {nation.songTitle}
                                 </span>
                             </div>
@@ -360,11 +363,10 @@ export function CreateTeamForm({ initialData, isEditMode = false, teamId, teamsL
             </FormItem>
           )}
         />
-        {/* Category prediction fields (Migliore canzone, etc.) are removed from this form */}
         <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || nations.length < 3 }
+            disabled={isSubmitting || isLoadingNations || teamsLocked || (!isEditMode && userHasTeam === true) || allNations.length < 3 }
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {teamsLocked ? <Lock className="mr-2 h-4 w-4" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />)}
