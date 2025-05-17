@@ -1,17 +1,14 @@
 
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalCategoryPickDetail, GlobalPrimaSquadraDetail, TeamWithScore } from "@/types";
+import type { TeamWithScore, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamListItem } from "./team-list-item";
 
 interface TeamListProps {
-  teams: (TeamWithScore & { 
-    primaSquadraDetails?: GlobalPrimaSquadraDetail[]; 
-    categoryPicksDetails?: GlobalCategoryPickDetail[];
-    isTied?: boolean; 
-  })[];
+  teams: TeamWithScore[];
   allNations: Nation[];
   nationGlobalCategorizedScoresArray: [string, NationGlobalCategorizedScores][];
   disableListItemEdit?: boolean;
-  isLeaderboardPodiumDisplay?: boolean; 
+  isLeaderboardPodiumDisplay?: boolean;
+  defaultOpenSections?: string[]; 
 }
 
 export function TeamList({ 
@@ -19,7 +16,8 @@ export function TeamList({
   allNations, 
   nationGlobalCategorizedScoresArray, 
   disableListItemEdit = false,
-  isLeaderboardPodiumDisplay = false 
+  isLeaderboardPodiumDisplay = false,
+  defaultOpenSections = [], 
 }: TeamListProps) {
   if (teams.length === 0) {
     return <p className="text-muted-foreground text-center py-10">Nessuna squadra trovata.</p>;
@@ -38,6 +36,7 @@ export function TeamList({
           nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray} 
           disableEdit={disableListItemEdit} 
           isLeaderboardPodiumDisplay={isLeaderboardPodiumDisplay} 
+          defaultOpenSections={defaultOpenSections}
         />
       ))}
     </div>
