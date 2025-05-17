@@ -33,6 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
 const finalAnswersFormZodSchema = z.object({
+  bestTreppoScoreNationId: z.string().min(1, "Devi selezionare la nazione per Miglior TreppoScore."),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
@@ -80,6 +81,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const form = useForm<TeamFinalAnswersFormData>({
     resolver: zodResolver(finalAnswersFormZodSchema),
     defaultValues: initialData || {
+      bestTreppoScoreNationId: "",
       bestSongNationId: "",
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
@@ -90,6 +92,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   React.useEffect(() => {
     if (initialData) {
       form.reset({
+        bestTreppoScoreNationId: initialData.bestTreppoScoreNationId || "",
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
         bestOutfitNationId: initialData.bestOutfitNationId || "",
@@ -171,6 +174,18 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       <>
         <Form {...form}>
           <form className="space-y-6 py-4">
+             <FormField
+              control={form.control}
+              name="bestTreppoScoreNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Miglior TreppoScore</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="bestSongNationId"
@@ -229,6 +244,33 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+         <FormField
+          control={form.control}
+          name="bestTreppoScoreNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Miglior TreppoScore</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
+                <FormControl>
+                  <SelectTrigger>
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                      {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sortedNations.map((nation) => (
+                    <SelectItem key={`${nation.id}-bestTreppo`} value={nation.id}>
+                       {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Scegli la nazione che otterrà il TreppoScore più alto (media voti utenti).</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="bestSongNationId"
@@ -364,4 +406,3 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </Form>
   );
 }
-
