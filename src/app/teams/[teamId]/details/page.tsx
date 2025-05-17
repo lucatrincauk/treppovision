@@ -105,7 +105,7 @@ const NavMedalIcon = memo(({ rank }: { rank?: number }) => {
   if (rank === 1) colorClass = "text-yellow-400";
   else if (rank === 2) colorClass = "text-slate-400";
   else if (rank === 3) colorClass = "text-amber-500";
-  return <Award className={cn("w-3 h-3 inline-block", colorClass)} />;
+  return <Award className={cn("w-3.5 h-3.5 inline-block mx-0.5", colorClass)} />;
 });
 NavMedalIcon.displayName = 'NavMedalIcon';
 
@@ -160,17 +160,20 @@ export default function TeamDetailsPage() {
         setGlobalScoresData(globalScoresMapData);
 
         const nationsMap = new Map(nationsData.map(n => [n.id, n]));
-
+        
+        const topTreppoScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'desc');
         const topSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageSongScore', 'desc');
         const topPerformanceNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averagePerformanceScore', 'desc');
         const topOutfitNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageOutfitScore', 'desc');
         const worstOverallScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'asc');
+
 
         let calculatedTeams: LocalTeamWithScore[] = allFetchedTeams.map(team => {
           let score = 0;
           let bonusEnPleinTop5 = false;
           let bonusCampionePronostici = false;
           let bonusGranCampionePronostici = false;
+          let firstPlaceCategoryPicksCount = 0;
 
           const primaSquadraDetails = (team.founderChoices || []).map(nationId => {
             const nation = nationsMap.get(nationId);
@@ -185,7 +188,11 @@ export default function TeamDetailsPage() {
           }
 
           const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
-          let firstPlaceCategoryPicksCount = 0;
+          
+          const bestTreppoPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, topTreppoScoreNations);
+          score += bestTreppoPick.points;
+          if (bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
+          categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "", pickedNationName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined, artistName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.artistName : undefined, songTitle: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
 
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
@@ -201,7 +208,7 @@ export default function TeamDetailsPage() {
           score += bestOutfitPick.points;
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
-
+          
           const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstOverallScoreNations);
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
@@ -280,8 +287,7 @@ export default function TeamDetailsPage() {
 
   const rankText = (rank?: number, isTied?: boolean): string => {
     if (rank === undefined || rank === null || rank <= 0) return "N/D";
-    let rankStr = `${rank}°`;
-    return isTied ? `${rankStr}*` : rankStr;
+    return `${rank}°${isTied ? '*' : ''}`;
   };
 
 
@@ -345,18 +351,24 @@ export default function TeamDetailsPage() {
       <div className="flex justify-between items-center mb-6">
         {previousTeam ? (
           <Button asChild variant="outline" size="sm">
-            <Link href={`/teams/${previousTeam.id}/details`} title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - ${rankText(previousTeam.rank, previousTeam.isTied)}`} className="flex items-center">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              <div className="flex flex-col items-start">
-                <span className="truncate max-w-[100px] sm:max-w-[150px]">{previousTeam.name}</span>
-                {previousTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({previousTeam.creatorDisplayName})</span>}
+            <Link 
+              href={`/teams/${previousTeam.id}/details`} 
+              title={`${previousTeam.name} (${previousTeam.creatorDisplayName}) - Rank ${rankText(previousTeam.rank, previousTeam.isTied)}`} 
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <div className="flex items-center">
+                {previousTeam.rank && (
+                    <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
+                    {rankText(previousTeam.rank, previousTeam.isTied)}
+                    </span>
+                )}
+                <NavMedalIcon rank={previousTeam.rank} />
+                <div className="flex flex-col items-start">
+                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{previousTeam.name}</span>
+                  {previousTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({previousTeam.creatorDisplayName})</span>}
+                </div>
               </div>
-              {previousTeam.rank && (
-                <span className={cn("ml-1.5 text-xs flex items-center gap-0.5", getRankTextColorClass(previousTeam.rank))}>
-                   <NavMedalIcon rank={previousTeam.rank} />
-                  ({previousTeam.rank}{previousTeam.isTied && '*'})
-                </span>
-              )}
             </Link>
           </Button>
         ) : (
@@ -366,18 +378,24 @@ export default function TeamDetailsPage() {
         )}
         {nextTeam ? (
           <Button asChild variant="outline" size="sm">
-            <Link href={`/teams/${nextTeam.id}/details`} title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - ${rankText(nextTeam.rank, nextTeam.isTied)}`} className="flex items-center">
-              <div className="flex flex-col items-start">
-                <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextTeam.name}</span>
-                {nextTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({nextTeam.creatorDisplayName})</span>}
+            <Link 
+              href={`/teams/${nextTeam.id}/details`} 
+              title={`${nextTeam.name} (${nextTeam.creatorDisplayName}) - Rank ${rankText(nextTeam.rank, nextTeam.isTied)}`} 
+              className="flex items-center gap-2"
+            >
+              <div className="flex items-center">
+                {nextTeam.rank && (
+                  <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
+                    {rankText(nextTeam.rank, nextTeam.isTied)}
+                  </span>
+                )}
+                <NavMedalIcon rank={nextTeam.rank} />
+                <div className="flex flex-col items-start">
+                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextTeam.name}</span>
+                  {nextTeam.creatorDisplayName && <span className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[150px]">({nextTeam.creatorDisplayName})</span>}
+                </div>
               </div>
-              {nextTeam.rank && (
-                 <span className={cn("ml-1.5 text-xs flex items-center gap-0.5", getRankTextColorClass(nextTeam.rank))}>
-                   <NavMedalIcon rank={nextTeam.rank} />
-                  ({nextTeam.rank}{nextTeam.isTied && '*'})
-                </span>
-              )}
-              <ChevronRight className="w-4 h-4 ml-2" />
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </Button>
         ) : (
@@ -402,3 +420,5 @@ export default function TeamDetailsPage() {
   );
 }
     
+
+      
