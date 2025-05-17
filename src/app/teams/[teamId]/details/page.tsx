@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, memo } from "react";
@@ -7,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getTeamById, getTeams } from "@/lib/team-service";
 import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service";
-import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreType } from "@/types";
+import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, TeamWithScore as TeamWithScoreType, GlobalCategoryPickDetail as BaseGlobalCategoryPickDetail } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
 import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight, Award, UserCircle, Music2, Star, Shirt, ThumbsDown, Info, ListChecks } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,11 +14,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface LocalCategoryPickDetail extends GlobalCategoryPickDetailType {}
+interface LocalCategoryPickDetail extends BaseGlobalCategoryPickDetail {
+  iconName: string;
+}
 
 interface LocalTeamWithScore extends TeamWithScoreType {
   primaSquadraScore: number;
-  eurovisionPicksScore: number; // New subtotal
+  eurovisionPicksScore: number;
   treppoScoreCategoryPicksScore: number;
   bonusTotalScore: number;
   rank?: number;
@@ -168,7 +169,7 @@ export default function TeamDetailsPage() {
 
       try {
         const [allFetchedTeams, nationsData, globalScoresMapData] = await Promise.all([
-          getTeams(), 
+          getTeams(),
           getNations(),
           getAllNationsGlobalCategorizedScores()
         ]);
@@ -180,7 +181,7 @@ export default function TeamDetailsPage() {
         const topOverallRankNations = getTopNationsForCategory(null, nationsMap, 'ranking', 'asc');
         const topJuryRankNations = getTopNationsForCategory(null, nationsMap, 'juryRank', 'asc');
         const topTelevoteRankNations = getTopNationsForCategory(null, nationsMap, 'televoteRank', 'asc');
-        
+
         const topTreppoScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'desc');
         const topSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageSongScore', 'desc');
         const topPerformanceNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averagePerformanceScore', 'desc');
@@ -198,7 +199,7 @@ export default function TeamDetailsPage() {
           let bonusGranCampionePronostici = false;
           let bonusEnPleinTop5 = false;
 
-          const primaSquadraDetails: GlobalPrimaSquadraDetailType[] = [];
+          const primaSquadraDetails: GlobalPrimaSquadraDetail[] = [];
           (currentTeam.founderChoices || []).forEach(nationId => {
             const nation = nationsMap.get(nationId);
             if (nation) {
@@ -221,99 +222,101 @@ export default function TeamDetailsPage() {
           const categoryPicksDetails: LocalCategoryPickDetail[] = [];
           let firstPlaceCategoryPicksCount = 0;
 
+          // Eurovision Result Based Picks
+          const eurovisionWinnerPickNation = currentTeam.eurovisionWinnerPickNationId ? nationsMap.get(currentTeam.eurovisionWinnerPickNationId) : undefined;
           const eurovisionWinnerPick = getCategoryPickPointsAndRank(currentTeam.eurovisionWinnerPickNationId, topOverallRankNations);
           eurovisionPicksSubtotal += eurovisionWinnerPick.points;
           if (eurovisionWinnerPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const eurovisionWinnerNation = currentTeam.eurovisionWinnerPickNationId ? nationsMap.get(currentTeam.eurovisionWinnerPickNationId) : undefined;
           categoryPicksDetails.push({
             categoryName: "Vincitore Eurovision", pickedNationId: currentTeam.eurovisionWinnerPickNationId || "",
-            pickedNationName: eurovisionWinnerNation?.name, pickedNationCountryCode: eurovisionWinnerNation?.countryCode,
-            artistName: eurovisionWinnerNation?.artistName, songTitle: eurovisionWinnerNation?.songTitle,
-            actualCategoryRank: eurovisionWinnerPick.rank, pointsAwarded: eurovisionWinnerPick.points, iconName: "EurovisionWinner", pickedNationScoreInCategory: eurovisionWinnerPick.score 
+            pickedNationName: eurovisionWinnerPickNation?.name, pickedNationCountryCode: eurovisionWinnerPickNation?.countryCode,
+            artistName: eurovisionWinnerPickNation?.artistName, songTitle: eurovisionWinnerPickNation?.songTitle,
+            actualCategoryRank: eurovisionWinnerPick.rank, pointsAwarded: eurovisionWinnerPick.points, iconName: "EurovisionWinner", pickedNationScoreInCategory: eurovisionWinnerPick.score
           });
-          
+
+          const juryWinnerPickNation = currentTeam.juryWinnerPickNationId ? nationsMap.get(currentTeam.juryWinnerPickNationId) : undefined;
           const juryWinnerPick = getCategoryPickPointsAndRank(currentTeam.juryWinnerPickNationId, topJuryRankNations);
           eurovisionPicksSubtotal += juryWinnerPick.points;
           if (juryWinnerPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const juryWinnerNation = currentTeam.juryWinnerPickNationId ? nationsMap.get(currentTeam.juryWinnerPickNationId) : undefined;
           categoryPicksDetails.push({
             categoryName: "Vincitore Giuria", pickedNationId: currentTeam.juryWinnerPickNationId || "",
-            pickedNationName: juryWinnerNation?.name, pickedNationCountryCode: juryWinnerNation?.countryCode,
-            artistName: juryWinnerNation?.artistName, songTitle: juryWinnerNation?.songTitle,
-            actualCategoryRank: juryWinnerPick.rank, pointsAwarded: juryWinnerPick.points, iconName: "JuryWinner", pickedNationScoreInCategory: juryWinnerPick.score 
+            pickedNationName: juryWinnerPickNation?.name, pickedNationCountryCode: juryWinnerPickNation?.countryCode,
+            artistName: juryWinnerPickNation?.artistName, songTitle: juryWinnerPickNation?.songTitle,
+            actualCategoryRank: juryWinnerPick.rank, pointsAwarded: juryWinnerPick.points, iconName: "JuryWinner", pickedNationScoreInCategory: juryWinnerPick.score
           });
 
+          const televoteWinnerPickNation = currentTeam.televoteWinnerPickNationId ? nationsMap.get(currentTeam.televoteWinnerPickNationId) : undefined;
           const televoteWinnerPick = getCategoryPickPointsAndRank(currentTeam.televoteWinnerPickNationId, topTelevoteRankNations);
           eurovisionPicksSubtotal += televoteWinnerPick.points;
           if (televoteWinnerPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const televoteWinnerNation = currentTeam.televoteWinnerPickNationId ? nationsMap.get(currentTeam.televoteWinnerPickNationId) : undefined;
           categoryPicksDetails.push({
             categoryName: "Vincitore Televoto", pickedNationId: currentTeam.televoteWinnerPickNationId || "",
-            pickedNationName: televoteWinnerNation?.name, pickedNationCountryCode: televoteWinnerNation?.countryCode,
-            artistName: televoteWinnerNation?.artistName, songTitle: televoteWinnerNation?.songTitle,
-            actualCategoryRank: televoteWinnerPick.rank, pointsAwarded: televoteWinnerPick.points, iconName: "TelevoteWinner", pickedNationScoreInCategory: televoteWinnerPick.score 
+            pickedNationName: televoteWinnerPickNation?.name, pickedNationCountryCode: televoteWinnerPickNation?.countryCode,
+            artistName: televoteWinnerPickNation?.artistName, songTitle: televoteWinnerPickNation?.songTitle,
+            actualCategoryRank: televoteWinnerPick.rank, pointsAwarded: televoteWinnerPick.points, iconName: "TelevoteWinner", pickedNationScoreInCategory: televoteWinnerPick.score
           });
 
+          // User Vote Based Picks
+          const bestTreppoNation = currentTeam.bestTreppoScoreNationId ? nationsMap.get(currentTeam.bestTreppoScoreNationId) : undefined;
           const bestTreppoPick = getCategoryPickPointsAndRank(currentTeam.bestTreppoScoreNationId, topTreppoScoreNations);
           treppoScoreCategoryPicksSubtotal += bestTreppoPick.points;
           if(bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const bestTreppoNation = currentTeam.bestTreppoScoreNationId ? nationsMap.get(currentTeam.bestTreppoScoreNationId) : undefined;
-          categoryPicksDetails.push({ 
-            categoryName: "Miglior TreppoScore", pickedNationId: currentTeam.bestTreppoScoreNationId || "", 
-            pickedNationName: bestTreppoNation?.name, pickedNationCountryCode: bestTreppoNation?.countryCode, 
+          categoryPicksDetails.push({
+            categoryName: "Miglior TreppoScore", pickedNationId: currentTeam.bestTreppoScoreNationId || "",
+            pickedNationName: bestTreppoNation?.name, pickedNationCountryCode: bestTreppoNation?.countryCode,
             artistName: bestTreppoNation?.artistName, songTitle: bestTreppoNation?.songTitle,
-            actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, 
-            iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score 
+            actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points,
+            iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score
           });
 
+          const bestSongNation = currentTeam.bestSongNationId ? nationsMap.get(currentTeam.bestSongNationId) : undefined;
           const bestSongPick = getCategoryPickPointsAndRank(currentTeam.bestSongNationId, topSongNations);
           treppoScoreCategoryPicksSubtotal += bestSongPick.points;
           if(bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const bestSongNation = currentTeam.bestSongNationId ? nationsMap.get(currentTeam.bestSongNationId) : undefined;
-          categoryPicksDetails.push({ 
-            categoryName: "Miglior Canzone", pickedNationId: currentTeam.bestSongNationId || "", 
+          categoryPicksDetails.push({
+            categoryName: "Miglior Canzone", pickedNationId: currentTeam.bestSongNationId || "",
             pickedNationName: bestSongNation?.name, pickedNationCountryCode: bestSongNation?.countryCode,
             artistName: bestSongNation?.artistName, songTitle: bestSongNation?.songTitle,
-            actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, 
-            iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score 
+            actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points,
+            iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score
           });
 
+          const bestPerfNation = currentTeam.bestPerformanceNationId ? nationsMap.get(currentTeam.bestPerformanceNationId) : undefined;
           const bestPerfPick = getCategoryPickPointsAndRank(currentTeam.bestPerformanceNationId, topPerformanceNations);
           treppoScoreCategoryPicksSubtotal += bestPerfPick.points;
           if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const bestPerfNation = currentTeam.bestPerformanceNationId ? nationsMap.get(currentTeam.bestPerformanceNationId) : undefined;
-          categoryPicksDetails.push({ 
-            categoryName: "Miglior Performance", pickedNationId: currentTeam.bestPerformanceNationId || "", 
+          categoryPicksDetails.push({
+            categoryName: "Miglior Performance", pickedNationId: currentTeam.bestPerformanceNationId || "",
             pickedNationName: bestPerfNation?.name, pickedNationCountryCode: bestPerfNation?.countryCode,
             artistName: bestPerfNation?.artistName, songTitle: bestPerfNation?.songTitle,
-            actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, 
-            iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score 
+            actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points,
+            iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score
           });
 
+          const bestOutfitNation = currentTeam.bestOutfitNationId ? nationsMap.get(currentTeam.bestOutfitNationId) : undefined;
           const bestOutfitPick = getCategoryPickPointsAndRank(currentTeam.bestOutfitNationId, topOutfitNations);
           treppoScoreCategoryPicksSubtotal += bestOutfitPick.points;
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const bestOutfitNation = currentTeam.bestOutfitNationId ? nationsMap.get(currentTeam.bestOutfitNationId) : undefined;
-          categoryPicksDetails.push({ 
-            categoryName: "Miglior Outfit", pickedNationId: currentTeam.bestOutfitNationId || "", 
+          categoryPicksDetails.push({
+            categoryName: "Miglior Outfit", pickedNationId: currentTeam.bestOutfitNationId || "",
             pickedNationName: bestOutfitNation?.name, pickedNationCountryCode: bestOutfitNation?.countryCode,
             artistName: bestOutfitNation?.artistName, songTitle: bestOutfitNation?.songTitle,
-            actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, 
-            iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score 
+            actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points,
+            iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score
           });
 
+          const worstTreppoNation = currentTeam.worstTreppoScoreNationId ? nationsMap.get(currentTeam.worstTreppoScoreNationId) : undefined;
           const worstTreppoPick = getCategoryPickPointsAndRank(currentTeam.worstTreppoScoreNationId, worstOverallScoreNations);
           treppoScoreCategoryPicksSubtotal += worstTreppoPick.points;
           if(worstTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
-          const worstTreppoNation = currentTeam.worstTreppoScoreNationId ? nationsMap.get(currentTeam.worstTreppoScoreNationId) : undefined;
-          categoryPicksDetails.push({ 
-            categoryName: "Peggior TreppoScore", pickedNationId: currentTeam.worstTreppoScoreNationId || "", 
-            pickedNationName: worstTreppoNation?.name, pickedNationCountryCode: worstTreppoNation?.countryCode, 
+          categoryPicksDetails.push({
+            categoryName: "Peggior TreppoScore", pickedNationId: currentTeam.worstTreppoScoreNationId || "",
+            pickedNationName: worstTreppoNation?.name, pickedNationCountryCode: worstTreppoNation?.countryCode,
             artistName: worstTreppoNation?.artistName, songTitle: worstTreppoNation?.songTitle,
-            actualCategoryRank: worstTreppoPick.rank, pointsAwarded: worstTreppoPick.points, 
-            iconName: "ThumbsDown", pickedNationScoreInCategory: worstTreppoPick.score 
+            actualCategoryRank: worstTreppoPick.rank, pointsAwarded: worstTreppoPick.points,
+            iconName: "ThumbsDown", pickedNationScoreInCategory: worstTreppoPick.score
           });
-          
+
           score = primaSquadraSubtotal + eurovisionPicksSubtotal + treppoScoreCategoryPicksSubtotal;
 
           if (firstPlaceCategoryPicksCount >= 4) {
@@ -323,7 +326,7 @@ export default function TeamDetailsPage() {
             bonusSubtotal += 5;
             bonusCampionePronostici = true;
           }
-          
+
           score += bonusSubtotal;
 
           return {
@@ -536,7 +539,7 @@ export default function TeamDetailsPage() {
           isLeaderboardPodiumDisplay={true}
           disableEdit={true}
           isOwnTeamCard={user?.uid === teamWithDetails.userId}
-          defaultOpenSections={["treppovision", "pronosticiEurovision", "trepposcore", "bonus"]}
+          defaultOpenSections={["treppovision", "pronosticiEurovision", "pronosticiTreppoScore", "bonus"]}
         />
       </div>
     </div>

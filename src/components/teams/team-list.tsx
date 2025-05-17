@@ -1,4 +1,3 @@
-
 import type { TeamWithScore, Nation, NationGlobalCategorizedScores } from "@/types";
 import { TeamListItem } from "./team-list-item";
 
@@ -7,17 +6,17 @@ interface TeamListProps {
   allNations: Nation[];
   nationGlobalCategorizedScoresArray: [string, NationGlobalCategorizedScores][];
   disableListItemEdit?: boolean;
-  isLeaderboardPodiumDisplay?: boolean;
-  defaultOpenSections?: string[]; 
+  isLeaderboardPodiumDisplay?: boolean; // Used for podium-specific styling
+  defaultOpenSections?: string[];
 }
 
-export function TeamList({ 
-  teams, 
-  allNations, 
-  nationGlobalCategorizedScoresArray, 
+export function TeamList({
+  teams,
+  allNations,
+  nationGlobalCategorizedScoresArray,
   disableListItemEdit = false,
-  isLeaderboardPodiumDisplay = false,
-  defaultOpenSections = [], 
+  isLeaderboardPodiumDisplay = false, // Pass this through
+  defaultOpenSections = [],
 }: TeamListProps) {
   if (teams.length === 0) {
     return <p className="text-muted-foreground text-center py-10">Nessuna squadra trovata.</p>;
@@ -29,13 +28,14 @@ export function TeamList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {teams.map((team) => (
-        <TeamListItem 
-          key={team.id} 
-          team={team} 
-          allNations={allNations} 
-          nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray} 
-          disableEdit={disableListItemEdit} 
-          isLeaderboardPodiumDisplay={isLeaderboardPodiumDisplay} 
+        <TeamListItem
+          key={team.id}
+          team={team}
+          allNations={allNations}
+          nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray}
+          disableEdit={disableListItemEdit}
+          isLeaderboardPodiumDisplay={isLeaderboardPodiumDisplay} // Pass this through
+          isOwnTeamCard={false} // Explicitly false for list context unless overridden
           defaultOpenSections={defaultOpenSections}
         />
       ))}
