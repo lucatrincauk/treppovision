@@ -1,45 +1,24 @@
 
 "use client";
 
-import type { Nation, Vote } from "@/types";
+import type { Nation } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Star, Users, TrendingUp, Award, Music2, UserSquare2 } from "lucide-react"; // Added Music2, UserSquare2
+import { Music2, UserSquare2 } from "lucide-react"; // Added Music2, UserSquare2
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
-import { getUserVoteForNationFromDB, listenToAllVotesForNation } from "@/lib/voting-service";
-import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 
 interface NationListItemProps {
   nation: Nation & { userAverageScore?: number | null };
 }
 
 export function NationListItem({ nation }: NationListItemProps) {
-  const { user, isLoading: authLoading } = useAuth();
-
   const localThumbnailUrl = `/${nation.id}.jpg`;
   const fallbackFlagUrl = `https://flagcdn.com/w160/${nation.countryCode.toLowerCase()}.png`;
 
   const [imageUrl, setImageUrl] = useState(localThumbnailUrl);
   const [imageAlt, setImageAlt] = useState(`Miniatura ${nation.name}`);
-  const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
-  const [userVote, setUserVote] = useState<Vote | null | undefined>(undefined);
-  const [userAverageScore, setUserAverageScore] = useState<string | null>(null);
-  const [isLoadingUserVote, setIsLoadingUserVote] = useState(true);
-
-  const [globalAverage, setGlobalAverage] = useState<number | null>(null);
-  const [globalVoteCount, setGlobalVoteCount] = useState<number | null>(null);
-  const [isLoadingGlobalVote, setIsLoadingGlobalVote] = useState(true);
-
-  useEffect(() => {
-    async function fetchLockStatus() {
-      const status = await getLeaderboardLockedStatus();
-      setLeaderboardLocked(status);
-    }
-    fetchLockStatus();
-  }, []);
 
   useEffect(() => {
     setImageUrl(localThumbnailUrl);
@@ -77,10 +56,9 @@ export function NationListItem({ nation }: NationListItemProps) {
               onError={handleImageError}
               data-ai-hint={imageUrl === fallbackFlagUrl ? `${nation.name} flag` : `${nation.name} thumbnail`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-row justify-between items-end p-3">
-              {/* Left part: Flag and Nation Name */}
-              <div>
-                <CardTitle className="text-xl font-bold text-white drop-shadow-md flex items-center gap-2">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 flex flex-col justify-end items-start p-3">
+              <div> {/* Container for all text */}
+                <CardTitle className="text-xl font-bold text-white drop-shadow-md flex items-center gap-2 mb-1">
                   <Image
                     src={`https://flagcdn.com/w20/${nation.countryCode.toLowerCase()}.png`}
                     alt={`Bandiera ${nation.name}`}
@@ -91,17 +69,16 @@ export function NationListItem({ nation }: NationListItemProps) {
                   />
                   <span>{nation.name}</span>
                 </CardTitle>
-              </div>
-              {/* Right part: Artist and Song Title */}
-              <div className="text-right">
-                <p className="text-sm text-white/90 drop-shadow-sm flex items-center justify-end gap-1" title={nation.artistName}>
-                  <UserSquare2 className="w-3 h-3" />
-                  <span>{nation.artistName}</span>
-                </p>
-                <p className="text-sm text-white/80 drop-shadow-sm flex items-center justify-end gap-1" title={nation.songTitle}>
-                  <Music2 className="w-3 h-3" />
-                  <span>{nation.songTitle}</span>
-                </p>
+                <div className="pl-0"> {/* Align artist/song under nation name text */}
+                  <p className="text-sm text-white/90 drop-shadow-sm flex items-center gap-1" title={nation.artistName}>
+                    <UserSquare2 className="w-3 h-3" />
+                    <span>{nation.artistName}</span>
+                  </p>
+                  <p className="text-sm text-white/80 drop-shadow-sm flex items-center gap-1" title={nation.songTitle}>
+                    <Music2 className="w-3 h-3" />
+                    <span>{nation.songTitle}</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
