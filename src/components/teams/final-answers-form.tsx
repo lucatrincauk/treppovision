@@ -33,11 +33,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
 const finalAnswersFormZodSchema = z.object({
-  // bestTreppoScoreNationId: z.string().min(1, "Devi selezionare la nazione per Miglior TreppoScore."), // REMOVED
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
   bestOutfitNationId: z.string().min(1, "Devi selezionare il migliore outfit."),
-  worstSongNationId: z.string().min(1, "Devi selezionare la peggiore canzone."),
+  worstSongNationId: z.string().min(1, "Devi selezionare il Peggior TreppoScore."),
 });
 
 interface FinalAnswersFormProps {
@@ -81,7 +80,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const form = useForm<TeamFinalAnswersFormData>({
     resolver: zodResolver(finalAnswersFormZodSchema),
     defaultValues: initialData || {
-      // bestTreppoScoreNationId: "", // REMOVED
       bestSongNationId: "",
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
@@ -92,7 +90,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   React.useEffect(() => {
     if (initialData) {
       form.reset({
-        // bestTreppoScoreNationId: initialData.bestTreppoScoreNationId || "", // REMOVED
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
         bestOutfitNationId: initialData.bestOutfitNationId || "",
@@ -174,7 +171,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       <>
         <Form {...form}>
           <form className="space-y-6 py-4">
-            {/* Field for bestTreppoScoreNationId REMOVED */}
             <FormField
               control={form.control}
               name="bestSongNationId"
@@ -216,7 +212,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
               name="worstSongNationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Peggior Canzone</FormLabel>
+                  <FormLabel>Peggior TreppoScore</FormLabel>
                   <Select value={field.value || ""} disabled={true}>
                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
                   </Select>
@@ -233,7 +229,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-        {/* Field for bestTreppoScoreNationId REMOVED */}
         <FormField
           control={form.control}
           name="bestSongNationId"
@@ -323,7 +318,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
           name="worstSongNationId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Peggior Canzone</FormLabel>
+              <FormLabel>Peggior TreppoScore</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
                 <FormControl>
                   <SelectTrigger>
@@ -340,7 +335,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>La peggiore canzone secondo gli utenti di TreppoVision.</FormDescription>
+              <FormDescription>La nazione con il peggior TreppoScore secondo gli utenti di TreppoVision.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -369,3 +364,4 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </Form>
   );
 }
+
