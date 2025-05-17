@@ -13,7 +13,7 @@ import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight } from "lucide
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image"; // Added for flags in nav buttons
+import Image from "next/image"; // Keep for potential future use or consistency, though not used in nav for now
 import { cn } from "@/lib/utils";
 
 interface GlobalCategoryPickDetail extends BaseGlobalCategoryPickDetail {
