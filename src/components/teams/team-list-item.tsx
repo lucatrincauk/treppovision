@@ -3,7 +3,7 @@
 
 import type { TeamWithScore, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail, GlobalCategoryPickDetail } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, ThumbsUp, Shirt, Lock, BadgeCheck, Award, ListOrdered, Loader2, Info, CheckCircle, Trophy, TrendingUp } from "lucide-react";
+import { Users, UserCircle, Edit, Music2, Star, ThumbsDown, Shirt, Lock, BadgeCheck, Award, ListOrdered, Loader2, Info, CheckCircle, Trophy, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,7 +12,7 @@ import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// MedalIcon for top 3 ranks
+// MedalIcon for top 3 ranks in "Pronostici TreppoVision" and "Pronostici TreppoScore" categories
 const MedalIcon = React.memo(({ rank, className }: { rank?: number, className?: string }) => {
   if (rank === undefined || rank === null || rank === 0 || rank > 3) return null;
   let colorClass = "";
@@ -40,13 +40,13 @@ const PrimaSquadraNationDisplayDetailPodium = React.memo(({
 
   return (
     <div className={cn(
-      "px-2 py-1 w-full",
+      "px-2 py-1",
       isEvenRow && "bg-muted/50 rounded-md"
     )}>
-      <div className="flex items-center justify-between w-full"> 
-        <div className="flex items-center gap-1"> 
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-1.5"> {/* Main container for icon, flag, text */}
           <BadgeCheck className="w-5 h-5 text-accent shrink-0" />
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5"> {/* Container for flag and text block */}
             {detail.countryCode ? (
               <Image
                 src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
@@ -59,7 +59,7 @@ const PrimaSquadraNationDisplayDetailPodium = React.memo(({
             ) : (
               <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
             )}
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start"> {/* Container for Nation Name/Rank and Artist/Song */}
               <Link
                 href={`/nations/${detail.id}`}
                 className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
@@ -72,7 +72,7 @@ const PrimaSquadraNationDisplayDetailPodium = React.memo(({
                 )}
               </Link>
               {(detail.artistName || detail.songTitle) && !leaderboardLockedAdmin && (
-                <span className="text-xs text-muted-foreground/80 block">
+                <span className="text-xs text-muted-foreground/80 block pl-0"> {/* Ensure this is left aligned */}
                   {detail.artistName}{detail.artistName && detail.songTitle && " - "}{detail.songTitle}
                 </span>
               )}
@@ -99,7 +99,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({
   leaderboardLockedAdmin,
   isEvenRow,
 }: {
-  detail: GlobalCategoryPickDetail & { actualCategoryRank?: number | null, artistName?: string, songTitle?: string };
+  detail: GlobalCategoryPickDetail & { artistName?: string, songTitle?: string };
   leaderboardLockedAdmin: boolean | null;
   isEvenRow?: boolean;
 }) => {
@@ -112,15 +112,12 @@ const CategoryPickDisplayDetailPodium = React.memo(({
     case 'Star': IconComponent = Star; break;
     case 'Shirt': IconComponent = Shirt; break;
     case 'ThumbsDown': IconComponent = ThumbsDown; break;
-    case 'ThumbsUp': IconComponent = ThumbsUp; break;
     default: IconComponent = Info;
   }
 
   let rankSuffix = "";
   if (detail.categoryName === "Peggior TreppoScore") {
-    rankSuffix = " peggiore";
-  } else if (["Miglior Performance", "Miglior Outfit"].includes(detail.categoryName)) {
-    // rankSuffix = " in cat."; // Removed as per user request for these
+      rankSuffix = " peggiore";
   }
   
   const rankText = !leaderboardLockedAdmin && detail.actualCategoryRank && detail.actualCategoryRank > 0
@@ -146,7 +143,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({
             className={cn(
               "text-xs shrink-0 ml-auto", 
               detail.pointsAwarded > 0 ? "font-semibold text-primary" :
-              detail.pointsAwarded === 0 ? "font-medium text-muted-foreground" :
+              detail.pointsAwarded === 0 ? "font-medium text-muted-foreground" : // Shows "0pt" in muted color
               "font-semibold text-destructive"
             )}
           >
@@ -160,7 +157,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({
         "pl-[calc(1.25rem+0.375rem)]" 
       )}>
         {detail.pickedNationName ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5"> {/* Container for flag and text block */}
             {detail.pickedNationCountryCode ? (
               <Image
                 src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode.toLowerCase()}.png`}
@@ -173,7 +170,7 @@ const CategoryPickDisplayDetailPodium = React.memo(({
             ) : (
               <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
             )}
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start"> {/* Container for Nation Name/Rank and Artist/Song */}
               <Link href={`/nations/${detail.pickedNationId || '#'}`}
                 className="group text-xs hover:underline hover:text-primary flex items-center gap-1"
                 title={titleText}
@@ -181,14 +178,14 @@ const CategoryPickDisplayDetailPodium = React.memo(({
                 <span className="font-medium">
                   {detail.pickedNationName}
                 </span>
-                {!leaderboardLockedAdmin && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank} />}
+                {!leaderboardLockedAdmin && detail.actualCategoryRank && [1,2,3].includes(detail.actualCategoryRank) && <MedalIcon rank={detail.actualCategoryRank}/>}
                 {rankText && !leaderboardLockedAdmin && (
                   <span className="text-muted-foreground text-xs ml-0.5">
                     {rankText}
                   </span>
                 )}
               </Link>
-              {(detail.artistName || detail.songTitle) && !leaderboardLockedAdmin && (
+               {(detail.artistName || detail.songTitle) && !leaderboardLockedAdmin && (
                 <span className="text-xs text-muted-foreground/80 block">
                   {detail.artistName}{detail.artistName && detail.songTitle && " - "}{detail.songTitle}
                 </span>
@@ -212,8 +209,6 @@ const SelectedNationDisplay = React.memo(({
   isCorrectPick,
   leaderboardLocked,
   isEvenRow,
-  isOwnTeamCard,
-  isLeaderboardPodiumDisplay,
   categoryRank,
   categoryRankText,
 }: {
@@ -223,12 +218,10 @@ const SelectedNationDisplay = React.memo(({
   isCorrectPick?: boolean;
   leaderboardLocked: boolean | null;
   isEvenRow?: boolean;
-  isOwnTeamCard?: boolean;
-  isLeaderboardPodiumDisplay?: boolean;
   categoryRank?: number | null;
   categoryRankText?: string | null;
 }) => {
-  const iconColor = isCorrectPick && !leaderboardLocked ? "text-accent" : "text-accent";
+  const iconColor = (isCorrectPick && !leaderboardLocked) || (label && !isCorrectPick) ? "text-accent" : "text-accent"; // Default to accent for labels if not correct
 
   const nationEurovisionRank = nation?.ranking;
   let eurovisionRankTextDisplay = "";
@@ -240,7 +233,7 @@ const SelectedNationDisplay = React.memo(({
     <>
       <span className="font-medium">{nation?.name || "Nessuna selezione"}</span>
       {!label && !leaderboardLocked && nationEurovisionRank && [1,2,3].includes(nationEurovisionRank) && <MedalIcon rank={nationEurovisionRank} className="ml-1"/>}
-      {eurovisionRankTextDisplay && (
+      {eurovisionRankTextDisplay && !label && ( // Only show Eurovision rank if not a labeled item
         <span className="text-muted-foreground text-xs ml-0.5">{eurovisionRankTextDisplay}</span>
       )}
       {label && !leaderboardLocked && categoryRank && [1,2,3].includes(categoryRank) && <MedalIcon rank={categoryRank} className="ml-1"/>}
@@ -249,17 +242,16 @@ const SelectedNationDisplay = React.memo(({
       )}
     </>
   );
-
+  
   const mainContainerClasses = cn(
     "px-2",
-    label && "py-1.5", 
-    !label && "flex items-center gap-1.5 py-1", 
+    label ? "py-1.5" : "flex items-center gap-1.5 py-1",
     isEvenRow && "bg-muted/50 rounded-md"
   );
 
   const labelAndIconContainerClasses = cn(
     "flex items-center gap-1.5",
-    label && "w-full sm:w-auto"
+    label && "w-full sm:w-auto" 
   );
 
   const nationInfoContainerOuterClasses = cn(
@@ -268,7 +260,7 @@ const SelectedNationDisplay = React.memo(({
   );
 
   const nationInfoContainerInnerClasses = cn(
-    label && "mt-1 sm:mt-0 sm:ml-[calc(1.25rem+0.375rem)]"
+     label && "mt-1 sm:mt-0 sm:ml-[calc(1.25rem+0.375rem)]" // 1.25rem for icon (w-5) + 0.375rem for gap-1.5
   );
 
   return (
@@ -287,7 +279,7 @@ const SelectedNationDisplay = React.memo(({
       
       <div className={cn(
         nationInfoContainerOuterClasses,
-        label && "pl-4 sm:pl-0" 
+        label && "pl-0" 
       )}>
         <div className={cn(
           "flex items-center gap-1.5",
@@ -314,7 +306,7 @@ const SelectedNationDisplay = React.memo(({
               >
                 {nameForDisplay}
               </Link>
-              {nation && (nation.artistName || nation.songTitle) && !label && (
+              {nation && (nation.artistName || nation.songTitle) && !label && ( // Only show artist/song for non-labeled (Pronostici TreppoVision)
                 <span className="text-xs text-muted-foreground/80 block">
                     {nation.artistName}{nation.artistName && nation.songTitle && " - "}{nation.songTitle}
                 </span>
@@ -354,80 +346,6 @@ export function TeamListItem({
     [key: string]: { rank?: number | null; isCorrectPick?: boolean; categoryRankText?: string };
   }>({});
 
-  const nationGlobalCategorizedScoresMap = useMemo(() => {
-    if (nationGlobalCategorizedScoresArray && nationGlobalCategorizedScoresArray.length > 0) {
-        return new Map(nationGlobalCategorizedScoresArray);
-    }
-    return new Map<string, NationGlobalCategorizedScores>();
-  }, [nationGlobalCategorizedScoresArray]);
-
-
-  const sortedFounderNationsDetails = useMemo(() => {
-    if (team.primaSquadraDetails && team.primaSquadraDetails.length > 0) {
-      return [...team.primaSquadraDetails].sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
-    }
-    if (!allNations || allNations.length === 0) return [];
-    return (team.founderChoices || []).map(id => {
-        const nation = allNations.find(n => n.id === id);
-        return {
-            id,
-            name: nation?.name || 'Sconosciuto',
-            countryCode: nation?.countryCode || 'xx',
-            artistName: nation?.artistName,
-            songTitle: nation?.songTitle,
-            actualRank: nation?.ranking,
-            points: 0, 
-        };
-    }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
-  }, [team.primaSquadraDetails, team.founderChoices, allNations]);
-
-  const treppoScoreCategoriesConfig = useMemo(() => [
-    { teamPickNationId: team.bestTreppoScoreNationId, Icon: ThumbsUp, label: "Miglior TreppoScore", rankInfoKey: 'ThumbsUp', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
-    { teamPickNationId: team.bestSongNationId, Icon: Music2, label: "Miglior Canzone", rankInfoKey: 'Music2', categoryKey: 'averageSongScore' as keyof NationGlobalCategorizedScores },
-    { teamPickNationId: team.bestPerformanceNationId, Icon: Star, label: "Miglior Performance", rankInfoKey: 'Star', categoryKey: 'averagePerformanceScore' as keyof NationGlobalCategorizedScores },
-    { teamPickNationId: team.bestOutfitNationId, Icon: Shirt, label: "Miglior Outfit", rankInfoKey: 'Shirt', categoryKey: 'averageOutfitScore' as keyof NationGlobalCategorizedScores },
-    { teamPickNationId: team.worstSongNationId, Icon: ThumbsDown, label: "Peggior TreppoScore", rankInfoKey: 'ThumbsDown', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
-  ], [team.bestSongNationId, team.bestPerformanceNationId, team.bestOutfitNationId, team.worstSongNationId, team.bestTreppoScoreNationId]);
-
-  const treppoScorePicksForDisplay = useMemo(() => {
-    if (!allNations || allNations.length === 0) {
-        return treppoScoreCategoriesConfig.map(pick => ({
-            categoryName: pick.label,
-            pickedNationId: pick.teamPickNationId || "",
-            pickedNationName: pick.teamPickNationId ? "Caricamento..." : "Nessuna selezione",
-            pickedNationCountryCode: "",
-            artistName: "",
-            songTitle: "",
-            actualCategoryRank: undefined,
-            pickedNationScoreInCategory: null,
-            pointsAwarded: team.categoryPicksDetails?.find(p => p.categoryName === pick.label)?.pointsAwarded ?? 0,
-            iconName: pick.rankInfoKey,
-            Icon: pick.Icon, 
-        }));
-    }
-    return treppoScoreCategoriesConfig.map(pick => {
-      const nation = pick.teamPickNationId ? allNations.find(n => n.id === pick.teamPickNationId) : undefined;
-      const rankInfo = categoryRanksAndCorrectness[pick.rankInfoKey] || {};
-      const nationScores = pick.teamPickNationId && nationGlobalCategorizedScoresMap ? nationGlobalCategorizedScoresMap.get(pick.teamPickNationId) : undefined;
-      const globalScore = nationScores ? nationScores[pick.categoryKey] : null;
-
-      return {
-        categoryName: pick.label,
-        pickedNationId: pick.teamPickNationId || "",
-        pickedNationName: nation?.name,
-        pickedNationCountryCode: nation?.countryCode,
-        artistName: nation?.artistName,
-        songTitle: nation?.songTitle,
-        actualCategoryRank: rankInfo.rank,
-        pickedNationScoreInCategory: globalScore,
-        pointsAwarded: team.categoryPicksDetails?.find(p => p.categoryName === pick.label)?.pointsAwarded ?? 0,
-        iconName: pick.rankInfoKey,
-        Icon: pick.Icon, 
-      };
-    });
-  }, [treppoScoreCategoriesConfig, categoryRanksAndCorrectness, allNations, nationGlobalCategorizedScoresMap, team.categoryPicksDetails]);
-
-
   useEffect(() => {
     async function fetchAdminSettings() {
       setIsLoadingAdminSettings(true);
@@ -449,7 +367,41 @@ export function TeamListItem({
     fetchAdminSettings();
   }, []);
 
- useEffect(() => {
+  const nationGlobalCategorizedScoresMap = useMemo(() => {
+    if (nationGlobalCategorizedScoresArray && nationGlobalCategorizedScoresArray.length > 0) {
+        return new Map(nationGlobalCategorizedScoresArray);
+    }
+    return new Map<string, NationGlobalCategorizedScores>();
+  }, [nationGlobalCategorizedScoresArray]);
+
+  // This needs to be before early returns
+  const sortedFounderNationsDetails = useMemo(() => {
+    if (team.primaSquadraDetails && team.primaSquadraDetails.length > 0) {
+      return [...team.primaSquadraDetails].sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
+    }
+    if (!allNations || allNations.length === 0) return [];
+    return (team.founderChoices || []).map(id => {
+        const nation = allNations.find(n => n.id === id);
+        return {
+            id,
+            name: nation?.name || 'Sconosciuto',
+            countryCode: nation?.countryCode || 'xx',
+            artistName: nation?.artistName,
+            songTitle: nation?.songTitle,
+            actualRank: nation?.ranking,
+            points: 0, // Points are calculated by parent for leaderboards
+        };
+    }).sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
+  }, [team.primaSquadraDetails, team.founderChoices, allNations]);
+
+  const treppoScoreCategoriesConfig = useMemo(() => [
+    { teamPickNationId: team.bestSongNationId, Icon: Music2, label: "Miglior Canzone", rankInfoKey: 'Music2', categoryKey: 'averageSongScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestPerformanceNationId, Icon: Star, label: "Miglior Performance", rankInfoKey: 'Star', categoryKey: 'averagePerformanceScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestOutfitNationId, Icon: Shirt, label: "Miglior Outfit", rankInfoKey: 'Shirt', categoryKey: 'averageOutfitScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.worstSongNationId, Icon: ThumbsDown, label: "Peggior TreppoScore", rankInfoKey: 'ThumbsDown', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
+  ], [team.bestSongNationId, team.bestPerformanceNationId, team.bestOutfitNationId, team.worstSongNationId]);
+
+  useEffect(() => {
     if (nationGlobalCategorizedScoresMap && nationGlobalCategorizedScoresMap.size > 0 && allNations && allNations.length > 0) {
         const getSortedList = (categoryKey: 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore' | 'overallAverageScore', order: 'asc' | 'desc') => {
           return Array.from(nationGlobalCategorizedScoresMap.entries())
@@ -483,19 +435,13 @@ export function TeamListItem({
             let suffix = "";
             if (categoryName === "Peggior TreppoScore") {
                 suffix = " peggiore";
-            } else if (categoryName !== "Miglior Canzone" && categoryName !== "Miglior TreppoScore") {
-                // suffix = " in cat."; // Removed
+            } else if (["Miglior Canzone", "Miglior Performance", "Miglior Outfit"].includes(categoryName || "")) {
+                // No "in cat." suffix here
             }
             return { rank, categoryRankText: rank ? `(${rank}º${suffix})` : undefined };
         };
 
         const newRanks: typeof categoryRanksAndCorrectness = {};
-
-        const bestTreppoScoreNations = getSortedList('overallAverageScore', 'desc');
-        if (team.bestTreppoScoreNationId) {
-          const { rank, categoryRankText } = getRankAndText(team.bestTreppoScoreNationId, bestTreppoScoreNations, "Miglior TreppoScore");
-          newRanks['ThumbsUp'] = { rank, isCorrectPick: !leaderboardLockedAdmin && rank !== undefined && rank <=3, categoryRankText };
-        }
 
         const bestSongNations = getSortedList('averageSongScore', 'desc');
         if (team.bestSongNationId) {
@@ -515,8 +461,8 @@ export function TeamListItem({
           newRanks['Shirt'] = { rank, isCorrectPick: !leaderboardLockedAdmin && rank !== undefined && rank <=3, categoryRankText };
         }
         
-        const worstOverallScoreNations = getSortedList('overallAverageScore', 'asc');
-        if (team.worstSongNationId) { 
+        const worstOverallScoreNations = getSortedList('overallAverageScore', 'asc'); // Changed to overallAverageScore for "Peggior TreppoScore"
+        if (team.worstSongNationId) { // Still uses worstSongNationId from team data
             const { rank, categoryRankText } = getRankAndText(team.worstSongNationId, worstOverallScoreNations, "Peggior TreppoScore");
             newRanks['ThumbsDown'] = { rank, isCorrectPick: !leaderboardLockedAdmin && rank !== undefined && rank <= 3, categoryRankText };
         }
@@ -524,10 +470,31 @@ export function TeamListItem({
     } else {
          setCategoryRanksAndCorrectness({});
     }
-  }, [nationGlobalCategorizedScoresArray, allNations, team, leaderboardLockedAdmin]);
+  }, [nationGlobalCategorizedScoresMap, allNations, team, leaderboardLockedAdmin, treppoScoreCategoriesConfig]);
+  
+  const treppoScorePicksForDisplay = useMemo(() => {
+    if (!allNations || allNations.length === 0) return []; // Guard against allNations not being ready
+    return treppoScoreCategoriesConfig.map(pick => {
+      const nation = pick.teamPickNationId && allNations ? allNations.find(n => n.id === pick.teamPickNationId) : undefined;
+      const rankInfo = categoryRanksAndCorrectness[pick.rankInfoKey] || {};
+      const originalDetail = team.categoryPicksDetails?.find(d => d.categoryName === pick.label);
+
+      return {
+        ...pick,
+        pickedNationName: nation?.name,
+        pickedNationCountryCode: nation?.countryCode,
+        artistName: nation?.artistName,
+        songTitle: nation?.songTitle,
+        actualCategoryRank: rankInfo.rank,
+        isCorrectPick: rankInfo.isCorrectPick,
+        categoryRankText: rankInfo.categoryRankText,
+        pointsAwarded: originalDetail?.pointsAwarded ?? 0,
+      };
+    });
+  }, [treppoScoreCategoriesConfig, categoryRanksAndCorrectness, allNations, team.categoryPicksDetails]);
 
 
-  if (isLoadingAdminSettings || (!allNations && !isLeaderboardPodiumDisplay) || (isLeaderboardPodiumDisplay && (!allNations || allNations.length === 0))) {
+  if (isLoadingAdminSettings || !allNations) {
     return (
       <Card className={cn(
         "flex flex-col h-full shadow-lg p-4 items-center justify-center min-w-[280px]",
@@ -568,17 +535,16 @@ export function TeamListItem({
       }
       return isTied ? `${rankStr}*` : rankStr;
   };
-
-  const hasTreppoScorePredictions = team.bestTreppoScoreNationId || team.bestSongNationId || team.bestPerformanceNationId || team.bestOutfitNationId || team.worstSongNationId;
   
-  const renderDetailedView = isLeaderboardPodiumDisplay || isOwnTeamCard;
+  const renderDetailedView = isOwnTeamCard || (isLeaderboardPodiumDisplay && team.primaSquadraDetails && team.categoryPicksDetails);
+  const hasTreppoScorePredictions = !!(team.bestSongNationId || team.bestPerformanceNationId || team.bestOutfitNationId || team.worstSongNationId);
 
   const PodiumHeader = () => (
-    <div className="space-y-0">
+    <>
       <div className="flex items-baseline justify-between w-full">
         <div className="flex items-center gap-2 text-xl text-primary">
           <Users className="h-5 w-5 text-accent" />
-          <CardTitle>
+          <CardTitle className="text-xl">
             {team.name}
           </CardTitle>
         </div>
@@ -602,7 +568,7 @@ export function TeamListItem({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 
   const DefaultHeader = () => (
@@ -610,12 +576,12 @@ export function TeamListItem({
         <div className="flex-grow">
           <div className="flex items-center gap-2 text-xl text-primary">
             <Users className="h-5 w-5 text-accent" />
-            <CardTitle>
+            <CardTitle className="text-xl">
                 {team.name}
             </CardTitle>
             {team.creatorDisplayName && !isOwnTeamCard && (
               <span className="ml-1 text-xs text-muted-foreground flex items-center gap-1" title={`Utente: ${team.creatorDisplayName}`}>
-                <UserCircle className="h-3 w-3" />{team.creatorDisplayName}
+                (<UserCircle className="h-3 w-3" />{team.creatorDisplayName})
               </span>
             )}
           </div>
@@ -636,23 +602,20 @@ export function TeamListItem({
       borderClass
     )}>
       <CardHeader className={cn(
-        "pt-4 px-4 space-y-0.5", 
-        isLeaderboardPodiumDisplay && "!space-y-0 pb-3 border-b border-border"
+        "pt-4 px-4 pb-3 space-y-0", 
+        isLeaderboardPodiumDisplay && "border-b border-border"
       )}>
         {isLeaderboardPodiumDisplay ? <PodiumHeader /> : <DefaultHeader />}
       </CardHeader>
 
-      <CardContent className="flex-grow space-y-1 pt-2 pb-4 px-4">
+      <CardContent className="flex-grow space-y-1 pt-3 pb-4 px-4">
         { renderDetailedView && allNations && allNations.length > 0 ? (
           <>
-            <div className={cn(
-                "mb-[15px]", 
-                (hasTreppoScorePredictions || team.bonusCampionePronostici || team.bonusEnPleinTop5) && "pb-[15px] border-b border-border"
-            )}>
+            <div className={cn("mb-[15px]", (hasTreppoScorePredictions || team.bonusCampionePronostici || team.bonusEnPleinTop5) && "pb-3 border-b border-border")}>
               <p className="text-lg font-bold text-primary mt-2 mb-1">
                 Pronostici TreppoVision
               </p>
-              {sortedFounderNationsDetails.map((detail, index) => (
+              { (team.primaSquadraDetails || sortedFounderNationsDetails).map((detail, index) => (
                 <PrimaSquadraNationDisplayDetailPodium
                   key={`${team.id}-${detail.id}-prima-detail-${index}`}
                   detail={detail}
@@ -662,18 +625,25 @@ export function TeamListItem({
               ))}
             </div>
 
-            {hasTreppoScorePredictions && (
-              <div className={cn(
-                  "pt-0 mb-[15px]", 
-                  (team.bonusCampionePronostici || team.bonusEnPleinTop5) && "pb-[15px] border-b border-border" 
-                )}>
-                <p className="text-lg font-bold text-secondary mt-0 pt-0 mb-1">
+            {(hasTreppoScorePredictions) && (
+              <div className={cn("pt-0 mb-[15px]", (team.bonusCampionePronostici || team.bonusEnPleinTop5) && "pb-3 border-b border-border")}>
+                <p className="text-lg font-bold text-primary mt-3 pt-0 mb-1">
                   Pronostici TreppoScore
                 </p>
                 {treppoScorePicksForDisplay.map((detail, index) => (
                    <CategoryPickDisplayDetailPodium
-                      key={`${team.id}-${detail.categoryName}-detail-${index}`}
-                      detail={detail as GlobalCategoryPickDetail & { actualCategoryRank?: number | null, artistName?: string, songTitle?: string }}
+                      key={`${team.id}-${detail.label}-detail-${index}`}
+                      detail={{
+                        categoryName: detail.label,
+                        pickedNationId: detail.teamPickNationId,
+                        pickedNationName: detail.pickedNationName,
+                        pickedNationCountryCode: detail.pickedNationCountryCode,
+                        artistName: detail.artistName,
+                        songTitle: detail.songTitle,
+                        actualCategoryRank: detail.actualCategoryRank,
+                        pointsAwarded: detail.pointsAwarded,
+                        iconName: detail.rankInfoKey, // Or determine iconName based on detail.Icon if needed
+                      }}
                       leaderboardLockedAdmin={leaderboardLockedAdmin}
                       isEvenRow={index % 2 !== 0}
                     />
@@ -683,7 +653,7 @@ export function TeamListItem({
 
            {(team.bonusCampionePronostici || team.bonusEnPleinTop5) && !leaderboardLockedAdmin && (
               <div className="pt-0">
-                <p className="text-lg font-bold text-primary mt-0 mb-1"> 
+                <p className="text-lg font-bold text-primary mt-3 mb-1"> 
                   Bonus
                 </p>
                 {team.bonusCampionePronostici && (
@@ -731,12 +701,12 @@ export function TeamListItem({
                 </div>
             )}
              {hasTreppoScorePredictions && allNations && allNations.length > 0 && (
-                <div className={cn("pt-3", (sortedFounderNationsDetails && sortedFounderNationsDetails.length > 0) && "border-t border-border")}>
-                    <p className={cn("text-base font-semibold mb-1", "text-secondary" )}>
+                <div className={cn("pt-3", (sortedFounderNationsDetails && sortedFounderNationsDetails.length > 0) && "border-t border-border mb-[15px]")}>
+                    <p className={cn("text-base font-semibold mb-1", "text-primary" )}>
                         Pronostici TreppoScore
                     </p>
                     {treppoScorePicksForDisplay.map((category, index) => {
-                        const nationForPick = category.pickedNationId ? allNations.find(n => n.id === category.pickedNationId) : undefined;
+                        const nationForPick = category.teamPickNationId ? allNations.find(n => n.id === category.teamPickNationId) : undefined;
                         const rankInfo = categoryRanksAndCorrectness[category.rankInfoKey] || {};
                         
                         return (
@@ -763,4 +733,3 @@ export function TeamListItem({
     </Card>
   );
 }
-
