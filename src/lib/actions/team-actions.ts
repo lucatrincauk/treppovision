@@ -54,7 +54,7 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
-      eurovisionWinnerPickNationId: "",
+      eurovisionWinnerPickNationId: "", // Initialize new fields
       juryWinnerPickNationId: "",
       televoteWinnerPickNationId: "",
       bestTreppoScoreNationId: "", 
@@ -124,7 +124,7 @@ export async function updateTeamAction(
       return { success: false, message: "Nome dell'utente mancante per l'aggiornamento." };
     }
     
-    const teamPayloadToUpdate = {
+    const teamPayloadToUpdate: Partial<Team> & {updatedAt: any} = {
       name: data.name,
       founderChoices: data.founderChoices,
       creatorDisplayName: data.creatorDisplayName, 
@@ -201,7 +201,7 @@ export async function updateTeamFinalAnswersAction(
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
     
-    const finalAnswersToUpdate = {
+    const finalAnswersToUpdate: Partial<Omit<Team, 'id' | 'userId' | 'creatorDisplayName' | 'name' | 'founderChoices' | 'createdAt'>> & {updatedAt: any} = {
       eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
       juryWinnerPickNationId: data.juryWinnerPickNationId || "",
       televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
@@ -281,3 +281,4 @@ export async function getTeamsLockedStatus(): Promise<boolean> {
     const settings = await getAdminSettingsAction();
     return settings.teamsLocked;
 }
+

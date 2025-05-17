@@ -8,7 +8,7 @@ import { getTeamById } from "@/lib/team-service";
 import type { Team, TeamFinalAnswersFormData } from "@/types";
 import { FinalAnswersForm } from "@/components/teams/final-answers-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, AlertTriangle, Users, ListOrdered, Lock, ChevronLeft, Info } from "lucide-react";
+import { Loader2, AlertTriangle, ListOrdered, Lock, ChevronLeft, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,12 +30,14 @@ export default function EditFinalAnswersPage() {
   useEffect(() => {
     async function fetchPageData() {
       setIsLoadingSettings(true);
+      setIsLoadingData(true); // Set loading data to true initially
+
       if (authLoading || !user || !teamId) {
-        setIsLoadingData(authLoading || (!user && !teamId));
         if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
         }
         setIsLoadingSettings(false);
+        setIsLoadingData(false);
         return;
       }
 
@@ -46,19 +48,18 @@ export default function EditFinalAnswersPage() {
       } catch (settingsError: any) {
         console.error("Failed to fetch final predictions enabled status:", settingsError);
         setError("Impossibile caricare le impostazioni dei pronostici.");
-        setFinalPredictionsEnabled(false); 
+        setFinalPredictionsEnabled(false);
         setIsLoadingSettings(false);
-        setIsLoadingData(false); 
+        setIsLoadingData(false);
         return;
       }
       setIsLoadingSettings(false);
 
       if (predictionsEnabledStatus === false) {
-        setIsLoadingData(false); 
+        setIsLoadingData(false);
         return;
       }
       
-      setIsLoadingData(true);
       setError(null);
       try {
         const fetchedTeam = await getTeamById(teamId);
@@ -237,9 +238,6 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
-            {!hasExistingPredictions && (
-                 <span className="block mt-1 text-destructive">Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.</span>
-            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -253,3 +251,4 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
+
