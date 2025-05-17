@@ -54,11 +54,11 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
-      bestTreppoScoreNationId: "",
+      bestTreppoScoreNationId: "", // Restored
       bestSongNationId: "", 
       bestPerformanceNationId: "",
       bestOutfitNationId: "",
-      worstTreppoScoreNationId: "", // This was originally "worstTreppoScoreNationId", ensure consistency if it was changed and then reverted
+      worstTreppoScoreNationId: "", // Restored
       createdAt: serverTimestamp(),
     };
 
@@ -170,30 +170,30 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const hasExistingPredictions = 
-                                 !!teamDataInDb.bestTreppoScoreNationId ||
+                                 !!teamDataInDb.bestTreppoScoreNationId || // Restored check
                                  !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
                                  !!teamDataInDb.bestOutfitNationId ||
-                                 !!teamDataInDb.worstTreppoScoreNationId;
+                                 !!teamDataInDb.worstTreppoScoreNationId; // Restored check
 
     if (hasExistingPredictions) {
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
-    if (!data.bestTreppoScoreNationId ||
+    if (!data.bestTreppoScoreNationId || // Restored validation
         !data.bestSongNationId || 
         !data.bestPerformanceNationId || 
         !data.bestOutfitNationId || 
-        !data.worstTreppoScoreNationId) {
+        !data.worstTreppoScoreNationId) { // Restored validation
         return { success: false, message: "Tutti i campi dei pronostici finali sono obbligatori." };
     }
     
     const finalAnswersToUpdate = {
-      bestTreppoScoreNationId: data.bestTreppoScoreNationId, // REMOVED
+      bestTreppoScoreNationId: data.bestTreppoScoreNationId, // Restored
       bestSongNationId: data.bestSongNationId,
       bestPerformanceNationId: data.bestPerformanceNationId,
       bestOutfitNationId: data.bestOutfitNationId,
-      worstTreppoScoreNationId: data.worstTreppoScoreNationId,
+      worstTreppoScoreNationId: data.worstTreppoScoreNationId, // Restored
       updatedAt: serverTimestamp(),
     };
 

@@ -88,10 +88,11 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
+  bestTreppoScoreNationId: string; // Restored
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstTreppoScoreNationId: string; // Restored (was worstSongNationId)
 }
 
 
@@ -102,10 +103,11 @@ export interface Team {
   name: string;
   founderChoices: string[]; // Array of 3 nation IDs
   
+  bestTreppoScoreNationId: string; // Restored
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstTreppoScoreNationId: string; // Restored (was worstSongNationId)
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -178,6 +180,6 @@ export interface AdminNationPayload extends Omit<NationFormData, 'ranking'> {
 
 export interface TeamAdminViewDetails extends Team {
   nationsNotVotedCount: number;
-  unvotedNationNames?: string[]; // Added this field
+  unvotedNationNames?: string[]; 
   hasSubmittedFinalPredictions: boolean;
 }

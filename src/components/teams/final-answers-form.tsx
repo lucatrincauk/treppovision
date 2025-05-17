@@ -174,7 +174,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
       <>
         <Form {...form}>
           <form className="space-y-6 py-4">
-             <FormField
+            <FormField
               control={form.control}
               name="bestTreppoScoreNationId"
               render={({ field }) => (
@@ -224,7 +224,7 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
             />
              <FormField
               control={form.control}
-              name="worstTreppoScoreNationId"
+              name="worstTreppoScoreNationId" 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Peggior TreppoScore</FormLabel>

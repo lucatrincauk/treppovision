@@ -69,24 +69,23 @@ export default function EditFinalAnswersPage() {
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           const existingPreds = 
-                               !!fetchedTeam.bestTreppoScoreNationId ||
+                               !!fetchedTeam.bestTreppoScoreNationId || // Restored check
                                !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
                                !!fetchedTeam.bestOutfitNationId ||
-                               !!fetchedTeam.worstTreppoScoreNationId;
+                               !!fetchedTeam.worstTreppoScoreNationId; // Restored check
           setHasExistingPredictions(existingPreds);
 
           if (user && fetchedTeam.userId === user.uid) {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
-            // No error here, page will handle unauthorized display
           }
         } else {
           setError("Squadra non trovata.");
           setIsAuthorized(false);
         }
-      } catch (fetchError: any) { // Added missing opening brace for catch block
+      } catch (fetchError: any) {
         console.error("Failed to fetch team data for final answers:", fetchError);
         setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
         setIsAuthorized(false);
@@ -213,11 +212,11 @@ export default function EditFinalAnswersPage() {
   }
 
   const initialFinalAnswers: TeamFinalAnswersFormData = {
-    bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "",
+    bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "", // Restored
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",
     bestOutfitNationId: team!.bestOutfitNationId || "",
-    worstTreppoScoreNationId: team!.worstTreppoScoreNationId || "",
+    worstTreppoScoreNationId: team!.worstTreppoScoreNationId || "", // Restored
   };
 
   return (
@@ -256,4 +255,3 @@ export default function EditFinalAnswersPage() {
     </div>
   );
 }
-
