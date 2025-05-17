@@ -120,18 +120,27 @@ export default function TeamDetailsPage() {
 
 
   useEffect(() => {
-    async function fetchAllRankedTeams() {
-      if (!teamId) return; // No need to fetch if teamId isn't set yet
+    async function fetchAllPageData() {
+      if (!teamId || authLoading) {
+        setIsLoadingData(authLoading);
+        setIsLoadingRankedTeams(authLoading);
+        if (!teamId && !authLoading) setError("ID Squadra non valido.");
+        return;
+      }
 
+      setIsLoadingData(true);
       setIsLoadingRankedTeams(true);
+      setError(null);
+
       try {
         const [allFetchedTeams, nationsData, globalScoresMap] = await Promise.all([
           getTeams(),
           getNations(),
           getAllNationsGlobalCategorizedScores()
         ]);
-        setAllNationsData(nationsData); // Store for TeamListItem
-        setGlobalScoresData(globalScoresMap); // Store for TeamListItem
+
+        setAllNationsData(nationsData);
+        setGlobalScoresData(globalScoresMap);
 
         const nationsMap = new Map(nationsData.map(n => [n.id, n]));
 
@@ -162,55 +171,51 @@ export default function TeamDetailsPage() {
           const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
           let firstPlaceCategoryPicksCount = 0;
 
-          // Miglior TreppoScore
           const bestTreppoPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, topOverallNations);
           score += bestTreppoPick.points;
           if(bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "", actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
+          categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "", pickedNationName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined, artistName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.artistName : undefined, songTitle: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
 
-          // Miglior Canzone
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
           if(bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Miglior Canzone", pickedNationId: team.bestSongNationId || "", actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score });
+          categoryPicksDetails.push({ categoryName: "Miglior Canzone", pickedNationId: team.bestSongNationId || "", pickedNationName: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.name : undefined, pickedNationCountryCode: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.countryCode : undefined, artistName: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.artistName : undefined, songTitle: team.bestSongNationId ? nationsMap.get(team.bestSongNationId)?.songTitle : undefined, actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score });
 
-          // Miglior Performance
           const bestPerfPick = getCategoryPickPointsAndRank(team.bestPerformanceNationId, topPerformanceNations);
           score += bestPerfPick.points;
           if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId || "", actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score });
+          categoryPicksDetails.push({ categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId || "", pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined, pickedNationCountryCode: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.countryCode : undefined, artistName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.artistName : undefined, songTitle: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.songTitle : undefined, actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score });
 
-          // Miglior Outfit
           const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
           score += bestOutfitPick.points;
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
+          categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
 
-          // Peggior TreppoScore
           const worstPick = getCategoryPickPointsAndRank(team.worstTreppoScoreNationId, worstOverallScoreNations);
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstTreppoScoreNationId || "", actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
+          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstTreppoScoreNationId || "", pickedNationName: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.countryCode : undefined, artistName: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.artistName : undefined, songTitle: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
 
           if (firstPlaceCategoryPicksCount >= 4) {
             score += 30;
             bonusGranCampionePronostici = true;
-          } else if (firstPlaceCategoryPicksCount >= 2) {
+          } else if (firstPlaceCategoryPicksCount >= 2 && firstPlaceCategoryPicksCount < 4) {
             score += 5;
             bonusCampionePronostici = true;
           }
+
 
           return { ...team, score, primaSquadraDetails, categoryPicksDetails, bonusCampionePronostici, bonusGranCampionePronostici, bonusEnPleinTop5 };
         });
 
         calculatedTeams.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity) || a.name.localeCompare(b.name));
 
-        let currentRank = 1;
+        let currentGlobalRank = 1;
         for (let i = 0; i < calculatedTeams.length; i++) {
           if (i > 0 && (calculatedTeams[i].score ?? -Infinity) < (calculatedTeams[i-1].score ?? -Infinity)) {
-            currentRank = i + 1;
+            currentGlobalRank = i + 1;
           }
-          calculatedTeams[i].rank = currentRank;
+          calculatedTeams[i].rank = currentGlobalRank;
         }
 
         for (let i = 0; i < calculatedTeams.length; i++) {
@@ -226,199 +231,57 @@ export default function TeamDetailsPage() {
         }
         setRankedTeams(calculatedTeams);
 
+        const currentTeam = calculatedTeams.find(t => t.id === teamId);
+        if (currentTeam) {
+            setTeamWithDetails(currentTeam);
+        } else {
+            setError("Squadra non trovata nella classifica globale.");
+        }
+
       } catch (fetchError: any) {
-        console.error("Failed to fetch all ranked teams:", fetchError);
-        setError(fetchError.message || "Errore durante il caricamento di tutte le squadre.");
+        console.error("Failed to fetch page data:", fetchError);
+        setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
       } finally {
+        setIsLoadingData(false);
         setIsLoadingRankedTeams(false);
       }
     }
-    fetchAllRankedTeams();
-  }, [teamId]); // Re-fetch all teams if teamId changes (though unlikely on this page)
+    fetchAllPageData();
+  }, [teamId, authLoading]);
 
 
   useEffect(() => {
-    if (isLoadingRankedTeams || !teamId || rankedTeams.length === 0) return;
+    if (isLoadingRankedTeams || !teamId || rankedTeams.length === 0 || !teamWithDetails) return;
 
-    const currentTeamIndex = rankedTeams.findIndex(t => t.id === teamId);
+    const currentTeamIndex = rankedTeams.findIndex(t => t.id === teamWithDetails.id); // Use teamWithDetails.id for consistency
     if (currentTeamIndex === -1) {
-      // This could happen if the specific teamId is not in the fetched rankedTeams
-      // or if data is inconsistent.
       setPreviousTeam(null);
       setNextTeam(null);
-      // Fetch the specific team again if it wasn't in the ranked list to ensure its details are shown
-      if (!teamWithDetails) {
-        fetchCurrentTeamDetails();
-      }
       return;
     }
 
-    if (!teamWithDetails) {
-      // If teamWithDetails hasn't been set yet by fetchCurrentTeamDetails, set it now
-      // from the ranked list.
-      setTeamWithDetails(rankedTeams[currentTeamIndex]);
-    }
+    setPreviousTeam(currentTeamIndex > 0 ? rankedTeams[currentTeamIndex - 1] : null);
+    setNextTeam(currentTeamIndex < rankedTeams.length - 1 ? rankedTeams[currentTeamIndex + 1] : null);
 
-
-    if (currentTeamIndex > 0) {
-      setPreviousTeam(rankedTeams[currentTeamIndex - 1]);
-    } else {
-      setPreviousTeam(null);
-    }
-
-    if (currentTeamIndex < rankedTeams.length - 1) {
-      setNextTeam(rankedTeams[currentTeamIndex + 1]);
-    } else {
-      setNextTeam(null);
-    }
-
-  }, [isLoadingRankedTeams, teamId, rankedTeams, teamWithDetails]); // Added teamWithDetails to deps
-
-
-  async function fetchCurrentTeamDetails() {
-      if (!teamId) {
-        setError("ID Squadra non valido.");
-        setIsLoadingData(false);
-        return;
-      }
-      setIsLoadingData(true);
-      setError(null);
-
-      try {
-        // Fetch all necessary data if not already available from rankedTeams fetch
-        let nationsToUse = allNationsData;
-        let globalScoresToUse = globalScoresData;
-
-        if (nationsToUse.length === 0 || globalScoresToUse.size === 0) {
-            const [fetchedNations, fetchedGlobalScoresMap] = await Promise.all([
-                getNations(),
-                getAllNationsGlobalCategorizedScores()
-            ]);
-            nationsToUse = fetchedNations;
-            globalScoresToUse = fetchedGlobalScoresMap;
-            setAllNationsData(nationsToUse);
-            setGlobalScoresData(globalScoresToUse);
-        }
-
-        const fetchedTeam = await getTeamById(teamId);
-
-        if (!fetchedTeam) {
-          setError("Squadra non trovata.");
-          setIsLoadingData(false);
-          return;
-        }
-
-        const nationsMap = new Map(nationsToUse.map(n => [n.id, n]));
-
-        let score = 0;
-        let bonusEnPleinTop5 = false;
-        let bonusCampionePronostici = false;
-        let bonusGranCampionePronostici = false;
-
-        const primaSquadraDetails = (fetchedTeam.founderChoices || []).map(nationId => {
-          const nation = nationsMap.get(nationId);
-          const points = nation ? getPointsForRank(nation.ranking) : 0;
-          score += points;
-          return { id: nationId, name: nation?.name || 'Sconosciuto', countryCode: nation?.countryCode || 'xx', artistName: nation?.artistName, songTitle: nation?.songTitle, actualRank: nation?.ranking, points };
-        });
-
-        if (primaSquadraDetails.length === 3 && primaSquadraDetails.every(detail => detail.actualRank && detail.actualRank >= 1 && detail.actualRank <= 5)) {
-          score += 30;
-          bonusEnPleinTop5 = true;
-        }
-
-        const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
-        let firstPlaceCategoryPicksCount = 0;
-
-        const topOverallNations = getTopNationsForCategory(globalScoresToUse, nationsMap, 'overallAverageScore', 'desc');
-        const topSongNations = getTopNationsForCategory(globalScoresToUse, nationsMap, 'averageSongScore', 'desc');
-        const topPerformanceNations = getTopNationsForCategory(globalScoresToUse, nationsMap, 'averagePerformanceScore', 'desc');
-        const topOutfitNations = getTopNationsForCategory(globalScoresToUse, nationsMap, 'averageOutfitScore', 'desc');
-        const worstOverallScoreNations = getTopNationsForCategory(globalScoresToUse, nationsMap, 'overallAverageScore', 'asc');
-
-
-        const bestTreppoPick = getCategoryPickPointsAndRank(fetchedTeam.bestTreppoScoreNationId, topOverallNations);
-        score += bestTreppoPick.points;
-        if(bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
-        categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: fetchedTeam.bestTreppoScoreNationId || "", pickedNationName: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.countryCode : undefined, artistName: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.artistName : undefined, songTitle: fetchedTeam.bestTreppoScoreNationId ? nationsMap.get(fetchedTeam.bestTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
-
-        const bestSongPick = getCategoryPickPointsAndRank(fetchedTeam.bestSongNationId, topSongNations);
-        score += bestSongPick.points;
-        if(bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
-        categoryPicksDetails.push({ categoryName: "Miglior Canzone", pickedNationId: fetchedTeam.bestSongNationId || "", pickedNationName: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.name : undefined, pickedNationCountryCode: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.countryCode : undefined, artistName: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.artistName : undefined, songTitle: fetchedTeam.bestSongNationId ? nationsMap.get(fetchedTeam.bestSongNationId)?.songTitle : undefined, actualCategoryRank: bestSongPick.rank, pointsAwarded: bestSongPick.points, iconName: "Music2", pickedNationScoreInCategory: bestSongPick.score });
-
-        const bestPerfPick = getCategoryPickPointsAndRank(fetchedTeam.bestPerformanceNationId, topPerformanceNations);
-        score += bestPerfPick.points;
-        if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
-        categoryPicksDetails.push({ categoryName: "Miglior Performance", pickedNationId: fetchedTeam.bestPerformanceNationId || "", pickedNationName: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.name : undefined, pickedNationCountryCode: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.countryCode : undefined, artistName: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.artistName : undefined, songTitle: fetchedTeam.bestPerformanceNationId ? nationsMap.get(fetchedTeam.bestPerformanceNationId)?.songTitle : undefined, actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score });
-
-        const bestOutfitPick = getCategoryPickPointsAndRank(fetchedTeam.bestOutfitNationId, topOutfitNations);
-        score += bestOutfitPick.points;
-        if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
-        categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: fetchedTeam.bestOutfitNationId || "", pickedNationName: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.countryCode : undefined, artistName: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.artistName : undefined, songTitle: fetchedTeam.bestOutfitNationId ? nationsMap.get(fetchedTeam.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
-
-        const worstPick = getCategoryPickPointsAndRank(fetchedTeam.worstTreppoScoreNationId, worstOverallScoreNations);
-        score += worstPick.points;
-        if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
-        categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: fetchedTeam.worstTreppoScoreNationId || "", pickedNationName: fetchedTeam.worstTreppoScoreNationId ? nationsMap.get(fetchedTeam.worstTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: fetchedTeam.worstTreppoScoreNationId ? nationsMap.get(fetchedTeam.worstTreppoScoreNationId)?.countryCode : undefined, artistName: fetchedTeam.worstTreppoScoreNationId ? nationsMap.get(fetchedTeam.worstTreppoScoreNationId)?.artistName : undefined, songTitle: fetchedTeam.worstTreppoScoreNationId ? nationsMap.get(fetchedTeam.worstTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
-
-        if (firstPlaceCategoryPicksCount >= 4) {
-          score += 30;
-          bonusGranCampionePronostici = true;
-        } else if (firstPlaceCategoryPicksCount >= 2) {
-          score += 5;
-          bonusCampionePronostici = true;
-        }
-
-        const processedTeam: LocalTeamWithScore = {
-          ...fetchedTeam,
-          score: score,
-          primaSquadraDetails: primaSquadraDetails,
-          categoryPicksDetails: categoryPicksDetails,
-          bonusCampionePronostici,
-          bonusGranCampionePronostici,
-          bonusEnPleinTop5,
-          rank: teamWithDetails?.rank, // Preserve rank if already set by rankedTeams logic
-          isTied: teamWithDetails?.isTied, // Preserve tie status
-        };
-        setTeamWithDetails(processedTeam);
-
-      } catch (fetchError: any) {
-        console.error("Failed to fetch current team details:", fetchError);
-        setError(fetchError.message || "Errore durante il caricamento dei dettagli della squadra.");
-      } finally {
-        setIsLoadingData(false);
-      }
-  }
-
-
-  useEffect(() => {
-    if (authLoading) return; // Wait for auth state to resolve
-
-    if (!isLoadingRankedTeams && rankedTeams.length > 0 && teamId) {
-        // If ranked teams are loaded, try to find the current team there.
-        const teamFromRankedList = rankedTeams.find(t => t.id === teamId);
-        if (teamFromRankedList) {
-            setTeamWithDetails(teamFromRankedList);
-            setIsLoadingData(false); // We have the team data
-        } else {
-            // Team not in ranked list (e.g. if it has no score yet), fetch its details individually
-            fetchCurrentTeamDetails();
-        }
-    } else if (!isLoadingRankedTeams && rankedTeams.length === 0 && teamId) {
-        // No ranked teams (maybe an error or empty leaderboard), fetch current team individually
-        fetchCurrentTeamDetails();
-    } else if (!teamId && !authLoading) {
-        setError("ID Squadra non valido.");
-        setIsLoadingData(false);
-    }
-    // If isLoadingRankedTeams is true, we wait for it to complete
-  }, [teamId, authLoading, isLoadingRankedTeams, rankedTeams]); // Primary effect for current team details
+  }, [isLoadingRankedTeams, teamId, rankedTeams, teamWithDetails]);
 
 
   const nationGlobalCategorizedScoresArray = useMemo(() => Array.from(globalScoresData.entries()), [globalScoresData]);
 
-  if (authLoading || isLoadingData || isLoadingRankedTeams || !teamWithDetails) {
+  const rankText = (rank?: number, isTied?: boolean): string => {
+    if (rank === undefined || rank === null || rank <= 0) return "";
+    let rankStr = "";
+    switch (rank) {
+      case 1: rankStr = "Primo Posto"; break;
+      case 2: rankStr = "Secondo Posto"; break;
+      case 3: rankStr = "Terzo Posto"; break;
+      default: rankStr = `${rank}º Posto`;
+    }
+    return isTied ? `${rankStr}*` : rankStr;
+  };
+
+
+  if (authLoading || isLoadingData || isLoadingRankedTeams || (!teamWithDetails && !error)) {
     return (
       <div className="space-y-4">
         <Link href="/teams/leaderboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
@@ -448,18 +311,22 @@ export default function TeamDetailsPage() {
       </div>
     );
   }
-
-  const rankText = (rank?: number, isTied?: boolean): string => {
-    if (rank === undefined || rank === null || rank <= 0) return "";
-    let rankStr = "";
-    switch (rank) {
-      case 1: rankStr = "Primo Posto"; break;
-      case 2: rankStr = "Secondo Posto"; break;
-      case 3: rankStr = "Terzo Posto"; break;
-      default: rankStr = `${rank}º Posto`;
-    }
-    return isTied ? `${rankStr}*` : rankStr;
-  };
+  
+  if (!teamWithDetails) { // Should be caught by error or loading state, but as a fallback
+      return (
+        <div className="space-y-4">
+            <Link href="/teams/leaderboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Torna alla Classifica Squadre
+            </Link>
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Errore</AlertTitle>
+                <AlertDescription>Dettagli squadra non disponibili.</AlertDescription>
+            </Alert>
+        </div>
+      )
+  }
 
 
   return (
@@ -514,5 +381,6 @@ export default function TeamDetailsPage() {
     </div>
   );
 }
+    
 
     
