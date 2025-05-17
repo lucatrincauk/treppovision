@@ -13,11 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit, UserPlus, Settings as SettingsIcon, SlidersHorizontal } from "lucide-react";
+import { Loader2, ShieldAlert, Lock, Unlock, Save, ArrowUp, ArrowDown, ListOrdered, Trash2, Edit, UserPlus, Settings as SettingsIcon, SlidersHorizontal, Users as UsersIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminTeamsManagement } from "@/components/admin/admin-teams-management";
 
 export default function AdminSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -41,36 +42,34 @@ export default function AdminSettingsPage() {
   const debounceTimers = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
   const DEBOUNCE_DELAY = 1500; // 1.5 seconds
 
-  const handleSaveRanking = React.useCallback(async (nationId: string, rankingToSave: string | null) => {
+  const handleSaveRanking = React.useCallback(async (nationId: string, rankingToSaveString: string | null) => {
     setSavingStates(prev => new Map(prev).set(nationId, true));
-    const result = await updateNationRankingAction(nationId, rankingToSave);
+    // The server action expects a string or null/undefined to parse or clear
+    const result = await updateNationRankingAction(nationId, rankingToSaveString);
+
     if (result.success) {
       toast({
         title: "Ranking Aggiornato",
         description: `Ranking per ${allNationsStable.find(n => n.id === nationId)?.name || nationId} aggiornato a ${result.newRanking ?? 'N/D'}.`,
       });
-      // Optimistically update local nations state for rank display
       setNations(prevNations =>
         prevNations.map(n =>
           n.id === nationId ? { ...n, ranking: result.newRanking } : n
-        )
+        ).sort((a,b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity)) // Re-sort after update
       );
-      // Update the initial map as well to reflect the saved state
-      setInitialRankingsMap(prev => new Map(prev).set(nationId, result.newRanking !== undefined ? String(result.newRanking) : ""));
-      // Ensure the input also reflects the potentially cleared state (e.g., "N/D" if newRanking is undefined)
-      setRankingsInput(prev => new Map(prev).set(nationId, result.newRanking !== undefined ? String(result.newRanking) : ""));
-
+      const newRankString = result.newRanking !== undefined ? String(result.newRanking) : "";
+      setInitialRankingsMap(prev => new Map(prev).set(nationId, newRankString));
+      setRankingsInput(prev => new Map(prev).set(nationId, newRankString));
     } else {
       toast({
         title: "Errore Aggiornamento Ranking",
         description: result.message,
         variant: "destructive",
       });
-      // Revert input to original value if save failed
       setRankingsInput(prev => new Map(prev).set(nationId, initialRankingsMap.get(nationId) ?? ""));
     }
     setSavingStates(prev => new Map(prev).set(nationId, false));
-  }, [toast, allNationsStable, initialRankingsMap]);
+  }, [toast, allNationsStable, initialRankingsMap, setNations, setInitialRankingsMap, setRankingsInput]);
 
 
   const handleRankingInputChange = React.useCallback((nationId: string, value: string) => {
@@ -89,11 +88,11 @@ export default function AdminSettingsPage() {
         try {
           const [currentSettings, fetchedNations] = await Promise.all([
             getAdminSettingsAction(),
-            getNations()
+            getNations() // getNations should already sort by performingOrder then name
           ]);
           setSettings(currentSettings);
 
-          const sortedNations = [...fetchedNations].sort((a, b) => {
+          const sortedNationsForTable = [...fetchedNations].sort((a, b) => {
             const rankA = a.ranking ?? Infinity;
             const rankB = b.ranking ?? Infinity;
             if (rankA === rankB) {
@@ -102,8 +101,8 @@ export default function AdminSettingsPage() {
             return rankA - rankB;
           });
 
-          setNations(sortedNations);
-          setAllNationsStable(fetchedNations); // Keep an unsorted stable list for reference
+          setNations(sortedNationsForTable);
+          setAllNationsStable(fetchedNations); 
 
           const initialRanks = new Map<string, string>();
           fetchedNations.forEach(nation => {
@@ -127,10 +126,6 @@ export default function AdminSettingsPage() {
     if (!authLoading) {
       fetchPageData();
     }
-     // Cleanup debounce timers on unmount
-    return () => {
-      debounceTimers.current.forEach(timer => clearTimeout(timer));
-    };
   }, [user, authLoading, toast]);
 
   const handleToggleSetting = async (
@@ -175,21 +170,17 @@ export default function AdminSettingsPage() {
         newIndex = index + 1;
       }
       newNationsArray.splice(newIndex, 0, itemToMove);
-
-      // Update rankingsInput based on new visual order, triggering debounced saves
+      
+      // Update rankingsInput based on new visual order
       const newRankingsMap = new Map(rankingsInput);
       newNationsArray.forEach((nation, idx) => {
-        const newTargetRankString = String(idx + 1);
-        const currentDisplayedRank = newRankingsMap.get(nation.id) ?? "";
-        if (newTargetRankString !== currentDisplayedRank) {
-          handleRankingInputChange(nation.id, newTargetRankString);
-        }
+          newRankingsMap.set(nation.id, String(idx + 1));
       });
-      // No need to call setRankingsInput here as handleRankingInputChange does it.
+      setRankingsInput(newRankingsMap);
       
       return newNationsArray;
     });
-  }, [nations, setNations, handleRankingInputChange, rankingsInput]);
+  }, [nations, setNations, rankingsInput, setRankingsInput]);
 
 
   const handleSaveAllChangedRankings = async () => {
@@ -198,29 +189,26 @@ export default function AdminSettingsPage() {
     let successfulSaves = 0;
     const promises = [];
 
-    // Use allNationsStable for a consistent list of nations to iterate over
     for (const nation of allNationsStable) {
       const currentInputValue = rankingsInput.get(nation.id) ?? "";
       const originalSavedRank = initialRankingsMap.get(nation.id) ?? "";
 
       if (currentInputValue !== originalSavedRank) {
         changesMade++;
-        // Pass the current input value (string) to the action
         promises.push(
           updateNationRankingAction(nation.id, currentInputValue)
             .then(result => {
               if (result.success) {
                 successfulSaves++;
-                // Optimistically update the 'nations' state for UI consistency
                 setNations(prevNations =>
                   prevNations.map(n =>
                     n.id === nation.id ? { ...n, ranking: result.newRanking } : n
-                  )
+                  ).sort((a,b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity))
                 );
               } else {
                 toast({ title: `Errore salvataggio ${nation.name}`, description: result.message, variant: "destructive" });
               }
-              return result; // Return the result for Promise.all
+              return result; 
             })
         );
       }
@@ -236,7 +224,6 @@ export default function AdminSettingsPage() {
 
     if (successfulSaves > 0) {
       toast({ title: "Ranking Aggiornati", description: `${successfulSaves} ranking salvati con successo.` });
-      // Update initialRankingsMap to the newly saved state
       setInitialRankingsMap(new Map(rankingsInput));
     }
     setIsSavingAll(false);
@@ -245,21 +232,20 @@ export default function AdminSettingsPage() {
   const handleDeleteAllRankings = async () => {
     setIsDeletingAll(true);
     const promises = [];
-    // Use allNationsStable for a consistent list of nations to iterate over
     for (const nation of allNationsStable) {
-      // Call action with empty string to clear rank
       promises.push(updateNationRankingAction(nation.id, ""));
     }
     await Promise.all(promises);
 
-    // Update local state: clear rankingsInput and initialRankingsMap
     const newEmptyRankings = new Map<string, string>();
     allNationsStable.forEach(n => newEmptyRankings.set(n.id, ""));
     setRankingsInput(newEmptyRankings);
     setInitialRankingsMap(newEmptyRankings);
 
-    // Update local 'nations' state to reflect cleared rankings for UI consistency
-    setNations(prevNations => prevNations.map(n => ({ ...n, ranking: undefined })));
+    setNations(prevNations => 
+      prevNations.map(n => ({ ...n, ranking: undefined }))
+      .sort((a,b) => (a.ranking ?? Infinity) - (b.ranking ?? Infinity) || (a.performingOrder ?? Infinity) - (b.performingOrder ?? Infinity))
+    );
 
     toast({ title: "Ranking Eliminati", description: "Tutti i ranking sono stati eliminati." });
     setIsDeletingAll(false);
@@ -301,7 +287,7 @@ export default function AdminSettingsPage() {
 
   return (
     <Tabs defaultValue="general" className="space-y-8">
-      <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+      <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
         <TabsTrigger value="general">
           <SettingsIcon className="mr-2 h-4 w-4" />
           Impostazioni Generali
@@ -309,6 +295,10 @@ export default function AdminSettingsPage() {
         <TabsTrigger value="ranking">
           <ListOrdered className="mr-2 h-4 w-4" />
           Gestione Ranking
+        </TabsTrigger>
+        <TabsTrigger value="teams">
+          <UsersIcon className="mr-2 h-4 w-4" />
+          Gestione Squadre
         </TabsTrigger>
       </TabsList>
 
@@ -576,6 +566,9 @@ export default function AdminSettingsPage() {
             )}
           </CardContent>
         </Card>
+      </TabsContent>
+       <TabsContent value="teams">
+        <AdminTeamsManagement allNations={allNationsStable} />
       </TabsContent>
     </Tabs>
   );
