@@ -9,7 +9,7 @@ import { getNations } from "@/lib/nation-service";
 import { getAllNationsGlobalCategorizedScores } from "@/lib/voting-service";
 import type { Team, Nation, NationGlobalCategorizedScores, GlobalPrimaSquadraDetail as GlobalPrimaSquadraDetailType, TeamWithScore as TeamWithScoreType, GlobalCategoryPickDetail as GlobalCategoryPickDetailTypeRaw } from "@/types";
 import { TeamListItem } from "@/components/teams/team-list-item";
-import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight, Award, UserCircle, Music2, Star, Shirt, ThumbsDown } from "lucide-react";
+import { Loader2, AlertTriangle, Users, ChevronLeft, ChevronRight, Award, UserCircle, Music2, Star, Shirt, ThumbsDown, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ const getPointsForRank = (rank?: number): number => {
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
   currentNationsMap: Map<string, Nation>,
-  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount' | 'worstSongNationId'>,
+  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount'>,
   sortOrder: 'desc' | 'asc' = 'desc',
 ): Array<{ id: string; name: string; score: number | null; artistName?: string; songTitle?: string; }> => {
   if (!scoresMap || scoresMap.size === 0 || !currentNationsMap || currentNationsMap.size === 0) return [];
@@ -127,7 +127,7 @@ export default function TeamDetailsPage() {
 
   const [teamWithDetails, setTeamWithDetails] = useState<LocalTeamWithScore | null>(null);
   const [allNationsData, setAllNationsData] = useState<Nation[]>([]);
-  const [globalScoresData, setGlobalScoresData] = useState<Map<string, NationGlobalCategorizedScores>>(new Map());
+  // const [globalScoresData, setGlobalScoresData] = useState<Map<string, NationGlobalCategorizedScores>>(new Map()); // Not needed as we pass array
 
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +136,8 @@ export default function TeamDetailsPage() {
   const [previousTeam, setPreviousTeam] = useState<LocalTeamWithScore | null>(null);
   const [nextTeam, setNextTeam] = useState<LocalTeamWithScore | null>(null);
   const [isLoadingRankedTeams, setIsLoadingRankedTeams] = useState(true);
+
+  const [globalCategorizedScoresArray, setGlobalCategorizedScoresArray] = useState<[string, NationGlobalCategorizedScores][]>([]);
 
 
   useEffect(() => {
@@ -160,8 +162,9 @@ export default function TeamDetailsPage() {
 
         setAllNationsData(nationsData);
         const nationsMap = new Map(nationsData.map(n => [n.id, n]));
-        setGlobalScoresData(globalScoresMapData);
-        
+        setGlobalCategorizedScoresArray(Array.from(globalScoresMapData.entries()));
+
+        const topTreppoScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'desc');
         const topSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageSongScore', 'desc');
         const topPerformanceNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averagePerformanceScore', 'desc');
         const topOutfitNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageOutfitScore', 'desc');
@@ -193,7 +196,13 @@ export default function TeamDetailsPage() {
 
           const categoryPicksDetails: LocalCategoryPickDetail[] = [];
           let firstPlaceCategoryPicksCount = 0;
-          
+
+          const bestTreppoPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, topTreppoScoreNations);
+          score += bestTreppoPick.points;
+          treppoScoreCategoryPicksSubtotal += bestTreppoPick.points;
+          if(bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
+          categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "", pickedNationName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined, artistName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.artistName : undefined, songTitle: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
+
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
           treppoScoreCategoryPicksSubtotal += bestSongPick.points;
@@ -205,21 +214,21 @@ export default function TeamDetailsPage() {
           treppoScoreCategoryPicksSubtotal += bestPerfPick.points;
           if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId || "", pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined, pickedNationCountryCode: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.countryCode : undefined, artistName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.artistName : undefined, songTitle: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.songTitle : undefined, actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score });
-          
+
           const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
           score += bestOutfitPick.points;
           treppoScoreCategoryPicksSubtotal += bestOutfitPick.points;
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
-          
-          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstOverallScoreNations);
-          score += worstPick.points;
-          treppoScoreCategoryPicksSubtotal += worstPick.points;
-          if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
-          
-          if (firstPlaceCategoryPicksCount >= 4) { 
-            score += 30; 
+
+          const worstTreppoPick = getCategoryPickPointsAndRank(team.worstTreppoScoreNationId, worstOverallScoreNations);
+          score += worstTreppoPick.points;
+          treppoScoreCategoryPicksSubtotal += worstTreppoPick.points;
+          if(worstTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
+          categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstTreppoScoreNationId || "", pickedNationName: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.countryCode : undefined, artistName: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.artistName : undefined, songTitle: team.worstTreppoScoreNationId ? nationsMap.get(team.worstTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: worstTreppoPick.rank, pointsAwarded: worstTreppoPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstTreppoPick.score });
+
+          if (firstPlaceCategoryPicksCount >= 4) {
+            score += 30;
             bonusSubtotal += 30;
             bonusGranCampionePronostici = true;
           } else if (firstPlaceCategoryPicksCount >= 2 && firstPlaceCategoryPicksCount < 4) {
@@ -229,17 +238,17 @@ export default function TeamDetailsPage() {
           }
 
 
-          return { 
-            ...team, 
-            score, 
-            primaSquadraDetails, 
+          return {
+            ...team,
+            score,
+            primaSquadraDetails,
             primaSquadraScore: primaSquadraSubtotal,
-            categoryPicksDetails, 
+            categoryPicksDetails,
             treppoScoreCategoryPicksScore: treppoScoreCategoryPicksSubtotal,
             bonusTotalScore: bonusSubtotal,
-            bonusCampionePronostici, 
-            bonusGranCampionePronostici, 
-            bonusEnPleinTop5 
+            bonusCampionePronostici,
+            bonusGranCampionePronostici,
+            bonusEnPleinTop5
           };
         });
 
@@ -257,7 +266,7 @@ export default function TeamDetailsPage() {
           let isTiedValue = false;
           if (i > 0 && calculatedTeams[i].rank === calculatedTeams[i - 1].rank && calculatedTeams[i].score === calculatedTeams[i-1].score) {
             isTiedValue = true;
-            calculatedTeams[i-1].isTied = true; 
+            calculatedTeams[i-1].isTied = true;
           }
           if (i < calculatedTeams.length - 1 && calculatedTeams[i].rank === calculatedTeams[i + 1].rank && calculatedTeams[i].score === calculatedTeams[i+1].score) {
             isTiedValue = true;
@@ -288,7 +297,7 @@ export default function TeamDetailsPage() {
   useEffect(() => {
     if (isLoadingRankedTeams || !teamId || rankedTeams.length === 0 || !teamWithDetails) return;
 
-    const currentTeamIndex = rankedTeams.findIndex(t => t.id === teamWithDetails.id); 
+    const currentTeamIndex = rankedTeams.findIndex(t => t.id === teamWithDetails.id);
     if (currentTeamIndex === -1) {
       setPreviousTeam(null);
       setNextTeam(null);
@@ -301,11 +310,9 @@ export default function TeamDetailsPage() {
   }, [isLoadingRankedTeams, teamId, rankedTeams, teamWithDetails]);
 
 
-  const nationGlobalCategorizedScoresArray = useMemo(() => Array.from(globalScoresData.entries()), [globalScoresData]);
-
   const rankText = (rank?: number): string => {
-    if (rank === undefined || rank === null || rank <= 0) return ""; 
-    return `${rank}º`;
+    if (rank === undefined || rank === null || rank <= 0) return "";
+    return `${rank}°`;
   };
 
 
@@ -339,8 +346,8 @@ export default function TeamDetailsPage() {
       </div>
     );
   }
-  
-  if (!teamWithDetails) { 
+
+  if (!teamWithDetails) {
       return (
         <div className="space-y-4">
             <Link href="/teams/leaderboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
@@ -369,13 +376,13 @@ export default function TeamDetailsPage() {
       <div className="flex justify-between items-center mb-6">
         {previousTeam ? (
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
-            <Link 
-              href={`/teams/${previousTeam.id}/details`} 
-              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `${previousTeam.creatorDisplayName}` : ''} - Rank ${previousTeam.rank}º${previousTeam.isTied ? '*' : ''}`} 
+            <Link
+              href={`/teams/${previousTeam.id}/details`}
+              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `${previousTeam.creatorDisplayName}` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`}
               className="flex items-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
-               <div className="flex items-center">
+              <div className="flex items-center">
                 {previousTeam.rank && (
                     <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
                       {rankText(previousTeam.rank)}
@@ -400,9 +407,9 @@ export default function TeamDetailsPage() {
         )}
         {nextTeam ? (
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
-            <Link 
-              href={`/teams/${nextTeam.id}/details`} 
-              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `${nextTeam.creatorDisplayName}` : ''} - Rank ${nextTeam.rank}º${nextTeam.isTied ? '*' : ''}`} 
+            <Link
+              href={`/teams/${nextTeam.id}/details`}
+              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `${nextTeam.creatorDisplayName}` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`}
               className="flex items-center gap-1.5"
             >
               <div className="flex flex-col items-end text-right leading-tight">
@@ -436,7 +443,7 @@ export default function TeamDetailsPage() {
         <TeamListItem
           team={teamWithDetails}
           allNations={allNationsData}
-          nationGlobalCategorizedScoresArray={nationGlobalCategorizedScoresArray}
+          nationGlobalCategorizedScoresArray={globalCategorizedScoresArray}
           isLeaderboardPodiumDisplay={true}
           disableEdit={true}
           isOwnTeamCard={user?.uid === teamWithDetails.userId}
@@ -446,4 +453,3 @@ export default function TeamDetailsPage() {
     </div>
   );
 }
-    
