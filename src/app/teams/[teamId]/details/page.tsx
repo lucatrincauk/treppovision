@@ -281,7 +281,7 @@ export default function TeamDetailsPage() {
   const nationGlobalCategorizedScoresArray = useMemo(() => Array.from(globalScoresData.entries()), [globalScoresData]);
 
   const rankText = (rank?: number): string => {
-    if (rank === undefined || rank === null || rank <= 0) return ""; // Return empty string if no rank
+    if (rank === undefined || rank === null || rank <= 0) return ""; 
     return `${rank}°`;
   };
 
@@ -348,11 +348,11 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${previousTeam.id}/details`} 
-              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `(${previousTeam.creatorDisplayName})` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
+              title={`${previousTeam.name} ${previousTeam.creatorDisplayName ? `${previousTeam.creatorDisplayName}` : ''} - Rank ${previousTeam.rank}°${previousTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
-              <div className="flex items-center">
+               <div className="flex items-center">
                 {previousTeam.rank && (
                     <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
                       {rankText(previousTeam.rank)}
@@ -380,9 +380,17 @@ export default function TeamDetailsPage() {
           <Button asChild variant="outline" size="sm" className="h-auto py-1.5 px-2.5">
             <Link 
               href={`/teams/${nextTeam.id}/details`} 
-              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `(${nextTeam.creatorDisplayName})` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
+              title={`${nextTeam.name} ${nextTeam.creatorDisplayName ? `${nextTeam.creatorDisplayName}` : ''} - Rank ${nextTeam.rank}°${nextTeam.isTied ? '*' : ''}`} 
               className="flex items-center gap-1.5"
             >
+              <div className="flex items-center">
+                {nextTeam.rank && (
+                  <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
+                    {rankText(nextTeam.rank)}
+                  </span>
+                )}
+                <NavMedalIcon rank={nextTeam.rank} />
+              </div>
               <div className="flex flex-col items-start text-left leading-tight">
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
                 {nextTeam.creatorDisplayName && (
@@ -391,14 +399,6 @@ export default function TeamDetailsPage() {
                     {nextTeam.creatorDisplayName}
                   </span>
                 )}
-              </div>
-               <div className="flex items-center">
-                {nextTeam.rank && (
-                  <span className={cn("mr-0.5 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
-                    {rankText(nextTeam.rank)}
-                  </span>
-                )}
-                <NavMedalIcon rank={nextTeam.rank} />
               </div>
               <ChevronRight className="w-4 h-4" />
             </Link>
@@ -427,4 +427,5 @@ export default function TeamDetailsPage() {
     
 
       
+
 
