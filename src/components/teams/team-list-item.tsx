@@ -577,7 +577,7 @@ export function TeamListItem({
             className="w-full"
             defaultValue={defaultOpenSections}
           >
-            {/* Pronostici TreppoVision Section */}
+            {/* Nazioni Squadra Section */}
             <AccordionItem
               value="treppovision"
               className={cn(
@@ -588,7 +588,7 @@ export function TeamListItem({
                 <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
                   <div className="flex items-center gap-1">
                     <p className="text-lg font-bold text-primary">
-                      Pronostici TreppoVision
+                      Nazioni Squadra
                     </p>
                     <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </div>

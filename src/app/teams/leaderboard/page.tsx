@@ -737,7 +737,7 @@ export default function TeamsLeaderboardPage() {
                   </p>
                   <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground space-y-1">
                       <li>
-                          <strong>Pronostici TreppoVision (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
+                          <strong>Nazioni Squadra (3 Nazioni)</strong>: Punti basati sulla classifica finale Eurovision.
                           Sistema: 1°: +30pt, 2°: +25pt, 3°: +20pt, 4°: +18pt, 5°: +16pt, 6°: +14pt, 7°-10°: +12pt, 11°-12°: +10pt, 13°-24°: -5pt, 25°: -10pt, 26°: -15pt.
                       </li>
                        <li>
@@ -765,7 +765,7 @@ export default function TeamsLeaderboardPage() {
                           <strong>Bonus "Gran Campione di Pronostici"</strong>: Un bonus di +30 punti viene assegnato se una squadra indovina il 1° posto in almeno 4 categorie degli "Pronostici Eurovision" e "Pronostici TreppoScore" (considerando tutte e 8 le categorie di pronostici). Se questo bonus è ottenuto, quello da +5pt non viene assegnato.
                       </li>
                       <li>
-                          <strong>Bonus "En Plein Top 5"</strong>: Un bonus di +30 punti viene assegnato se tutte e tre le nazioni scelte per "Pronostici TreppoVision" si classificano nelle prime 5 posizioni della classifica finale Eurovision.
+                          <strong>Bonus "En Plein Top 5"</strong>: Un bonus di +30 punti viene assegnato se tutte e tre le nazioni scelte per "Nazioni Squadra" si classificano nelle prime 5 posizioni della classifica finale Eurovision.
                       </li>
                   </ul>
                 </div>

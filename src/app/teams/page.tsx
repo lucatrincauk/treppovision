@@ -806,7 +806,7 @@ export default function TeamsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Squadra</TableHead>
-                    <TableHead>Pronostici TreppoVision</TableHead>
+                    <TableHead>Nazioni Squadra</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
