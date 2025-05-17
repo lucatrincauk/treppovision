@@ -125,6 +125,8 @@ export interface GlobalCategoryPickDetail {
   pickedNationId?: string;
   pickedNationName?: string;
   pickedNationCountryCode?: string;
+  artistName?: string; 
+  songTitle?: string;  
   actualCategoryRank?: number;
   pickedNationScoreInCategory?: number | null;
   pointsAwarded: number;
@@ -145,18 +147,19 @@ export interface NationGlobalCategorizedScores {
   averageSongScore: number | null;
   averagePerformanceScore: number | null;
   averageOutfitScore: number | null;
-  overallAverageScore: number | null;
+  overallAverageScore: number | null; 
   voteCount: number;
 }
 
 
 export interface NationWithTreppoScore extends Nation {
-  globalScores?: NationGlobalCategorizedScores | null; // All scores for this nation
-  scoreForRanking: number | null; // The score used for the current sort, corresponds to selectedCategoryKey
-  rank?: number; // Rank based on scoreForRanking
-  voteCount: number; // Overall vote count for this nation
-  userAverageScore?: number | null; // User's overall average for this nation
+  globalScores?: NationGlobalCategorizedScores | null; 
+  scoreForRanking: number | null; 
+  rank?: number; 
+  voteCount: number; 
+  userAverageScore?: number | null; 
 }
+
 export interface TeamWithScore extends Team {
   score?: number;
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
