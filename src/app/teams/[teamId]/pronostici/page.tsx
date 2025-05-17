@@ -29,18 +29,16 @@ export default function EditFinalAnswersPage() {
 
   useEffect(() => {
     async function fetchPageData() {
+      setIsLoadingSettings(true);
       if (authLoading || !user || !teamId) {
-        setIsLoadingSettings(authLoading);
         setIsLoadingData(authLoading || (!user && !teamId));
         if (!teamId && !authLoading) {
           setError("ID Squadra non valido.");
-          setIsLoadingSettings(false);
-          setIsLoadingData(false);
         }
+        setIsLoadingSettings(false);
         return;
       }
 
-      setIsLoadingSettings(true);
       let predictionsEnabledStatus = false;
       try {
         predictionsEnabledStatus = await getFinalPredictionsEnabledStatus();
@@ -68,6 +66,9 @@ export default function EditFinalAnswersPage() {
         if (fetchedTeam) {
           setTeam(fetchedTeam);
           const existingPreds = 
+                               !!fetchedTeam.eurovisionWinnerPickNationId ||
+                               !!fetchedTeam.juryWinnerPickNationId ||
+                               !!fetchedTeam.televoteWinnerPickNationId ||
                                !!fetchedTeam.bestTreppoScoreNationId ||
                                !!fetchedTeam.bestSongNationId ||
                                !!fetchedTeam.bestPerformanceNationId ||
@@ -86,7 +87,7 @@ export default function EditFinalAnswersPage() {
           setIsAuthorized(false);
         }
       } catch (fetchError: any) {
-        console.error("Failed to fetch team data for final answers:", fetchError);
+         console.error("Failed to fetch team data for final answers:", fetchError);
         setError(fetchError.message || "Errore durante il caricamento dei dati della squadra.");
         setIsAuthorized(false);
       } finally {
@@ -212,6 +213,9 @@ export default function EditFinalAnswersPage() {
   }
 
   const initialFinalAnswers: TeamFinalAnswersFormData = {
+    eurovisionWinnerPickNationId: team!.eurovisionWinnerPickNationId || "",
+    juryWinnerPickNationId: team!.juryWinnerPickNationId || "",
+    televoteWinnerPickNationId: team!.televoteWinnerPickNationId || "",
     bestTreppoScoreNationId: team!.bestTreppoScoreNationId || "",
     bestSongNationId: team!.bestSongNationId || "",
     bestPerformanceNationId: team!.bestPerformanceNationId || "",
@@ -233,6 +237,9 @@ export default function EditFinalAnswersPage() {
           </CardTitle>
           <CardDescription>
             Inserisci i tuoi pronostici per le categorie basate sul voto degli utenti.
+            {!hasExistingPredictions && (
+                 <span className="block mt-1 text-destructive">Attenzione: I pronostici finali, una volta inviati, non possono essere modificati.</span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>

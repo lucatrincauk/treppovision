@@ -1,4 +1,6 @@
 
+import type { Timestamp } from "firebase/firestore";
+
 export type NationCategory = "founders" | "day1" | "day2";
 
 export interface Nation {
@@ -10,8 +12,8 @@ export interface Nation {
   youtubeVideoId: string;
   category: NationCategory;
   ranking?: number;
-  juryRank?: number; // New field
-  televoteRank?: number; // New field
+  juryRank?: number;
+  televoteRank?: number;
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -27,8 +29,8 @@ export interface NationFormData {
   youtubeVideoId: string;
   category: NationCategory;
   ranking?: string;
-  juryRank?: string; // New field for form
-  televoteRank?: string; // New field for form
+  juryRank?: string;
+  televoteRank?: string;
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -92,10 +94,14 @@ export interface TeamCoreFormData {
 
 // Team Final Answers (Category Predictions)
 export interface TeamFinalAnswersFormData {
-  bestSongNationId: string;
-  bestPerformanceNationId: string;
-  bestOutfitNationId: string;
-  worstSongNationId: string; // This was changed from worstTreppoScoreNationId
+  eurovisionWinnerPickNationId?: string;
+  juryWinnerPickNationId?: string;
+  televoteWinnerPickNationId?: string;
+  bestTreppoScoreNationId?: string;
+  bestSongNationId?: string;
+  bestPerformanceNationId?: string;
+  bestOutfitNationId?: string;
+  worstTreppoScoreNationId?: string;
 }
 
 
@@ -106,10 +112,14 @@ export interface Team {
   name: string;
   founderChoices: string[];
   
-  bestSongNationId: string;
-  bestPerformanceNationId: string;
-  bestOutfitNationId: string;
-  worstSongNationId: string; // This was changed from worstTreppoScoreNationId
+  eurovisionWinnerPickNationId?: string;
+  juryWinnerPickNationId?: string;
+  televoteWinnerPickNationId?: string;
+  bestTreppoScoreNationId?: string;
+  bestSongNationId?: string;
+  bestPerformanceNationId?: string;
+  bestOutfitNationId?: string;
+  worstTreppoScoreNationId?: string;
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -131,8 +141,8 @@ export interface GlobalCategoryPickDetail {
   pickedNationCountryCode?: string;
   artistName?: string; 
   songTitle?: string;  
-  actualCategoryRank?: number | null;
-  pickedNationScoreInCategory?: number | null;
+  actualCategoryRank?: number | null; // Rank of the picked nation within that specific category's global results
+  pickedNationScoreInCategory?: number | null; // Score of the picked nation within that category
   pointsAwarded: number;
   iconName: string; 
 }
@@ -142,7 +152,7 @@ export interface AdminSettings {
   teamsLocked: boolean;
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean; 
-  userRegistrationEnabled: boolean; 
+  userRegistrationEnabled: boolean;
 }
 
 export type RankingCategoryKey = 'overallAverageScore' | 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore';
@@ -181,8 +191,8 @@ export interface TeamWithScore extends Team {
 
 export interface AdminNationPayload extends Omit<NationFormData, 'ranking' | 'juryRank' | 'televoteRank'> {
   ranking?: number;
-  juryRank?: number; // New field for payload
-  televoteRank?: number; // New field for payload
+  juryRank?: number; 
+  televoteRank?: number; 
 }
 
 export interface TeamAdminViewDetails extends Team {

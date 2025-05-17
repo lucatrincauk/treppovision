@@ -33,6 +33,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 
 const finalAnswersFormZodSchema = z.object({
+  eurovisionWinnerPickNationId: z.string().min(1, "Devi selezionare la nazione per Vincitore Eurovision."),
+  juryWinnerPickNationId: z.string().min(1, "Devi selezionare la nazione per Vincitore Giuria."),
+  televoteWinnerPickNationId: z.string().min(1, "Devi selezionare la nazione per Vincitore Televoto."),
   bestTreppoScoreNationId: z.string().min(1, "Devi selezionare la nazione per Miglior TreppoScore."),
   bestSongNationId: z.string().min(1, "Devi selezionare la migliore canzone."),
   bestPerformanceNationId: z.string().min(1, "Devi selezionare la migliore performance."),
@@ -81,6 +84,9 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   const form = useForm<TeamFinalAnswersFormData>({
     resolver: zodResolver(finalAnswersFormZodSchema),
     defaultValues: initialData || {
+      eurovisionWinnerPickNationId: "",
+      juryWinnerPickNationId: "",
+      televoteWinnerPickNationId: "",
       bestTreppoScoreNationId: "",
       bestSongNationId: "",
       bestPerformanceNationId: "",
@@ -92,6 +98,9 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   React.useEffect(() => {
     if (initialData) {
       form.reset({
+        eurovisionWinnerPickNationId: initialData.eurovisionWinnerPickNationId || "",
+        juryWinnerPickNationId: initialData.juryWinnerPickNationId || "",
+        televoteWinnerPickNationId: initialData.televoteWinnerPickNationId || "",
         bestTreppoScoreNationId: initialData.bestTreppoScoreNationId || "",
         bestSongNationId: initialData.bestSongNationId || "",
         bestPerformanceNationId: initialData.bestPerformanceNationId || "",
@@ -169,11 +178,46 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
     </div>
   );
   
-  if (isReadOnly) {
+  if (isReadOnly) { // If form is read-only, display current selections as non-interactive
     return (
-      <>
         <Form {...form}>
           <form className="space-y-6 py-4">
+            <FormField
+              control={form.control}
+              name="eurovisionWinnerPickNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vincitore Eurovision</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="juryWinnerPickNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vincitore Giuria</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="televoteWinnerPickNationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vincitore Televoto</FormLabel>
+                   <Select value={field.value || ""} disabled={true}>
+                     <FormControl><SelectTrigger><SelectValue>{field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : "Nessuna selezione"}</SelectValue></SelectTrigger></FormControl>
+                  </Select>
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="bestTreppoScoreNationId"
@@ -236,7 +280,6 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
             />
           </form>
         </Form>
-      </>
     );
   }
 
@@ -244,6 +287,87 @@ export function FinalAnswersForm({ initialData, teamId, isReadOnly = false }: Fi
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+        <FormField
+          control={form.control}
+          name="eurovisionWinnerPickNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vincitore Eurovision</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
+                <FormControl>
+                  <SelectTrigger>
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                      {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sortedNations.map((nation) => (
+                    <SelectItem key={`${nation.id}-eurovisionWinner`} value={nation.id}>
+                       {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Pronostica il vincitore assoluto di Eurovision.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="juryWinnerPickNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vincitore Giuria</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
+                <FormControl>
+                  <SelectTrigger>
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                      {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sortedNations.map((nation) => (
+                    <SelectItem key={`${nation.id}-juryWinner`} value={nation.id}>
+                       {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Pronostica il vincitore del voto della giuria.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="televoteWinnerPickNationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vincitore Televoto</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""} disabled={isSubmitting || sortedNations.length === 0 || isReadOnly}>
+                <FormControl>
+                  <SelectTrigger>
+                     <SelectValue placeholder={sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione"}>
+                      {field.value && sortedNations.find(n => n.id === field.value) ? renderNationSelectItem(sortedNations.find(n => n.id === field.value)!) : (sortedNations.length === 0 ? "Nessuna nazione" : "Seleziona nazione")}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sortedNations.map((nation) => (
+                    <SelectItem key={`${nation.id}-televoteWinner`} value={nation.id}>
+                       {renderNationSelectItem(nation)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Pronostica il vincitore del televoto.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
          <FormField
           control={form.control}
           name="bestTreppoScoreNationId"

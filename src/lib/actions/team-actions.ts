@@ -54,6 +54,9 @@ export async function createTeamAction(
       name: data.name,
       creatorDisplayName: data.creatorDisplayName,
       founderChoices: data.founderChoices,
+      eurovisionWinnerPickNationId: "",
+      juryWinnerPickNationId: "",
+      televoteWinnerPickNationId: "",
       bestTreppoScoreNationId: "", 
       bestSongNationId: "", 
       bestPerformanceNationId: "",
@@ -67,6 +70,8 @@ export async function createTeamAction(
     revalidatePath("/teams");
     revalidatePath("/teams/new");
     revalidatePath("/teams/leaderboard");
+    revalidatePath(`/teams/${docRef.id}/details`);
+    revalidatePath(`/teams/${docRef.id}/pronostici`);
 
     return { success: true, message: "Team creato con successo! Ora puoi inserire i tuoi pronostici finali.", teamId: docRef.id };
   } catch (error) {
@@ -172,6 +177,9 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const hasExistingPredictions = 
+                                 !!teamDataInDb.eurovisionWinnerPickNationId ||
+                                 !!teamDataInDb.juryWinnerPickNationId ||
+                                 !!teamDataInDb.televoteWinnerPickNationId ||
                                  !!teamDataInDb.bestTreppoScoreNationId ||
                                  !!teamDataInDb.bestSongNationId ||
                                  !!teamDataInDb.bestPerformanceNationId ||
@@ -182,7 +190,10 @@ export async function updateTeamFinalAnswersAction(
       return { success: false, message: "I pronostici finali sono già stati inviati e non possono essere modificati." };
     }
     
-    if (!data.bestTreppoScoreNationId ||
+    if (!data.eurovisionWinnerPickNationId ||
+        !data.juryWinnerPickNationId ||
+        !data.televoteWinnerPickNationId ||
+        !data.bestTreppoScoreNationId ||
         !data.bestSongNationId || 
         !data.bestPerformanceNationId || 
         !data.bestOutfitNationId || 
@@ -191,11 +202,14 @@ export async function updateTeamFinalAnswersAction(
     }
     
     const finalAnswersToUpdate = {
-      bestTreppoScoreNationId: data.bestTreppoScoreNationId,
-      bestSongNationId: data.bestSongNationId,
-      bestPerformanceNationId: data.bestPerformanceNationId,
-      bestOutfitNationId: data.bestOutfitNationId,
-      worstTreppoScoreNationId: data.worstTreppoScoreNationId,
+      eurovisionWinnerPickNationId: data.eurovisionWinnerPickNationId || "",
+      juryWinnerPickNationId: data.juryWinnerPickNationId || "",
+      televoteWinnerPickNationId: data.televoteWinnerPickNationId || "",
+      bestTreppoScoreNationId: data.bestTreppoScoreNationId || "",
+      bestSongNationId: data.bestSongNationId || "",
+      bestPerformanceNationId: data.bestPerformanceNationId || "",
+      bestOutfitNationId: data.bestOutfitNationId || "",
+      worstTreppoScoreNationId: data.worstTreppoScoreNationId || "",
       updatedAt: serverTimestamp(),
     };
 
