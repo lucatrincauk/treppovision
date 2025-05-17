@@ -95,7 +95,7 @@ const getRankTextPodium = (rank?: number, isTied?: boolean): string => {
 interface TeamListItemProps {
   team: TeamWithScore;
   allNations: Nation[];
-  nationGlobalCategorizedScoresArray: [string, NationGlobalCategorizedScores][];
+  nationGlobalCategorizedScoresArray: [string, NationGlobalCategorizedScores][]; // Changed from Map
   isOwnTeamCard?: boolean;
   isLeaderboardPodiumDisplay?: boolean;
   disableEdit?: boolean;
@@ -108,73 +108,218 @@ interface PrimaSquadraNationDisplayDetailPodiumProps {
   isEvenRow?: boolean;
 }
 
-const PrimaSquadraNationDisplayDetailPodium = React.memo(
-  ({
-    detail,
-    leaderboardLockedAdmin,
-    isEvenRow,
-  }: PrimaSquadraNationDisplayDetailPodiumProps) => {
-    const nationRank = detail.actualRank;
-    const rankText =
-      !leaderboardLockedAdmin && nationRank && nationRank > 0
-        ? `(${nationRank}°)`
-        : "";
+const PrimaSquadraNationDisplayDetailPodium: React.FC<PrimaSquadraNationDisplayDetailPodiumProps> = ({
+  detail,
+  leaderboardLockedAdmin,
+  isEvenRow,
+}) => {
+  const nationRank = detail.actualRank;
+  const rankText =
+    !leaderboardLockedAdmin && nationRank && nationRank > 0
+      ? `(${nationRank}°)`
+      : "";
 
-    const titleText = `${detail.name || "Nazione Sconosciuta"} ${
-      rankText ? `${rankText} ` : ""
-    }${detail.artistName ? `- ${detail.artistName} ` : ""}${
-      detail.songTitle ? `- ${detail.songTitle}` : ""
-    }${
-      !leaderboardLockedAdmin && typeof detail.points === "number"
-        ? ` Punti: ${detail.points}`
-        : ""
-    }`;
+  const titleText = `${detail.name || "Nazione Sconosciuta"} ${
+    rankText ? `${rankText} ` : ""
+  }${detail.artistName ? `- ${detail.artistName} ` : ""}${
+    detail.songTitle ? `- ${detail.songTitle}` : ""
+  }${
+    !leaderboardLockedAdmin && typeof detail.points === "number"
+      ? ` Punti: ${detail.points}`
+      : ""
+  }`;
 
-    return (
-      <div
-        className={cn(
-          "w-full flex items-center justify-between",
-          isEvenRow ? "bg-muted/50 rounded-md" : "",
-          "pl-2 py-1"
-        )}
-      >
-        <div className="flex items-center gap-1.5">
-          <BadgeCheck className="w-5 h-5 text-accent shrink-0 mr-1.5" />
-          <div className="flex items-center gap-1.5">
-            {detail.countryCode ? (
-              <Image
-                src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
-                alt={detail.name || "Nazione"}
-                width={20}
-                height={13}
-                className="rounded-sm border border-border/30 object-contain shrink-0"
-                data-ai-hint={`${detail.name} flag`}
-              />
-            ) : (
-              <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
+  return (
+    <div
+      className={cn(
+        "w-full flex items-center justify-between",
+        isEvenRow ? "bg-muted/50 rounded-md" : "",
+        "pl-2 py-1"
+      )}
+    >
+      <div className="flex items-center gap-1.5"> {/* Container for icon and (flag + text block) */}
+        <BadgeCheck className="w-5 h-5 text-accent shrink-0 mr-1.5" />
+        <div className="flex items-center gap-1.5"> {/* Container for flag + text block */}
+          {detail.countryCode ? (
+            <Image
+              src={`https://flagcdn.com/w20/${detail.countryCode.toLowerCase()}.png`}
+              alt={detail.name || "Nazione"}
+              width={20}
+              height={13}
+              className="rounded-sm border border-border/30 object-contain shrink-0"
+              data-ai-hint={`${detail.name} flag`}
+            />
+          ) : (
+            <div className="w-5 h-[13px] shrink-0 bg-muted/20 rounded-sm"></div>
+          )}
+          <div className="flex flex-col items-start">
+            <Link
+              href={`/nations/${detail.id}`}
+              className="group text-sm hover:underline hover:text-primary flex items-center gap-0.5"
+              title={titleText}
+            >
+              <span className="font-medium">
+                {detail.name || "Nazione Sconosciuta"}
+              </span>
+              {!leaderboardLockedAdmin &&
+                nationRank &&
+                [1, 2, 3].includes(nationRank) && (
+                  <MedalIcon rank={nationRank} className="ml-0.5" />
+                )}
+              {rankText && (
+                <span
+                  className={cn(
+                    "text-xs ml-0.5",
+                    !leaderboardLockedAdmin &&
+                      nationRank &&
+                      [1, 2, 3].includes(nationRank)
+                      ? rankTextColorClass(nationRank)
+                      : "text-muted-foreground/80"
+                  )}
+                >
+                  {rankText}
+                </span>
+              )}
+            </Link>
+            {!leaderboardLockedAdmin &&
+              (detail.artistName || detail.songTitle) && (
+                <span className="text-[11px] text-muted-foreground/80 block pl-[0px]">
+                  {detail.artistName}
+                  {detail.artistName && detail.songTitle && " - "}
+                  {detail.songTitle}
+                </span>
+              )}
+          </div>
+        </div>
+      </div>
+      {!leaderboardLockedAdmin && typeof detail.points === "number" && (
+        <span
+          className={cn(
+            "text-sm ml-auto pl-1 shrink-0 self-center font-semibold",
+            detail.points > 0
+              ? "text-primary"
+              : detail.points < 0
+              ? "text-destructive"
+              : "text-muted-foreground"
+          )}
+        >
+          {detail.points > 0 ? `+${detail.points}` : detail.points}pt
+        </span>
+      )}
+    </div>
+  );
+};
+PrimaSquadraNationDisplayDetailPodium.displayName = "PrimaSquadraNationDisplayDetailPodium";
+
+
+interface CategoryPickDisplayDetailPodiumProps {
+  detail: GlobalCategoryPickDetail & { actualCategoryRank?: number | null; iconName: string; };
+  leaderboardLockedAdmin: boolean | null;
+  isEvenRow?: boolean;
+  allNations: Nation[]; // Required for nation lookup
+}
+
+const CategoryPickDisplayDetailPodium: React.FC<CategoryPickDisplayDetailPodiumProps> = ({
+  detail,
+  leaderboardLockedAdmin,
+  isEvenRow,
+  allNations,
+}) => {
+  let IconComponent: React.ElementType = Info;
+  switch (detail.iconName) {
+    case "EurovisionWinner": IconComponent = Award; break;
+    case "JuryWinner": IconComponent = Users; break;
+    case "TelevoteWinner": IconComponent = Flag; break;
+    case "Award": IconComponent = Award; break;
+    case "Music2": IconComponent = Music2; break;
+    case "Star": IconComponent = Star; break;
+    case "Shirt": IconComponent = Shirt; break;
+    case "ThumbsDown": IconComponent = ThumbsDown; break;
+    default: IconComponent = Info;
+  }
+
+  const iconColorClass = "text-accent";
+  const actualCategoryRank = detail.actualCategoryRank;
+
+  let rankSuffix = "";
+  if (detail.categoryName === "Peggior TreppoScore") {
+    rankSuffix = " peggiore";
+  }
+
+  const rankText = !leaderboardLockedAdmin && actualCategoryRank && actualCategoryRank > 0
+    ? `(${actualCategoryRank}°${rankSuffix})`
+    : "";
+    
+  const pickedNationFullDetails = detail.pickedNationId ? allNations.find(n => n.id === detail.pickedNationId) : undefined;
+
+  return (
+    <div
+      className={cn(
+        "w-full px-2 py-1.5", // Base padding for all rows
+        isEvenRow ? "bg-muted/50 rounded-md" : ""
+      )}
+    >
+      {/* Line for Category Label and Points */}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-1.5"> {/* Label and Icon */}
+          <IconComponent
+            className={cn("w-5 h-5 flex-shrink-0", iconColorClass)}
+          />
+          <p className="text-sm font-medium text-foreground/90">
+            {detail.categoryName}
+          </p>
+        </div>
+        {typeof detail.pointsAwarded === "number" && !leaderboardLockedAdmin && (
+          <span
+            className={cn(
+              "text-sm font-semibold ml-auto",
+              detail.pointsAwarded > 0
+                ? "text-primary"
+                : detail.pointsAwarded === 0
+                ? "text-muted-foreground"
+                : "text-destructive"
             )}
+          >
+            {detail.pointsAwarded >= 0 ? "+" : ""}
+            {detail.pointsAwarded}pt
+          </span>
+        )}
+      </div>
+
+      {/* Line for Nation Details (indented) */}
+      <div className={cn("w-full mt-1", "pl-[calc(1.25rem+0.375rem)]")}> {/* 1.25rem (w-5) + 0.375rem (gap-1.5) */}
+        {pickedNationFullDetails ? (
+          <div className="flex items-center gap-1.5"> {/* Container for flag + text block */}
+            <Image
+              src={`https://flagcdn.com/w20/${pickedNationFullDetails.countryCode.toLowerCase()}.png`}
+              alt={pickedNationFullDetails.name}
+              width={20}
+              height={13}
+              className="rounded-sm border border-border/30 object-contain shrink-0"
+              data-ai-hint={`${pickedNationFullDetails.name} flag`}
+            />
             <div className="flex flex-col items-start">
               <Link
-                href={`/nations/${detail.id}`}
+                href={`/nations/${pickedNationFullDetails.id}`}
                 className="group text-sm hover:underline hover:text-primary flex items-center gap-0.5"
-                title={titleText}
+                title={`${pickedNationFullDetails.name} ${rankText ? rankText + " " : ""}${pickedNationFullDetails.artistName ? `- ${pickedNationFullDetails.artistName} ` : ''}${pickedNationFullDetails.songTitle ? `- ${pickedNationFullDetails.songTitle}` : ''}`}
               >
                 <span className="font-medium">
-                  {detail.name || "Nazione Sconosciuta"}
+                  {pickedNationFullDetails.name}
                 </span>
                 {!leaderboardLockedAdmin &&
-                  nationRank &&
-                  [1, 2, 3].includes(nationRank) && (
-                    <MedalIcon rank={nationRank} className="ml-0.5" />
+                  actualCategoryRank &&
+                  [1, 2, 3].includes(actualCategoryRank) && (
+                    <MedalIcon rank={actualCategoryRank} className="ml-0.5" />
                   )}
                 {rankText && (
                   <span
                     className={cn(
                       "text-xs ml-0.5",
                       !leaderboardLockedAdmin &&
-                        nationRank &&
-                        [1, 2, 3].includes(nationRank)
-                        ? rankTextColorClass(nationRank)
+                        actualCategoryRank &&
+                        [1, 2, 3].includes(actualCategoryRank)
+                        ? rankTextColorClass(actualCategoryRank)
                         : "text-muted-foreground/80"
                     )}
                   >
@@ -183,181 +328,31 @@ const PrimaSquadraNationDisplayDetailPodium = React.memo(
                 )}
               </Link>
               {!leaderboardLockedAdmin &&
-                (detail.artistName || detail.songTitle) && (
+                (pickedNationFullDetails.artistName || pickedNationFullDetails.songTitle) && (
                   <span className="text-[11px] text-muted-foreground/80 block">
-                    {detail.artistName}
-                    {detail.artistName && detail.songTitle && " - "}
-                    {detail.songTitle}
+                    {pickedNationFullDetails.artistName}
+                    {pickedNationFullDetails.artistName && pickedNationFullDetails.songTitle && " - "}
+                    {pickedNationFullDetails.songTitle}
                   </span>
                 )}
             </div>
           </div>
-        </div>
-        {!leaderboardLockedAdmin && typeof detail.points === "number" && (
-          <span
-            className={cn(
-              "text-sm ml-auto pl-1 shrink-0 self-center font-semibold",
-              detail.points > 0
-                ? "text-primary"
-                : detail.points < 0
-                ? "text-destructive"
-                : "text-muted-foreground"
-            )}
-          >
-            {detail.points > 0 ? `+${detail.points}` : detail.points}pt
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            Nessuna selezione
           </span>
         )}
       </div>
-    );
-  }
-);
-PrimaSquadraNationDisplayDetailPodium.displayName =
-  "PrimaSquadraNationDisplayDetailPodium";
+    </div>
+  );
+};
+CategoryPickDisplayDetailPodium.displayName = "CategoryPickDisplayDetailPodium";
 
-interface CategoryPickDisplayDetailPodiumProps {
-  detail: GlobalCategoryPickDetail & { actualCategoryRank?: number | null };
-  leaderboardLockedAdmin: boolean | null;
-  isEvenRow?: boolean;
-}
-
-const CategoryPickDisplayDetailPodium = React.memo(
-  ({
-    detail,
-    leaderboardLockedAdmin,
-    isEvenRow,
-  }: CategoryPickDisplayDetailPodiumProps) => {
-    let IconComponent: React.ElementType = Info;
-    switch (detail.iconName) {
-      case "EurovisionWinner": IconComponent = Award; break;
-      case "JuryWinner": IconComponent = Users; break; 
-      case "TelevoteWinner": IconComponent = Flag; break; 
-      case "Award": IconComponent = Award; break; 
-      case "Music2": IconComponent = Music2; break;
-      case "Star": IconComponent = Star; break;
-      case "Shirt": IconComponent = Shirt; break;
-      case "ThumbsDown": IconComponent = ThumbsDown; break;
-      default: IconComponent = Info;
-    }
-
-    const iconColorClass = "text-accent";
-    const actualCategoryRank = detail.actualCategoryRank;
-
-    let rankSuffix = "";
-     if (detail.categoryName === "Peggior TreppoScore") {
-      rankSuffix = " peggiore";
-    }
-
-    const rankText =
-      !leaderboardLockedAdmin && actualCategoryRank && actualCategoryRank > 0
-        ? `(${actualCategoryRank}°${rankSuffix})`
-        : "";
-
-    return (
-      <div
-        className={cn(
-          "w-full",
-          isEvenRow ? "bg-muted/50 rounded-md" : ""
-        )}
-      >
-        <div className="flex items-center justify-between w-full px-2 py-1.5">
-          <div className="flex items-center gap-1.5">
-            <IconComponent
-              className={cn("w-5 h-5 flex-shrink-0", iconColorClass)}
-            />
-            <p className="text-sm font-medium text-foreground/90 min-w-[120px] shrink-0">
-              {detail.categoryName}
-            </p>
-          </div>
-          {typeof detail.pointsAwarded === "number" && !leaderboardLockedAdmin && (
-            <span
-              className={cn(
-                "text-sm font-semibold ml-auto",
-                detail.pointsAwarded > 0
-                  ? "text-primary"
-                  : detail.pointsAwarded === 0
-                  ? "text-muted-foreground"
-                  : "text-destructive"
-              )}
-            >
-              {detail.pointsAwarded >= 0 ? "+" : ""}
-              {detail.pointsAwarded}pt
-            </span>
-          )}
-        </div>
-
-        <div className={cn("w-full mt-0.5", "pl-[calc(1.25rem+0.375rem+0.5rem)]")}> 
-          {detail.pickedNationName ? (
-            <div className="flex items-center gap-1.5">
-              <Image
-                src={`https://flagcdn.com/w20/${detail.pickedNationCountryCode?.toLowerCase()}.png`}
-                alt={detail.pickedNationName}
-                width={20}
-                height={13}
-                className="rounded-sm border border-border/30 object-contain shrink-0"
-                data-ai-hint={`${detail.pickedNationName} flag`}
-              />
-              <div className="flex flex-col items-start">
-                <Link
-                  href={`/nations/${detail.pickedNationId}`}
-                  className="group text-sm hover:underline hover:text-primary flex items-center gap-0.5"
-                  title={`${detail.pickedNationName} ${
-                    rankText ? rankText + " " : ""
-                  }${
-                    detail.artistName ? `- ${detail.artistName} ` : ""
-                  }${
-                    detail.songTitle ? `- ${detail.songTitle}` : ""
-                  }`}
-                >
-                  <span className="font-medium">
-                    {detail.pickedNationName}
-                  </span>
-                  {!leaderboardLockedAdmin &&
-                    actualCategoryRank &&
-                    [1, 2, 3].includes(actualCategoryRank) && (
-                      <MedalIcon rank={actualCategoryRank} className="ml-0.5" />
-                    )}
-                  {rankText && (
-                    <span
-                      className={cn(
-                        "text-xs ml-0.5",
-                        !leaderboardLockedAdmin &&
-                          actualCategoryRank &&
-                          [1, 2, 3].includes(actualCategoryRank)
-                          ? rankTextColorClass(actualCategoryRank)
-                          : "text-muted-foreground/80"
-                      )}
-                    >
-                      {rankText}
-                    </span>
-                  )}
-                </Link>
-                {!leaderboardLockedAdmin &&
-                  (detail.artistName || detail.songTitle) && (
-                    <span className="text-[11px] text-muted-foreground/80 block">
-                      {detail.artistName}
-                      {detail.artistName && detail.songTitle && " - "}
-                      {detail.songTitle}
-                    </span>
-                  )}
-              </div>
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">
-              Nessuna selezione
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-);
-CategoryPickDisplayDetailPodium.displayName =
-  "CategoryPickDisplayDetailPodium";
 
 export function TeamListItem({
   team,
   allNations,
-  nationGlobalCategorizedScoresArray,
+  nationGlobalCategorizedScoresArray, // Changed from Map
   isOwnTeamCard = false,
   isLeaderboardPodiumDisplay = false,
   disableEdit = false,
@@ -365,48 +360,22 @@ export function TeamListItem({
 }: TeamListItemProps) {
   const { user } = useAuth();
   const [teamsLocked, setTeamsLocked] = useState<boolean | null>(null);
-  const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<
-    boolean | null
-  >(null);
+  const [leaderboardLockedAdmin, setLeaderboardLockedAdmin] = useState<boolean | null>(null);
   const [isLoadingAdminSettings, setIsLoadingAdminSettings] = useState(true);
 
-  const renderDetailedView =
-    !!team.primaSquadraDetails && !!team.categoryPicksDetails;
+  const nationGlobalCategorizedScoresMap = useMemo(() => {
+    return new Map(nationGlobalCategorizedScoresArray || []);
+  }, [nationGlobalCategorizedScoresArray]);
 
-  const sortedFounderNationsDetails = useMemo(() => {
-    if (!allNations || allNations.length === 0) return [];
-    if (team.primaSquadraDetails && team.primaSquadraDetails.length > 0) {
-      return [...team.primaSquadraDetails].sort(
-        (a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity)
-      );
-    }
-    // Fallback if primaSquadraDetails is not provided, but it should be for detailed views
-    return (team.founderChoices || [])
-      .map((id) => {
-        const nation = allNations.find((n) => n.id === id);
-        return {
-          id,
-          name: nation?.name || "Sconosciuto",
-          countryCode: nation?.countryCode || "xx",
-          artistName: nation?.artistName,
-          songTitle: nation?.songTitle,
-          actualRank: nation?.ranking,
-          points: 0,
-        };
-      })
-      .sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
-  }, [team.primaSquadraDetails, team.founderChoices, allNations]);
-  
-  const eurovisionPicksForDisplay = useMemo(() => {
-    if (!renderDetailedView || !team.categoryPicksDetails) return [];
-    return team.categoryPicksDetails.filter(p => ["Vincitore Eurovision", "Vincitore Giuria", "Vincitore Televoto"].includes(p.categoryName));
-  }, [renderDetailedView, team.categoryPicksDetails]);
+  const treppoScoreCategoriesConfig = useMemo(() => [
+    { teamPickNationId: team.bestTreppoScoreNationId, iconName: "Award", label: "Miglior TreppoScore", rankInfoKey: 'TreppoScore', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestSongNationId, iconName: "Music2", label: "Miglior Canzone", rankInfoKey: 'Music2', categoryKey: 'averageSongScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestPerformanceNationId, iconName: "Star", label: "Miglior Performance", rankInfoKey: 'Star', categoryKey: 'averagePerformanceScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.bestOutfitNationId, iconName: "Shirt", label: "Miglior Outfit", rankInfoKey: 'Shirt', categoryKey: 'averageOutfitScore' as keyof NationGlobalCategorizedScores },
+    { teamPickNationId: team.worstTreppoScoreNationId, iconName: "ThumbsDown", label: "Peggior TreppoScore", rankInfoKey: 'ThumbsDown', categoryKey: 'overallAverageScore' as keyof NationGlobalCategorizedScores, sortOrder: 'asc' as 'asc' | 'desc' },
+  ], [team.bestTreppoScoreNationId, team.bestSongNationId, team.bestPerformanceNationId, team.bestOutfitNationId, team.worstTreppoScoreNationId]);
 
-  const userVotePicksForDisplay = useMemo(() => {
-    if (!renderDetailedView || !team.categoryPicksDetails) return [];
-    return team.categoryPicksDetails.filter(p => !["Vincitore Eurovision", "Vincitore Giuria", "Vincitore Televoto"].includes(p.categoryName));
-  }, [renderDetailedView, team.categoryPicksDetails]);
-
+  const [categoryRanksAndCorrectness, setCategoryRanksAndCorrectness] = useState<Record<string, { rank?: number; isCorrectPick: boolean; categoryRankText: string }>>({});
 
   useEffect(() => {
     setIsLoadingAdminSettings(true);
@@ -419,10 +388,7 @@ export function TeamListItem({
         setLeaderboardLockedAdmin(lbLockResult);
       })
       .catch((error) => {
-        console.error(
-          "Failed to fetch admin settings for TeamListItem:",
-          error
-        );
+        console.error("Failed to fetch admin settings for TeamListItem:", error);
         if (!disableEdit) setTeamsLocked(false);
         setLeaderboardLockedAdmin(false);
       })
@@ -431,25 +397,63 @@ export function TeamListItem({
       });
   }, [disableEdit]);
 
-  if (
-    isLoadingAdminSettings ||
-    !allNations ||
-    !nationGlobalCategorizedScoresArray
-  ) {
+  const renderDetailedView = !!(team.primaSquadraDetails && team.categoryPicksDetails);
+
+  const hasAnyTreppoScorePredictions = useMemo(() => {
+    return !!(team.bestTreppoScoreNationId || team.bestSongNationId || team.bestPerformanceNationId || team.bestOutfitNationId || team.worstTreppoScoreNationId);
+  }, [team.bestTreppoScoreNationId, team.bestSongNationId, team.bestPerformanceNationId, team.bestOutfitNationId, team.worstTreppoScoreNationId]);
+  
+  const hasAnyBonus = !!(team.bonusCampionePronostici || team.bonusGranCampionePronostici || team.bonusEnPleinTop5);
+
+  const eurovisionPicksForDisplay = useMemo(() => {
+    if (!renderDetailedView || !team.categoryPicksDetails) return [];
+    return team.categoryPicksDetails.filter(p => ["Vincitore Eurovision", "Vincitore Giuria", "Vincitore Televoto"].includes(p.categoryName));
+  }, [renderDetailedView, team.categoryPicksDetails]);
+
+  const userVotePicksForDisplay = useMemo(() => {
+    if (!renderDetailedView || !team.categoryPicksDetails) return [];
+    const userVoteCategories = ["Miglior TreppoScore", "Miglior Canzone", "Miglior Performance", "Miglior Outfit", "Peggior TreppoScore"];
+    return team.categoryPicksDetails.filter(p => userVoteCategories.includes(p.categoryName));
+  }, [renderDetailedView, team.categoryPicksDetails]);
+  
+  const sortedFounderNationsDetails = useMemo(() => {
+    if (!renderDetailedView || !team.primaSquadraDetails || team.primaSquadraDetails.length === 0) {
+      if (!allNations || allNations.length === 0) return []; // Guard for allNations
+      // Fallback if primaSquadraDetails is not provided, but it should be for detailed views
+      return (team.founderChoices || [])
+        .map((id) => {
+          const nation = allNations.find((n) => n.id === id);
+          return {
+            id,
+            name: nation?.name || "Sconosciuto",
+            countryCode: nation?.countryCode || "xx",
+            artistName: nation?.artistName,
+            songTitle: nation?.songTitle,
+            actualRank: nation?.ranking,
+            points: 0, // Points might not be calculated in this simpler fallback
+          };
+        })
+        .sort((a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity));
+    }
+    return [...team.primaSquadraDetails].sort(
+      (a, b) => (a.actualRank ?? Infinity) - (b.actualRank ?? Infinity)
+    );
+  }, [renderDetailedView, team.primaSquadraDetails, team.founderChoices, allNations]);
+
+
+  if (isLoadingAdminSettings || !allNations || !nationGlobalCategorizedScoresArray) {
+     const cardHeightClass = isLeaderboardPodiumDisplay ? "min-h-[400px]" : "min-h-[200px]";
+     const borderClass = isLeaderboardPodiumDisplay && !leaderboardLockedAdmin && team.rank && team.rank <=3 
+        ? team.rank === 1 ? "border-yellow-400 border-2 shadow-yellow-400/30"
+        : team.rank === 2 ? "border-slate-400 border-2 shadow-slate-400/30"
+        : "border-amber-500 border-2 shadow-amber-500/30"
+        : "border-border";
     return (
       <Card
         className={cn(
-          "flex flex-col h-full shadow-lg p-4 items-center justify-center min-w-[280px]",
-          isLeaderboardPodiumDisplay &&
-            !leaderboardLockedAdmin &&
-            team.rank &&
-            team.rank <= 3
-            ? team.rank === 1
-              ? "border-yellow-400 border-2 shadow-yellow-400/30"
-              : team.rank === 2
-              ? "border-slate-400 border-2 shadow-slate-400/30"
-              : "border-amber-500 border-2 shadow-amber-500/30"
-            : "border-border"
+          "flex flex-col h-full shadow-lg p-4 items-center justify-center",
+           cardHeightClass,
+           borderClass // Apply border class here too
         )}
       >
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -474,7 +478,7 @@ export function TeamListItem({
 
   const PodiumHeader = () => (
     <>
-      <div className="flex items-baseline justify-between w-full">
+      <div className="flex items-baseline justify-between w-full"> {/* Team Name & Score */}
         <CardTitle className="text-xl text-primary flex items-center gap-2">
           <Users className="h-5 w-5 text-accent shrink-0" />
           {team.name}
@@ -485,7 +489,7 @@ export function TeamListItem({
           </div>
         )}
       </div>
-      <div className="flex items-baseline justify-between w-full">
+      <div className="flex items-baseline justify-between w-full"> {/* Owner & Rank */}
         {team.creatorDisplayName && (
           <div className="text-xs text-muted-foreground flex items-center gap-1">
             <UserCircle className="h-3 w-3" />
@@ -493,13 +497,7 @@ export function TeamListItem({
           </div>
         )}
         {!leaderboardLockedAdmin && team.rank && (
-          <div
-            className={cn(
-              "font-semibold flex items-center",
-              rankTextColorClass(team.rank),
-              !team.creatorDisplayName ? "ml-auto" : ""
-            )}
-          >
+          <div className={cn("font-semibold flex items-center", rankTextColorClass(team.rank), (!team.creatorDisplayName || isOwnTeamCard) ? "ml-auto" : "")}>
             <MedalIcon rank={team.rank} className="mr-1" />
             {getRankTextPodium(team.rank, team.isTied)}
           </div>
@@ -516,74 +514,40 @@ export function TeamListItem({
           {team.name}
         </CardTitle>
         {team.creatorDisplayName && !isOwnTeamCard && (
-          <div
-            className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"
-            title={`Utente: ${team.creatorDisplayName}`}
-          >
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
             <UserCircle className="h-3 w-3" />
             {team.creatorDisplayName}
           </div>
         )}
       </div>
-      {isOwnTeamCard &&
-        typeof team.score === "number" &&
-        !leaderboardLockedAdmin && (
-          <div className="text-lg font-bold text-primary ml-2">
-            {team.score}pt
-          </div>
-        )}
-      {!isOwnTeamCard &&
-        !isLeaderboardPodiumDisplay &&
-        typeof team.score === "number" &&
-        !leaderboardLockedAdmin && (
-          <div className="text-lg font-bold text-primary ml-2">
-            {team.score}pt
-          </div>
-        )}
+       {/* "Modifica Squadra" button removed from here as per previous request. It's now handled on the /teams page header. */}
+      {typeof team.score === "number" && !leaderboardLockedAdmin && (
+        <div className="text-lg font-bold text-primary ml-2">
+          {team.score}pt
+        </div>
+      )}
     </div>
   );
 
-  const hasAnyBonus = !!(
-    team.bonusCampionePronostici ||
-    team.bonusGranCampionePronostici ||
-    team.bonusEnPleinTop5
-  );
-
-  const hasAnyEurovisionPredictions = eurovisionPicksForDisplay.length > 0;
-  const hasAnyUserVotePredictions = userVotePicksForDisplay.length > 0;
-
-
   return (
-    <Card
-      className={cn(
-        "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300",
-        borderClass
-      )}
-    >
+    <Card className={cn(
+      "flex flex-col h-full shadow-lg hover:shadow-primary/20 transition-shadow duration-300",
+      borderClass
+    )}>
       <CardHeader
         className={cn(
           "pt-4 px-4 pb-3",
-          isLeaderboardPodiumDisplay &&
-            "border-b border-border"
+          isLeaderboardPodiumDisplay && "pb-3 border-b border-border" // Removed thick top border
         )}
       >
         {isLeaderboardPodiumDisplay ? <PodiumHeader /> : <DefaultHeader />}
       </CardHeader>
 
       <CardContent className="flex-grow space-y-1 pt-3 pb-4 px-4">
-        {renderDetailedView && allNations && allNations.length > 0 ? (
-          <Accordion
-            type="multiple"
-            className="w-full"
-            defaultValue={defaultOpenSections}
-          >
-            {/* Nazioni Squadra Section */}
-            <AccordionItem
-              value="treppovision"
-              className={cn(
-                (hasAnyEurovisionPredictions || hasAnyUserVotePredictions || hasAnyBonus) && "pb-3 border-b border-border"
-              )}
-            >
+        { renderDetailedView && allNations && allNations.length > 0 ? (
+          <Accordion type="multiple" className="w-full" defaultValue={defaultOpenSections}>
+            {/* Pronostici TreppoVision Section */}
+            <AccordionItem value="treppovision" className={cn("border-b-0", (eurovisionPicksForDisplay.length > 0 || userVotePicksForDisplay.length > 0 || hasAnyBonus) && "pb-3 border-b border-border")}>
               <AccordionTrigger asChild className="py-2 hover:no-underline">
                 <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
                   <div className="flex items-center gap-1">
@@ -592,8 +556,7 @@ export function TeamListItem({
                     </p>
                     <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </div>
-                  {typeof team.primaSquadraScore === "number" &&
-                    !leaderboardLockedAdmin && (
+                  {typeof team.primaSquadraScore === "number" && !leaderboardLockedAdmin && (
                       <span
                         className={cn(
                           "text-sm font-semibold ml-auto",
@@ -625,31 +588,31 @@ export function TeamListItem({
             </AccordionItem>
 
             {/* Pronostici Eurovision Section */}
-            {renderDetailedView && hasAnyEurovisionPredictions && (
-               <AccordionItem value="pronosticiEurovision" className={cn((hasAnyUserVotePredictions || hasAnyBonus) && "pb-3 border-b border-border")}>
+            {eurovisionPicksForDisplay.length > 0 && (
+              <AccordionItem value="pronosticiEurovision" className={cn("border-b-0", (userVotePicksForDisplay.length > 0 || hasAnyBonus) && "pb-3 border-b border-border")}>
                 <AccordionTrigger asChild className="py-2 hover:no-underline">
-                  <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
+                   <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
                     <div className="flex items-center gap-1">
                       <p className="text-lg font-bold text-primary">
                         Pronostici Eurovision
                       </p>
                       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </div>
-                    {typeof team.eurovisionPicksScore === "number" && !leaderboardLockedAdmin && (
+                     {typeof team.eurovisionPicksScore === "number" && !leaderboardLockedAdmin && (
                         <span
-                            className={cn(
+                          className={cn(
                             "text-sm font-semibold ml-auto",
                             team.eurovisionPicksScore > 0
-                                ? "text-primary"
-                                : team.eurovisionPicksScore === 0
-                                ? "text-muted-foreground"
-                                : "text-destructive"
-                            )}
+                              ? "text-primary"
+                              : team.eurovisionPicksScore === 0
+                              ? "text-muted-foreground"
+                              : "text-destructive"
+                          )}
                         >
-                            {team.eurovisionPicksScore >= 0 ? "+" : ""}
-                            {team.eurovisionPicksScore}pt
+                          {team.eurovisionPicksScore >= 0 ? "+" : ""}
+                          {team.eurovisionPicksScore}pt
                         </span>
-                        )}
+                      )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-1 pb-0">
@@ -670,18 +633,15 @@ export function TeamListItem({
 
 
             {/* Pronostici TreppoScore Section */}
-            {renderDetailedView && hasAnyUserVotePredictions && (
-              <AccordionItem
-                value="pronosticiTreppoScore"
-                className={cn(hasAnyBonus && "pb-3 border-b border-border")}
-              >
+            {hasAnyTreppoScorePredictions && (
+              <AccordionItem value="pronosticiTreppoScore" className={cn("border-b-0", hasAnyBonus && "pb-3 border-b border-border")}>
                 <AccordionTrigger asChild className="py-2 hover:no-underline">
                   <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
                     <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-primary">
+                      <p className="text-lg font-bold text-primary mt-3 pt-0">
                         Pronostici TreppoScore
                       </p>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </div>
                     {typeof team.treppoScoreCategoryPicksScore === "number" &&
                       !leaderboardLockedAdmin && (
@@ -718,16 +678,15 @@ export function TeamListItem({
             )}
 
             {/* Bonus Section */}
-            {renderDetailedView && hasAnyBonus && (
+            {renderDetailedView && hasAnyBonus && !leaderboardLockedAdmin && (
               <AccordionItem value="bonus" className="border-b-0">
                 <AccordionTrigger asChild className="py-2 hover:no-underline">
                   <div className="group flex justify-between items-center w-full py-2 font-medium cursor-pointer">
                     <div className="flex items-center gap-1">
                       <p className="text-lg font-bold text-primary">Bonus</p>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </div>
-                    {typeof team.bonusTotalScore === "number" &&
-                      !leaderboardLockedAdmin && (
+                    {typeof team.bonusTotalScore === "number" && !leaderboardLockedAdmin && (
                         <span
                           className={cn(
                             "text-sm font-semibold ml-auto",
@@ -766,12 +725,12 @@ export function TeamListItem({
                       },
                     ]
                       .filter(Boolean)
-                      .map((bonusItem, index, arr) =>
+                      .map((bonusItem, index) =>
                         bonusItem ? (
                           <div
                             key={bonusItem.label}
                             className={cn(
-                              "flex items-center justify-between w-full text-xs pl-2 py-1",
+                              "flex items-center justify-between w-full pl-2 py-1 text-xs",
                               index % 2 !== 0 ? "bg-muted/50 rounded-md" : ""
                             )}
                           >
