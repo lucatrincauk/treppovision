@@ -91,8 +91,7 @@ export interface TeamFinalAnswersFormData {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string; 
-  bestTreppoScoreNationId: string;
+  worstSongNationId: string;
 }
 
 
@@ -101,9 +100,8 @@ export interface Team {
   userId: string;
   creatorDisplayName: string;
   name: string;
-  founderChoices: string[]; 
+  founderChoices: string[];
   
-  bestTreppoScoreNationId: string;
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
@@ -141,6 +139,7 @@ export interface AdminSettings {
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean; 
   userRegistrationEnabled: boolean; 
+  eurovisionWinnerNationId?: string;
   juryWinnerNationId?: string;
   televoteWinnerNationId?: string;
 }

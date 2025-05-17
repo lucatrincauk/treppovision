@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import type { AdminNationPayload, AdminSettings } from "@/types";
 import { doc, setDoc, getDoc, deleteDoc, deleteField, updateDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-import { getNations } from "@/lib/nation-service";
+import { getNations, getNationById } from "@/lib/nation-service";
 import { unstable_noStore as noStore } from 'next/cache';
 
 
@@ -124,14 +124,33 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
         leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked,
         finalPredictionsEnabled: data.finalPredictionsEnabled === undefined ? false : data.finalPredictionsEnabled,
         userRegistrationEnabled: data.userRegistrationEnabled === undefined ? true : data.userRegistrationEnabled,
+        eurovisionWinnerNationId: data.eurovisionWinnerNationId || undefined,
         juryWinnerNationId: data.juryWinnerNationId || undefined,
         televoteWinnerNationId: data.televoteWinnerNationId || undefined,
       };
     }
-    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true, juryWinnerNationId: undefined, televoteWinnerNationId: undefined };
+    // Default settings if the document doesn't exist
+    return { 
+      teamsLocked: false, 
+      leaderboardLocked: false, 
+      finalPredictionsEnabled: false, 
+      userRegistrationEnabled: true, 
+      eurovisionWinnerNationId: undefined,
+      juryWinnerNationId: undefined, 
+      televoteWinnerNationId: undefined 
+    };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
-    return { teamsLocked: false, leaderboardLocked: false, finalPredictionsEnabled: false, userRegistrationEnabled: true, juryWinnerNationId: undefined, televoteWinnerNationId: undefined };
+    // Return default settings on error
+    return { 
+      teamsLocked: false, 
+      leaderboardLocked: false, 
+      finalPredictionsEnabled: false, 
+      userRegistrationEnabled: true,
+      eurovisionWinnerNationId: undefined,
+      juryWinnerNationId: undefined, 
+      televoteWinnerNationId: undefined 
+    };
   }
 }
 
@@ -147,6 +166,9 @@ export async function updateAdminSettingsAction(
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
     const payloadToSave: { [key: string]: any } = { ...payload };
 
+    if (payload.eurovisionWinnerNationId === '') {
+        payloadToSave.eurovisionWinnerNationId = deleteField();
+    }
     if (payload.juryWinnerNationId === '') {
         payloadToSave.juryWinnerNationId = deleteField();
     }
@@ -158,15 +180,17 @@ export async function updateAdminSettingsAction(
     await setDoc(settingsDocRef, payloadToSave, { merge: true });
 
     revalidatePath("/admin/settings");
-    revalidatePath("/teams", "layout"); // Revalidate to reflect team lock status changes
-    revalidatePath("/nations", "layout"); // Revalidate to reflect leaderboard lock status changes
+    revalidatePath("/teams", "layout"); 
+    revalidatePath("/nations", "layout"); 
     if (payload.finalPredictionsEnabled !== undefined) {
       revalidatePath("/teams/[teamId]/pronostici", "page");
     }
     if (payload.userRegistrationEnabled !== undefined) {
-      // Revalidate components that depend on user registration status
       revalidatePath("/components/auth/signup-form", "page"); 
       revalidatePath("/components/auth/auth-button", "page");
+    }
+    if (payload.eurovisionWinnerNationId !== undefined || payload.juryWinnerNationId !== undefined || payload.televoteWinnerNationId !== undefined) {
+        revalidatePath("/teams/leaderboard"); // Revalidate leaderboard if winners change
     }
 
 
@@ -182,7 +206,7 @@ export async function updateNationRankingAction(
   nationId: string,
   newRankingString?: string | null
 ): Promise<{ success: boolean; message: string; newRanking?: number }> {
-  noStore(); // Ensure fresh data is considered
+  noStore(); 
   const isAdmin = await verifyAdminServerSide();
   if (!isAdmin) {
     return { success: false, message: "Non autorizzato.", newRanking: undefined };
@@ -194,13 +218,12 @@ export async function updateNationRankingAction(
       const parsed = parseInt(newRankingString.trim(), 10);
       if (!isNaN(parsed) && parsed > 0) {
         numericRanking = parsed;
-      } else if (parsed <= 0 && newRankingString.trim() !== "") { // Explicit 0 or negative should also clear
-        numericRanking = undefined; // Will lead to deleteField
-      } else if (newRankingString.trim() === "") { // Explicit empty string
-        numericRanking = undefined; // Will lead to deleteField
+      } else if (newRankingString.trim() === "" || parsed <= 0) { 
+        numericRanking = undefined; 
       }
+    } else if (newRankingString === "") { // Explicitly handle empty string to clear rank
+      numericRanking = undefined;
     }
-
 
     const nationRef = doc(db, NATIONS_COLLECTION, nationId);
     const rankingUpdate = numericRanking === undefined ? deleteField() : numericRanking;
@@ -209,13 +232,11 @@ export async function updateNationRankingAction(
       ranking: rankingUpdate,
     });
     
-    revalidatePath(`/nations/${nationId}`); // Specific nation page
-    revalidatePath("/nations/ranking"); // Final ranking page
-    revalidatePath("/teams/leaderboard"); // Team leaderboard
-    revalidatePath("/nations/trepposcore-ranking"); // TreppoScore ranking page
-    // No revalidatePath("/admin/settings") here, as it's handled by optimistic client update
-
-
+    revalidatePath(`/nations/${nationId}`); 
+    revalidatePath("/nations/ranking"); 
+    revalidatePath("/teams/leaderboard"); 
+    revalidatePath("/nations/trepposcore-ranking"); 
+    
     return { success: true, message: `Ranking per ${nationId} aggiornato.`, newRanking: numericRanking };
   } catch (error) {
     console.error(`Errore durante l'aggiornamento del ranking per ${nationId}:`, error);
