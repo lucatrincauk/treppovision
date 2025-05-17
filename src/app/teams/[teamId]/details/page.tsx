@@ -49,7 +49,7 @@ const getPointsForRank = (rank?: number): number => {
 const getTopNationsForCategory = (
   scoresMap: Map<string, NationGlobalCategorizedScores>,
   currentNationsMap: Map<string, Nation>,
-  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount' | 'worstSongNationId'>,
+  categoryKey: keyof Omit<NationGlobalCategorizedScores, 'voteCount'>,
   sortOrder: 'desc' | 'asc' = 'desc',
 ): Array<{ id: string; name: string; score: number | null; artistName?: string; songTitle?: string; }> => {
   if (!scoresMap || scoresMap.size === 0 || !currentNationsMap || currentNationsMap.size === 0) return [];
@@ -161,11 +161,10 @@ export default function TeamDetailsPage() {
 
         const nationsMap = new Map(nationsData.map(n => [n.id, n]));
         
-        const topTreppoScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'desc');
         const topSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageSongScore', 'desc');
         const topPerformanceNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averagePerformanceScore', 'desc');
         const topOutfitNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'averageOutfitScore', 'desc');
-        const worstOverallScoreNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'asc');
+        const worstSongNations = getTopNationsForCategory(globalScoresMapData, nationsMap, 'overallAverageScore', 'asc');
 
 
         let calculatedTeams: LocalTeamWithScore[] = allFetchedTeams.map(team => {
@@ -189,11 +188,6 @@ export default function TeamDetailsPage() {
 
           const categoryPicksDetails: GlobalCategoryPickDetail[] = [];
           
-          const bestTreppoPick = getCategoryPickPointsAndRank(team.bestTreppoScoreNationId, topTreppoScoreNations);
-          score += bestTreppoPick.points;
-          if (bestTreppoPick.rank === 1) firstPlaceCategoryPicksCount++;
-          categoryPicksDetails.push({ categoryName: "Miglior TreppoScore", pickedNationId: team.bestTreppoScoreNationId || "", pickedNationName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.name : undefined, pickedNationCountryCode: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.countryCode : undefined, artistName: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.artistName : undefined, songTitle: team.bestTreppoScoreNationId ? nationsMap.get(team.bestTreppoScoreNationId)?.songTitle : undefined, actualCategoryRank: bestTreppoPick.rank, pointsAwarded: bestTreppoPick.points, iconName: "Award", pickedNationScoreInCategory: bestTreppoPick.score });
-
           const bestSongPick = getCategoryPickPointsAndRank(team.bestSongNationId, topSongNations);
           score += bestSongPick.points;
           if(bestSongPick.rank === 1) firstPlaceCategoryPicksCount++;
@@ -203,19 +197,19 @@ export default function TeamDetailsPage() {
           score += bestPerfPick.points;
           if(bestPerfPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Performance", pickedNationId: team.bestPerformanceNationId || "", pickedNationName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.name : undefined, pickedNationCountryCode: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.countryCode : undefined, artistName: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.artistName : undefined, songTitle: team.bestPerformanceNationId ? nationsMap.get(team.bestPerformanceNationId)?.songTitle : undefined, actualCategoryRank: bestPerfPick.rank, pointsAwarded: bestPerfPick.points, iconName: "Star", pickedNationScoreInCategory: bestPerfPick.score });
-
+          
           const bestOutfitPick = getCategoryPickPointsAndRank(team.bestOutfitNationId, topOutfitNations);
           score += bestOutfitPick.points;
           if(bestOutfitPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Miglior Outfit", pickedNationId: team.bestOutfitNationId || "", pickedNationName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.name : undefined, pickedNationCountryCode: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.countryCode : undefined, artistName: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.artistName : undefined, songTitle: team.bestOutfitNationId ? nationsMap.get(team.bestOutfitNationId)?.songTitle : undefined, actualCategoryRank: bestOutfitPick.rank, pointsAwarded: bestOutfitPick.points, iconName: "Shirt", pickedNationScoreInCategory: bestOutfitPick.score });
           
-          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstOverallScoreNations);
+          const worstPick = getCategoryPickPointsAndRank(team.worstSongNationId, worstSongNations);
           score += worstPick.points;
           if(worstPick.rank === 1) firstPlaceCategoryPicksCount++;
           categoryPicksDetails.push({ categoryName: "Peggior TreppoScore", pickedNationId: team.worstSongNationId || "", pickedNationName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.name : undefined, pickedNationCountryCode: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.countryCode : undefined, artistName: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.artistName : undefined, songTitle: team.worstSongNationId ? nationsMap.get(team.worstSongNationId)?.songTitle : undefined, actualCategoryRank: worstPick.rank, pointsAwarded: worstPick.points, iconName: "ThumbsDown", pickedNationScoreInCategory: worstPick.score });
           
-          if (firstPlaceCategoryPicksCount >= 4) {
-            score += 30;
+          if (firstPlaceCategoryPicksCount >= 4) { 
+            score += 30; 
             bonusGranCampionePronostici = true;
           } else if (firstPlaceCategoryPicksCount >= 2 && firstPlaceCategoryPicksCount < 4) {
             score += 5;
@@ -239,7 +233,7 @@ export default function TeamDetailsPage() {
           let isTiedValue = false;
           if (i > 0 && calculatedTeams[i].rank === calculatedTeams[i - 1].rank && calculatedTeams[i].score === calculatedTeams[i-1].score) {
             isTiedValue = true;
-            calculatedTeams[i-1].isTied = true;
+            calculatedTeams[i-1].isTied = true; 
           }
           if (i < calculatedTeams.length - 1 && calculatedTeams[i].rank === calculatedTeams[i + 1].rank && calculatedTeams[i].score === calculatedTeams[i+1].score) {
             isTiedValue = true;
@@ -285,9 +279,9 @@ export default function TeamDetailsPage() {
 
   const nationGlobalCategorizedScoresArray = useMemo(() => Array.from(globalScoresData.entries()), [globalScoresData]);
 
-  const rankText = (rank?: number, isTied?: boolean): string => {
+  const rankText = (rank?: number): string => {
     if (rank === undefined || rank === null || rank <= 0) return "N/D";
-    return `${rank}°${isTied ? '*' : ''}`;
+    return `${rank}°`;
   };
 
 
@@ -360,7 +354,7 @@ export default function TeamDetailsPage() {
               <div className="flex items-center">
                 {previousTeam.rank && (
                     <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(previousTeam.rank))}>
-                      {previousTeam.rank}°{previousTeam.isTied ? '*' : ''}
+                      {rankText(previousTeam.rank)}
                     </span>
                 )}
                 <NavMedalIcon rank={previousTeam.rank} />
@@ -368,9 +362,9 @@ export default function TeamDetailsPage() {
               <div className="flex flex-col items-start text-left leading-tight">
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{previousTeam.name}</span>
                 {previousTeam.creatorDisplayName && (
-                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                     <UserCircle className="w-3 h-3 mr-0.5 text-muted-foreground flex-shrink-0" />
-                    ({previousTeam.creatorDisplayName})
+                  <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
+                     <UserCircle className="w-2.5 h-2.5 mr-0.5 text-muted-foreground flex-shrink-0" />
+                     {previousTeam.creatorDisplayName}
                   </span>
                 )}
               </div>
@@ -391,16 +385,16 @@ export default function TeamDetailsPage() {
               <div className="flex flex-col items-start text-left leading-tight">
                 <span className="truncate max-w-[100px] sm:max-w-[150px] text-xs font-medium">{nextTeam.name}</span>
                 {nextTeam.creatorDisplayName && (
-                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
-                    <UserCircle className="w-3 h-3 mr-0.5 text-muted-foreground flex-shrink-0" />
-                    ({nextTeam.creatorDisplayName})
+                  <span className="text-[10px] text-muted-foreground truncate max-w-[100px] sm:max-w-[150px] flex items-center">
+                    <UserCircle className="w-2.5 h-2.5 mr-0.5 text-muted-foreground flex-shrink-0" />
+                    {nextTeam.creatorDisplayName}
                   </span>
                 )}
               </div>
                <div className="flex items-center">
                 {nextTeam.rank && (
                   <span className={cn("mr-1 text-xs font-semibold", getRankTextColorClass(nextTeam.rank))}>
-                    {nextTeam.rank}°{nextTeam.isTied ? '*' : ''}
+                    {rankText(nextTeam.rank)}
                   </span>
                 )}
                 <NavMedalIcon rank={nextTeam.rank} />
