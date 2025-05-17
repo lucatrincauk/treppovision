@@ -31,6 +31,8 @@ export default async function EditNationPage({ params }: EditNationPageProps) {
     youtubeVideoId: nation.youtubeVideoId,
     category: nation.category,
     ranking: (nation.ranking === 0 || nation.ranking === undefined || nation.ranking === null) ? undefined : String(nation.ranking),
+    juryRank: (nation.juryRank === 0 || nation.juryRank === undefined || nation.juryRank === null) ? undefined : String(nation.juryRank), // New field
+    televoteRank: (nation.televoteRank === 0 || nation.televoteRank === undefined || nation.televoteRank === null) ? undefined : String(nation.televoteRank), // New field
     performingOrder: nation.performingOrder || 0,
     songDescription: nation.songDescription || "",
     songLyrics: nation.songLyrics || "",

@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/firebase";
 import type { AdminNationPayload, AdminSettings } from "@/types";
-import { doc, setDoc, getDoc, deleteDoc, deleteField, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, deleteDoc, deleteField, updateDoc, collection, getDocs } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { getNations, getNationById } from "@/lib/nation-service";
 import { unstable_noStore as noStore } from 'next/cache';
@@ -15,8 +15,10 @@ const ADMIN_SETTINGS_DOC_ID = "config";
 
 async function verifyAdminServerSide(): Promise<boolean> {
   // TODO: Implement robust server-side admin verification
-  // For now, this relies on the client-side check, which is not secure for server actions.
-  // A proper implementation would involve Firebase Custom Claims or a server-side role check.
+  // For now, this is a placeholder. In a real app, check Firebase Custom Claims or a secure role store.
+  // const { getUser } = await getAuth();
+  // const user = await getUser();
+  // return user?.customClaims?.admin === true || user?.email === "lucatrinca.uk@gmail.com";
   return true;
 }
 
@@ -36,8 +38,14 @@ export async function addNationAction(
     if (docSnap.exists()) {
       return { success: false, message: `Una nazione con ID '${data.id}' esiste già.` };
     }
+    // Prepare data, removing undefined fields to avoid saving them as null
+    const payloadToSave: { [key: string]: any } = { ...data };
+    if (payloadToSave.ranking === undefined) delete payloadToSave.ranking;
+    if (payloadToSave.juryRank === undefined) delete payloadToSave.juryRank;
+    if (payloadToSave.televoteRank === undefined) delete payloadToSave.televoteRank;
 
-    await setDoc(nationRef, data);
+
+    await setDoc(nationRef, payloadToSave);
 
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
@@ -68,13 +76,20 @@ export async function updateNationAction(
     if (data.ranking === undefined) {
       payloadForFirestore.ranking = deleteField();
     }
+    if (data.juryRank === undefined) { 
+      payloadForFirestore.juryRank = deleteField();
+    }
+    if (data.televoteRank === undefined) { 
+      payloadForFirestore.televoteRank = deleteField();
+    }
+
 
     await setDoc(nationRef, payloadForFirestore, { merge: true });
 
     revalidatePath("/nations");
     revalidatePath(`/nations/${data.id}`);
     revalidatePath(`/admin/nations/${data.id}/edit`);
-    revalidatePath("/admin/settings");
+    revalidatePath("/admin/settings"); 
     revalidatePath("/teams/leaderboard");
     revalidatePath("/nations/ranking");
     revalidatePath("/nations/trepposcore-ranking");
@@ -155,7 +170,10 @@ export async function updateAdminSettingsAction(
 
   try {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
-    await setDoc(settingsDocRef, payload, { merge: true });
+    
+    const payloadToSave: { [key: string]: any } = { ...payload };
+    
+    await setDoc(settingsDocRef, payloadToSave, { merge: true });
 
     revalidatePath("/admin/settings");
     revalidatePath("/teams", "layout"); 
@@ -188,11 +206,16 @@ export async function updateNationRankingAction(
 
   try {
     let numericRanking: number | undefined = undefined;
+
     if (newRankingString && newRankingString.trim() !== "") {
       const parsed = parseInt(newRankingString.trim(), 10);
       if (!isNaN(parsed) && parsed > 0) {
         numericRanking = parsed;
+      } else {
+        numericRanking = undefined; 
       }
+    } else {
+      numericRanking = undefined;
     }
 
     const nationRef = doc(db, NATIONS_COLLECTION, nationId);
@@ -237,15 +260,17 @@ export async function getUserRegistrationEnabledStatus(): Promise<boolean> {
 export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
   noStore();
   try {
-    const nations = await getNations();
-    if (nations.length === 0) {
+    const nationsSnapshot = await getDocs(collection(db, NATIONS_COLLECTION));
+    if (nationsSnapshot.empty) {
       return false; 
     }
-    return nations.every(nation => nation.ranking && nation.ranking > 0);
+    // Check if ALL nations have a ranking > 0
+    return nationsSnapshot.docs.every(doc => {
+        const data = doc.data();
+        return typeof data.ranking === 'number' && data.ranking > 0;
+    });
   } catch (error) {
     console.error("Error checking if all nations are ranked:", error);
     return false; 
   }
 }
-
-    

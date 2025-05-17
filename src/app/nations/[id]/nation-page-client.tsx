@@ -8,7 +8,7 @@ import { VotingForm } from "@/components/voting/voting-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
-import { Music2, UserSquare2, ChevronLeft, ChevronRight, Edit, Award, FileText, Info, ListOrdered, PlayCircle, ListMusic, Loader2 } from "lucide-react";
+import { Music2, UserSquare2, ChevronLeft, ChevronRight, Edit, Award, FileText, Info, ListOrdered, PlayCircle, ListMusic, Loader2, Users, Flag } from "lucide-react"; // Added Users, Flag
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminNationControls } from "@/components/admin/admin-nation-controls";
@@ -244,8 +244,20 @@ export default function NationPageClient({ initialNation, params: serverParams }
                 )}
               >
                 <Award className="w-3 h-3 mr-1.5" />
-                Posizione: {nation.ranking}°
+                Posizione Finale: {nation.ranking}°
                 {nation.ranking === 1 && " (Vincitore!)"}
+              </Badge>
+            )}
+            {nation.juryRank && nation.juryRank > 0 && (
+              <Badge variant="outline" className="text-sm py-1 px-3">
+                <Users className="w-3 h-3 mr-1.5" /> 
+                Posizione Giuria: {nation.juryRank}°
+              </Badge>
+            )}
+            {nation.televoteRank && nation.televoteRank > 0 && (
+              <Badge variant="outline" className="text-sm py-1 px-3">
+                <Flag className="w-3 h-3 mr-1.5" /> 
+                Posizione Televoto: {nation.televoteRank}°
               </Badge>
             )}
           </div>
@@ -304,4 +316,3 @@ export default function NationPageClient({ initialNation, params: serverParams }
     </div>
   );
 }
-

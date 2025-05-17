@@ -10,6 +10,8 @@ export interface Nation {
   youtubeVideoId: string;
   category: NationCategory;
   ranking?: number;
+  juryRank?: number; // New field
+  televoteRank?: number; // New field
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -25,6 +27,8 @@ export interface NationFormData {
   youtubeVideoId: string;
   category: NationCategory;
   ranking?: string;
+  juryRank?: string; // New field for form
+  televoteRank?: string; // New field for form
   performingOrder: number;
   songDescription?: string;
   songLyrics?: string;
@@ -91,7 +95,7 @@ export interface TeamFinalAnswersFormData {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstSongNationId: string; // This was changed from worstTreppoScoreNationId
 }
 
 
@@ -105,7 +109,7 @@ export interface Team {
   bestSongNationId: string;
   bestPerformanceNationId: string;
   bestOutfitNationId: string;
-  worstSongNationId: string;
+  worstSongNationId: string; // This was changed from worstTreppoScoreNationId
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -175,8 +179,10 @@ export interface TeamWithScore extends Team {
   bonusTotalScore?: number;
 }
 
-export interface AdminNationPayload extends Omit<NationFormData, 'ranking'> {
+export interface AdminNationPayload extends Omit<NationFormData, 'ranking' | 'juryRank' | 'televoteRank'> {
   ranking?: number;
+  juryRank?: number; // New field for payload
+  televoteRank?: number; // New field for payload
 }
 
 export interface TeamAdminViewDetails extends Team {
@@ -184,5 +190,3 @@ export interface TeamAdminViewDetails extends Team {
   unvotedNationNames?: string[]; 
   hasSubmittedFinalPredictions: boolean;
 }
-
-    

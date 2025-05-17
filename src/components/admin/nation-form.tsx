@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -41,14 +41,15 @@ const nationFormInternalSchema = z.object({
   category: z.enum(["founders", "day1", "day2"], {
     required_error: "La categoria è richiesta.",
   }),
-  ranking: z.string().optional(), // Form stores string or undefined for ranking
+  ranking: z.string().optional(),
+  juryRank: z.string().optional(), // New field for form
+  televoteRank: z.string().optional(), // New field for form
   performingOrder: z.coerce.number().int().min(0, "L'ordine di esibizione deve essere un numero intero non negativo."),
-  songDescription: z.string().optional(), // New field
-  songLyrics: z.string().optional(), // New field
+  songDescription: z.string().optional(),
+  songLyrics: z.string().optional(),
 });
 
 // This schema is for the actual data payload (AdminNationPayload) sent to server actions
-// It transforms ranking from string to number | undefined
 const nationPayloadSchema = nationFormInternalSchema.extend({
   ranking: z.any().transform((val, ctx) => {
     if (val === undefined || val === null || String(val).trim() === "") {
@@ -64,7 +65,34 @@ const nationPayloadSchema = nationFormInternalSchema.extend({
     }
     return num;
   }),
-  // songDescription and songLyrics remain optional strings, no transformation needed from internal form state
+  juryRank: z.any().transform((val, ctx) => { // New transformation
+    if (val === undefined || val === null || String(val).trim() === "") {
+      return undefined;
+    }
+    const num = Number(String(val));
+    if (isNaN(num) || !Number.isInteger(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La Posizione Giuria deve essere un numero intero valido o vuota.",
+      });
+      return z.NEVER;
+    }
+    return num;
+  }),
+  televoteRank: z.any().transform((val, ctx) => { // New transformation
+    if (val === undefined || val === null || String(val).trim() === "") {
+      return undefined;
+    }
+    const num = Number(String(val));
+    if (isNaN(num) || !Number.isInteger(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La Posizione Televoto deve essere un numero intero valido o vuota.",
+      });
+      return z.NEVER;
+    }
+    return num;
+  }),
 });
 
 
@@ -83,7 +111,9 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     defaultValues: initialData
       ? {
           ...initialData,
-          ranking: initialData.ranking, // Already string | undefined
+          ranking: initialData.ranking ?? undefined,
+          juryRank: initialData.juryRank ?? undefined, // New field default
+          televoteRank: initialData.televoteRank ?? undefined, // New field default
           performingOrder: initialData.performingOrder || 0,
           songDescription: initialData.songDescription || "",
           songLyrics: initialData.songLyrics || "",
@@ -97,6 +127,8 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           youtubeVideoId: "dQw4w9WgXcQ",
           category: "day1",
           ranking: undefined,
+          juryRank: undefined, // New field default
+          televoteRank: undefined, // New field default
           performingOrder: 0,
           songDescription: "",
           songLyrics: "",
@@ -108,12 +140,10 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
     const payloadForAction: AdminNationPayload = {
       ...values,
       ranking: values.ranking && values.ranking > 0 ? values.ranking : undefined,
-      // songDescription and songLyrics are already in correct format (string | undefined)
-      // If they are empty strings from the form, they will be saved as empty strings.
-      // If they were truly undefined (e.g. if the field was never part of the form),
-      // they wouldn't be in 'values'.
-      songDescription: values.songDescription || undefined, // Convert empty string to undefined if preferred
-      songLyrics: values.songLyrics || undefined, // Convert empty string to undefined if preferred
+      juryRank: values.juryRank && values.juryRank > 0 ? values.juryRank : undefined, // Prepare for payload
+      televoteRank: values.televoteRank && values.televoteRank > 0 ? values.televoteRank : undefined, // Prepare for payload
+      songDescription: values.songDescription || undefined,
+      songLyrics: values.songLyrics || undefined,
     };
 
     const action = isEditMode ? updateNationAction : addNationAction;
@@ -261,7 +291,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           name="ranking"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Posizione (Ranking) (Opzionale)</FormLabel>
+              <FormLabel>Posizione Complessiva (Ranking Finale)</FormLabel>
               <FormControl>
                 <Input
                   type="text"
@@ -273,7 +303,53 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                 />
               </FormControl>
               <FormDescription>
-                La posizione iniziale o prevista della nazione. Lasciare vuoto se non si desidera specificare.
+                La posizione finale della nazione. Lasciare vuoto se non si desidera specificare.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="juryRank"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Posizione Giuria (Opzionale)</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="es. 1 (lasciare vuoto se non applicabile)"
+                  {...field}
+                  onChange={event => field.onChange(event.target.value)}
+                  value={field.value ?? ""}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormDescription>
+                La posizione assegnata dalla giuria.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="televoteRank"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Posizione Televoto (Opzionale)</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="es. 1 (lasciare vuoto se non applicabile)"
+                  {...field}
+                  onChange={event => field.onChange(event.target.value)}
+                  value={field.value ?? ""}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormDescription>
+                La posizione assegnata dal televoto.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -299,7 +375,7 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
                 />
               </FormControl>
               <FormDescription>
-                Numero per ordinare le nazioni (0 per primo). Non visibile agli utenti.
+                Numero per ordinare le nazioni (0 per primo).
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -310,10 +386,10 @@ export function NationForm({ initialData, isEditMode = false }: NationFormProps)
           name="songDescription"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrizione Canzone (Opzionale)</FormLabel>
+              <FormLabel>Descrizione Artista/Canzone (Opzionale)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Breve descrizione o aneddoti sulla canzone..."
+                  placeholder="Breve descrizione o aneddoti sull'artista o sulla canzone..."
                   className="resize-y min-h-[100px]"
                   {...field}
                   disabled={isSubmitting}
