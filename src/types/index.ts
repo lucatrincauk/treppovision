@@ -97,11 +97,11 @@ export interface TeamFinalAnswersFormData {
   eurovisionWinnerPickNationId?: string;
   juryWinnerPickNationId?: string;
   televoteWinnerPickNationId?: string;
-  bestTreppoScoreNationId?: string;
-  bestSongNationId?: string;
-  bestPerformanceNationId?: string;
-  bestOutfitNationId?: string;
-  worstTreppoScoreNationId?: string;
+  bestTreppoScoreNationId: string;
+  bestSongNationId: string;
+  bestPerformanceNationId: string;
+  bestOutfitNationId: string;
+  worstTreppoScoreNationId: string;
 }
 
 
@@ -115,11 +115,11 @@ export interface Team {
   eurovisionWinnerPickNationId?: string;
   juryWinnerPickNationId?: string;
   televoteWinnerPickNationId?: string;
-  bestTreppoScoreNationId?: string;
-  bestSongNationId?: string;
-  bestPerformanceNationId?: string;
-  bestOutfitNationId?: string;
-  worstTreppoScoreNationId?: string;
+  bestTreppoScoreNationId: string;
+  bestSongNationId: string;
+  bestPerformanceNationId: string;
+  bestOutfitNationId: string;
+  worstTreppoScoreNationId: string;
 
   createdAt: number | null;
   updatedAt?: number | null;
@@ -153,9 +153,6 @@ export interface AdminSettings {
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean; 
   userRegistrationEnabled: boolean;
-  eurovisionWinnerNationId?: string;
-  juryWinnerNationId?: string;
-  televoteWinnerNationId?: string;
 }
 
 export type RankingCategoryKey = 'overallAverageScore' | 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore';
@@ -183,6 +180,7 @@ export interface TeamWithScore extends Team {
   primaSquadraDetails?: GlobalPrimaSquadraDetail[];
   categoryPicksDetails?: GlobalCategoryPickDetail[];
   primaSquadraScore?: number;
+  eurovisionPicksScore?: number; // New for subtotal of official result predictions
   treppoScoreCategoryPicksScore?: number;
   bonusTotalScore?: number;
   rank?: number;
