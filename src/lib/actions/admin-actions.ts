@@ -124,9 +124,6 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
         leaderboardLocked: data.leaderboardLocked === undefined ? false : data.leaderboardLocked,
         finalPredictionsEnabled: data.finalPredictionsEnabled === undefined ? false : data.finalPredictionsEnabled,
         userRegistrationEnabled: data.userRegistrationEnabled === undefined ? true : data.userRegistrationEnabled,
-        eurovisionWinnerNationId: data.eurovisionWinnerNationId || undefined,
-        juryWinnerNationId: data.juryWinnerNationId || undefined,
-        televoteWinnerNationId: data.televoteWinnerNationId || undefined,
       };
     }
     // Default settings if the document doesn't exist
@@ -135,9 +132,6 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
       leaderboardLocked: false, 
       finalPredictionsEnabled: false, 
       userRegistrationEnabled: true, 
-      eurovisionWinnerNationId: undefined,
-      juryWinnerNationId: undefined, 
-      televoteWinnerNationId: undefined 
     };
   } catch (error) {
     console.error("Error fetching admin settings:", error);
@@ -147,9 +141,6 @@ export async function getAdminSettingsAction(): Promise<AdminSettings> {
       leaderboardLocked: false, 
       finalPredictionsEnabled: false, 
       userRegistrationEnabled: true,
-      eurovisionWinnerNationId: undefined,
-      juryWinnerNationId: undefined, 
-      televoteWinnerNationId: undefined 
     };
   }
 }
@@ -164,20 +155,7 @@ export async function updateAdminSettingsAction(
 
   try {
     const settingsDocRef = doc(db, ADMIN_SETTINGS_COLLECTION, ADMIN_SETTINGS_DOC_ID);
-    const payloadToSave: { [key: string]: any } = { ...payload };
-
-    if (payload.eurovisionWinnerNationId === '') {
-        payloadToSave.eurovisionWinnerNationId = deleteField();
-    }
-    if (payload.juryWinnerNationId === '') {
-        payloadToSave.juryWinnerNationId = deleteField();
-    }
-    if (payload.televoteWinnerNationId === '') {
-        payloadToSave.televoteWinnerNationId = deleteField();
-    }
-
-
-    await setDoc(settingsDocRef, payloadToSave, { merge: true });
+    await setDoc(settingsDocRef, payload, { merge: true });
 
     revalidatePath("/admin/settings");
     revalidatePath("/teams", "layout"); 
@@ -189,11 +167,7 @@ export async function updateAdminSettingsAction(
       revalidatePath("/components/auth/signup-form", "page"); 
       revalidatePath("/components/auth/auth-button", "page");
     }
-    if (payload.eurovisionWinnerNationId !== undefined || payload.juryWinnerNationId !== undefined || payload.televoteWinnerNationId !== undefined) {
-        revalidatePath("/teams/leaderboard"); // Revalidate leaderboard if winners change
-    }
-
-
+    
     return { success: true, message: "Impostazioni admin aggiornate con successo." };
   } catch (error) {
     console.error("Errore durante l'aggiornamento delle impostazioni admin:", error);
@@ -218,11 +192,7 @@ export async function updateNationRankingAction(
       const parsed = parseInt(newRankingString.trim(), 10);
       if (!isNaN(parsed) && parsed > 0) {
         numericRanking = parsed;
-      } else if (newRankingString.trim() === "" || parsed <= 0) { 
-        numericRanking = undefined; 
       }
-    } else if (newRankingString === "") { // Explicitly handle empty string to clear rank
-      numericRanking = undefined;
     }
 
     const nationRef = doc(db, NATIONS_COLLECTION, nationId);
@@ -277,3 +247,5 @@ export async function checkIfAnyNationIsRankedAction(): Promise<boolean> {
     return false; 
   }
 }
+
+    

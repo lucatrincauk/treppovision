@@ -139,9 +139,6 @@ export interface AdminSettings {
   leaderboardLocked: boolean;
   finalPredictionsEnabled: boolean; 
   userRegistrationEnabled: boolean; 
-  eurovisionWinnerNationId?: string;
-  juryWinnerNationId?: string;
-  televoteWinnerNationId?: string;
 }
 
 export type RankingCategoryKey = 'overallAverageScore' | 'averageSongScore' | 'averagePerformanceScore' | 'averageOutfitScore';
@@ -187,3 +184,5 @@ export interface TeamAdminViewDetails extends Team {
   unvotedNationNames?: string[]; 
   hasSubmittedFinalPredictions: boolean;
 }
+
+    
