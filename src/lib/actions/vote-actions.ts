@@ -5,6 +5,7 @@ import type { Vote } from "@/types";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getLeaderboardLockedStatus } from "./admin-actions"; // Import status check
 
 interface VoteSubmission {
   nationId: string;
@@ -21,6 +22,11 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
     return { success: false, message: "Utente non autenticato." };
   }
 
+  const leaderboardLocked = await getLeaderboardLockedStatus();
+  if (leaderboardLocked === false) { // Voting is disabled if leaderboards are UNLOCKED
+    return { success: false, message: "La votazione è chiusa perché le classifiche sono attive." };
+  }
+
   if (
     submission.scores.song < 1 || submission.scores.song > 10 ||
     submission.scores.performance < 1 || submission.scores.performance > 10 ||
@@ -33,18 +39,18 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
     userId: submission.userId,
     nationId: submission.nationId,
     scores: submission.scores,
-    timestamp: Date.now(), // Using client-side timestamp for consistency before Firestore's serverTimestamp is set
+    timestamp: Date.now(), // Client-side timestamp
   };
 
   try {
     const voteDocRef = doc(db, "votes", `${submission.userId}_${submission.nationId}`);
-    // We add serverTimestamp for reliable ordering/last updated, but keep client timestamp for immediate feedback if needed
     const dataToSave = { ...newVote, serverTimestamp: serverTimestamp() };
     await setDoc(voteDocRef, dataToSave);
 
     revalidatePath(`/nations/${submission.nationId}`);
-    // revalidatePath("/charts"); // If you had a charts page
-
+    revalidatePath("/nations/trepposcore-ranking"); // Revalidate trepposcore ranking
+    revalidatePath("/teams/leaderboard"); // Revalidate team leaderboard
+    
     return { success: true, message: "Voto inviato con successo!", vote: newVote };
   } catch (error) {
     console.error("Error saving vote to Firestore:", error);
@@ -52,4 +58,3 @@ export async function submitVoteAction(submission: VoteSubmission): Promise<{ su
     return { success: false, message: errorMessage, vote: undefined };
   }
 }
-

@@ -11,7 +11,9 @@ import { submitVoteAction } from "@/lib/actions/vote-actions";
 import { useToast } from "@/hooks/use-toast";
 import { getUserVoteForNationFromDB } from "@/lib/voting-service";
 import type { Nation, Vote } from "@/types";
-import { Loader2, Send, Star, Info } from "lucide-react";
+import { Loader2, Send, Star, Info, Lock } from "lucide-react";
+import { getLeaderboardLockedStatus } from "@/lib/actions/admin-actions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface VotingFormProps {
   nation: Nation;
@@ -24,6 +26,8 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
   const [isPending, startTransition] = useTransition();
   
   const [isLoadingVote, setIsLoadingVote] = useState(true); 
+  const [leaderboardLocked, setLeaderboardLocked] = useState<boolean | null>(null);
+  const [isLoadingLockStatus, setIsLoadingLockStatus] = useState(true);
 
   const [songScore, setSongScore] = useState(5);
   const [performanceScore, setPerformanceScore] = useState(5);
@@ -45,7 +49,23 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
   };
 
   useEffect(() => {
-    if (authIsLoading) {
+    async function fetchLockStatus() {
+      setIsLoadingLockStatus(true);
+      try {
+        const status = await getLeaderboardLockedStatus();
+        setLeaderboardLocked(status);
+      } catch (error) {
+        console.error("Error fetching leaderboard lock status for voting form:", error);
+        setLeaderboardLocked(false); // Default to unlocked if status fetch fails
+      } finally {
+        setIsLoadingLockStatus(false);
+      }
+    }
+    fetchLockStatus();
+  }, []);
+
+  useEffect(() => {
+    if (authIsLoading || isLoadingLockStatus) {
       setIsLoadingVote(true);
       return;
     }
@@ -83,7 +103,7 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
 
     fetchUserVote();
 
-  }, [nation.id, user, authIsLoading, toast]);
+  }, [nation.id, user, authIsLoading, toast, isLoadingLockStatus]);
 
   useEffect(() => {
     if (user) { 
@@ -98,6 +118,10 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
     event.preventDefault();
     if (!user) {
       toast({ title: "Autenticazione Richiesta", description: "Effettua il login per votare.", variant: "destructive" });
+      return;
+    }
+    if (leaderboardLocked === false) {
+      toast({ title: "Votazione Chiusa", description: "Le votazioni sono chiuse perché le classifiche sono attive.", variant: "destructive" });
       return;
     }
 
@@ -122,7 +146,9 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
     });
   };
 
-  if (authIsLoading) {
+  const isVotingDisabled = isPending || leaderboardLocked === false || isLoadingLockStatus;
+
+  if (authIsLoading || isLoadingLockStatus) {
     return (
         <Card className="shadow-lg border-primary/30">
             <CardHeader>
@@ -130,7 +156,7 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                <p className="text-muted-foreground">Caricamento autenticazione...</p>
+                <p className="text-muted-foreground">Caricamento...</p>
             </CardContent>
         </Card>
     );
@@ -167,8 +193,8 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
     <Card className="shadow-lg border-primary/30">
       <CardHeader>
         <CardTitle className="text-primary flex items-center"><Star className="mr-2 text-accent"/>Il Tuo Voto per {nation.name}</CardTitle>
-        {hasVoted && <CardDescription>Hai già votato per {nation.name}. Puoi aggiornare i tuoi punteggi.</CardDescription>}
-        {!hasVoted && <CardDescription>Esprimi i tuoi punteggi da 1 a 10 per ogni categoria.</CardDescription>}
+        {hasVoted && <CardDescription>Hai già votato per {nation.name}. {leaderboardLocked === false ? "Le votazioni sono chiuse." : "Puoi aggiornare i tuoi punteggi."}</CardDescription>}
+        {!hasVoted && <CardDescription>{leaderboardLocked === false ? "Le votazioni sono chiuse." : "Esprimi i tuoi punteggi da 1 a 10 per ogni categoria."}</CardDescription>}
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
@@ -180,6 +206,14 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
               </p>
             </div>
           )}
+          {leaderboardLocked === false && (
+            <Alert variant="destructive" className="mb-4">
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                Le votazioni sono chiuse perché le classifiche sono attive. Non è possibile modificare i voti.
+              </AlertDescription>
+            </Alert>
+          )}
           <div>
             <Label htmlFor="songScore" className="text-lg">Canzone: <span className="font-bold text-accent">{songScore}</span>/10</Label>
             <Slider
@@ -190,7 +224,7 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
               value={[songScore]}
               onValueChange={(value) => setSongScore(value[0])}
               className="mt-2 [&>span>span]:bg-primary"
-              disabled={isPending}
+              disabled={isVotingDisabled}
             />
           </div>
           <div>
@@ -203,7 +237,7 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
               value={[performanceScore]}
               onValueChange={(value) => setPerformanceScore(value[0])}
               className="mt-2 [&>span>span]:bg-primary"
-              disabled={isPending}
+              disabled={isVotingDisabled}
             />
           </div>
           <div>
@@ -216,12 +250,12 @@ export function VotingForm({ nation, onVoteSuccess }: VotingFormProps) {
               value={[outfitScore]}
               onValueChange={(value) => setOutfitScore(value[0])}
               className="mt-2 [&>span>span]:bg-primary"
-              disabled={isPending}
+              disabled={isVotingDisabled}
             />
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isPending}>
+          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isVotingDisabled}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             {hasVoted ? "Aggiorna Voto" : "Invia Voto"}
           </Button>
